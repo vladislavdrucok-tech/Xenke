@@ -86,3 +86,11 @@
 /* FPS line sits under the compass instead of on top of it. */
 #performance{top:calc(266px + env(safe-area-inset-top));left:14px;right:auto;max-width:calc(100% - 28px);white-space:normal}
 @media(max-height:500px) and (orientation:landscape){#performance{top:206px}}
+/* Progress transfer panel inside the pause sheet. */
+.transfer{display:grid;gap:8px;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#0f1c22}
+.transfer[hidden]{display:none}
+.transfer label{font-size:11px;color:var(--muted)}
+.transfer textarea{width:100%;min-height:64px;background:#0b161b;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font:11px/1.4 ui-monospace,monospace;word-break:break-all;resize:vertical;user-select:text;-webkit-user-select:text}
+.transfer textarea:focus-visible{outline:2px solid var(--green)}
+#import-confirm p{font-size:12px;line-height:1.6;color:#d3dfd9;margin:4px 0}
+#import-confirm .secondary{width:100%}

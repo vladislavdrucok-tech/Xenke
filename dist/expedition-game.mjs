@@ -1,4 +1,4 @@
-import {SAVE_KEY,LEGACY_KEY,ITEMS,RECIPES,freshState,parseSave,canCraft,craft,plant,quest} from './expedition.mjs?v=3';
+import {SAVE_KEY,LEGACY_KEY,ITEMS,RECIPES,freshState,parseSave,canCraft,craft,plant,quest,exportCode,importCode} from './expedition.mjs?v=3';
 import atlasLayout from './assets/atlas-layout.mjs';
 import {icon} from './icons.mjs';
 import {bakeShellback} from './creatures.mjs';
@@ -65,6 +65,13 @@ $$('dialog').forEach(d=>{d.addEventListener('close',()=>{modal=!!$('dialog[open]
 $('#craft-btn').onclick=()=>openSheet('craft-dialog');$('#bag-btn').onclick=()=>openSheet('bag-dialog');$('#pause-btn').onclick=()=>openSheet('pause-dialog');$('#resume-btn').onclick=closeSheets;$('#continue-btn').onclick=closeSheets;
 $('#sound-btn').onclick=()=>{muted=!muted;setText($('#sound-btn'),'Звук: '+(muted?'вимкнено':'увімкнено'));};
 ui['quality-btn'].onclick=()=>{quality={smooth:'eco',eco:'detail',detail:'smooth'}[quality];adaptiveScale=1;slowWindows=0;ecoFallback=false;updateSettings();savePrefs();resize();};
+// Progress transfer: copy a code here, paste it on another device; the code goes through the same save validator.
+let pendingImport=null;const transferNote=t=>setText($('#transfer-note'),t);
+$('#transfer-btn').onclick=()=>{const box=$('#transfer');box.hidden=!box.hidden;if(!box.hidden){state.player={x:player.x,y:player.y};$('#export-code').value=exportCode(state);transferNote('');}};
+$('#copy-code').onclick=()=>{const area=$('#export-code'),manual=()=>{area.focus?.();area.select?.();transferNote('Код виділено. Скопіюй його вручну.');};if(navigator.clipboard?.writeText)navigator.clipboard.writeText(area.value).then(()=>transferNote('Код скопійовано.'),manual);else manual();};
+$('#import-btn').onclick=()=>{pendingImport=importCode($('#import-code').value);if(!pendingImport){$('#import-confirm').hidden=true;transferNote('Код не розпізнано. Перевір, що скопійовано весь текст, починаючи з AFTERFALL-1:');return;}const t=Math.floor(pendingImport.time);setText($('#import-summary'),`Знайдено прогрес: «${quest(pendingImport).title}», час експедиції ${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}. Замінити поточний прогрес?`);$('#import-confirm').hidden=false;transferNote('');};
+$('#import-no').onclick=()=>{pendingImport=null;$('#import-confirm').hidden=true;};
+$('#import-yes').onclick=()=>{if(!pendingImport)return;started=false;state=pendingImport;try{localStorage.setItem(SAVE_KEY,JSON.stringify(pendingImport));}catch{transferNote('Не вдалося зберегти в цьому браузері.');return;}location.reload();};
 $('#reset-btn').onclick=()=>$('#reset-confirm').hidden=false;$('#reset-no').onclick=()=>$('#reset-confirm').hidden=true;
 $('#reset-yes').onclick=()=>{started=false;state=freshState();try{localStorage.setItem(SAVE_KEY,JSON.stringify(freshState()));}catch{}location.reload();};
 ui['start-btn'].onclick=()=>{if(!assetsReady)return;started=true;ui.welcome.hidden=true;resetInput();sound(560,.12);toast(continuing?'Експедиція триває. Компас показує мету.':'Торкнись зліва й веди пальцем. Біля колод натисни дію.');refreshHud();dirtyFrame=true;};
@@ -97,7 +104,7 @@ for(const event of ['pointerup','pointercancel','lostpointercapture'])pad.addEve
 // Long-press on Android would open a context menu and cancel the touch; block it inside the game.
 $('#game').addEventListener('contextmenu',ev=>ev.preventDefault());
 measureControls();
-window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowLeft','ArrowRight','KeyE','KeyC','KeyI'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='Escape'){modal?closeSheets():openSheet('pause-dialog');return;}if(!started)return;if(e.code==='KeyC'||e.code==='KeyI'){if(modal)closeSheets();else openSheet(e.code==='KeyC'?'craft-dialog':'bag-dialog');return;}keys[e.code]=true;if(['Space','KeyW','ArrowUp'].includes(e.code))jumpBuffer=.16;});
+window.addEventListener('keydown',e=>{if(/^(TEXTAREA|INPUT)$/.test(e.target?.tagName||''))return;if(['Space','ArrowUp','ArrowLeft','ArrowRight','KeyE','KeyC','KeyI'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='Escape'){modal?closeSheets():openSheet('pause-dialog');return;}if(!started)return;if(e.code==='KeyC'||e.code==='KeyI'){if(modal)closeSheets();else openSheet(e.code==='KeyC'?'craft-dialog':'bag-dialog');return;}keys[e.code]=true;if(['Space','KeyW','ArrowUp'].includes(e.code))jumpBuffer=.16;});
 window.addEventListener('keyup',e=>keys[e.code]=false);
 window.addEventListener('blur',()=>{resetInput();save();});
 document.addEventListener('visibilitychange',()=>{visible=!document.hidden;resetInput();if(!visible)save();last=0;accum=0;dirtyFrame=true;});window.addEventListener('pagehide',()=>save(true));

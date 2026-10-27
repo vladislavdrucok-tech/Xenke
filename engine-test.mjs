@@ -68,3 +68,8 @@ assert.deepEqual(snap().state.forest,[true,true,true]);assert.equal(resourceRebu
 console.log('PASS: second mission, forest cache, purifier crafting, three cleansing sites, completion.');
 
 globalThis.location={reload(){}};el('reset-yes').onclick();listeners.pagehide();assert.equal(JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']).completed,false);assert.equal(JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']).time,0);console.log('PASS: resetting cannot be overwritten by pagehide autosave.');
+{const {exportCode,freshState}=await import('./dist/expedition.mjs');const other=freshState();other.inv.wood=42;other.time=77;
+el('import-code').value='garbage';el('import-btn').onclick();assert.equal(el('import-confirm').hidden,true,'Garbage code must not offer import');
+el('import-code').value=exportCode(other);el('import-btn').onclick();assert.equal(el('import-confirm').hidden,false);el('import-yes').onclick();listeners.pagehide();
+const saved=JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']);assert.equal(saved.inv.wood,42);assert.equal(saved.time,77);
+console.log('PASS: progress import through the pause menu, rejected garbage, not overwritten by pagehide autosave.');}

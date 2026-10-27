@@ -17,3 +17,8 @@ console.log('PASS: complete v0.2 economy, station gates, no duplicate planting, 
 const old=JSON.parse(JSON.stringify(s));old.version=2;delete old.forest;delete old.built.purifier;const migrated=parseSave(JSON.stringify(old));assert.equal(migrated.version,3);assert.equal(migrated.completed,true);assert.deepEqual(migrated.forest,[false,false,false]);assert.equal(migrated.inv.wood,s.inv.wood);
 const purifier=RECIPES.find(r=>r.id==='purifier');assert.equal(canCraft(freshState(),purifier),'Спершу захисти теплицю');Object.assign(migrated.inv,{scrap:6,cloth:1,water:2});assert.equal(craft(migrated,'purifier'),true);assert.equal(craft(migrated,'purifier'),false);assert.equal(quest(migrated).step,8);migrated.forest=[true,true,true];assert.equal(quest(migrated).step,10);assert.deepEqual(parseSave(JSON.stringify(migrated)).forest,[true,true,true]);
 console.log('PASS: v0.2 save migration, forest unlock and purifier gate, forest save round-trip.');
+import {exportCode,importCode} from './dist/expedition.mjs';
+const code=exportCode(migrated);assert.ok(code.startsWith('AFTERFALL-1:'));assert.deepEqual(importCode(code),parseSave(JSON.stringify(migrated)));
+assert.deepEqual(importCode(' '+code.slice(0,30)+'\n'+code.slice(30)+' '),importCode(code),'Line breaks from messengers are ignored');
+assert.equal(importCode('hello'),null);assert.equal(importCode('AFTERFALL-1:!!!'),null);assert.equal(importCode(exportCode({...migrated,inv:{...migrated.inv,wood:-5}})),null);
+console.log('PASS: progress transfer code round-trip, tolerant of line breaks, rejects garbage and invalid saves.');

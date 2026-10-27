@@ -30,3 +30,7 @@ export function quest(s){
  if(s.inv.planter<1)return {step:4,title:'Створи набори для посадки',desc:'Біля верстака: 2 деревини + насіння + чиста вода на кожен набір.',x:s.inv.wood<2?800:260};
  return {step:5,title:`Оживи теплицю · ${s.beds.filter(Boolean).length}/3`,desc:'Утримуй «Посадити» біля кожної порожньої грядки.',x:410+s.beds.findIndex(x=>!x)*40};
 }
+// Progress transfer between devices or addresses: a text code, since file downloads are blocked in some viewers.
+const CODE_PREFIX='AFTERFALL-1:';
+export function exportCode(s){const bytes=new TextEncoder().encode(JSON.stringify(s));let bin='';for(const b of bytes)bin+=String.fromCharCode(b);return CODE_PREFIX+btoa(bin);}
+export function importCode(text){try{const raw=String(text||'').replace(/\s+/g,'');if(!raw.startsWith(CODE_PREFIX))return null;const bin=atob(raw.slice(CODE_PREFIX.length));return parseSave(new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0))));}catch{return null;}}

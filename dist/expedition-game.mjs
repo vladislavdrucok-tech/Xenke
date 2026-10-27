@@ -23,7 +23,7 @@ const art={},atlases={},rendered={};
 let autoAction=false,tapAction=true,movePointer=null,moveAxis=0,jumpBuffer=0,coyote=0,saveQueued=false;
 let adaptiveScale=1,slowWindows=0,fastWindows=0,showFps=false,ecoFallback=false,rafDelta=1000/60,rafCount=0,worstMs=0,hitches=0,prevX=player.x,prevY=player.y,renderX=player.x,renderY=player.y;
 let controlSize='m',vibrate=true,swipeJump=false;
-const QUALITY={smooth:{label:'Графіка: плавно · 60 FPS, адаптивна',fps:60,area:200000,sharp:.62},eco:{label:'Графіка: економ · 30 FPS',fps:30,area:280000,sharp:.72},detail:{label:'Графіка: деталізація · 60 FPS',fps:60,area:650000,sharp:1.15}};
+const QUALITY={smooth:{label:'Графіка: плавно · 60 FPS, адаптивна',fps:60,area:200000,sharp:.62},eco:{label:'Графіка: економ · 30 FPS, для слабких телефонів',fps:30,area:280000,sharp:.72},detail:{label:'Графіка: деталізація · до 120 FPS',fps:120,area:650000,sharp:1.15}};
 const SIZES={s:'малі',m:'стандартні',l:'великі'};
 try{const prefs=JSON.parse(localStorage.getItem('afterfall-controls-v3')||'{}');quality=QUALITY[prefs.quality]?prefs.quality:'smooth';tapAction=prefs.tapAction!==false;controlSize=SIZES[prefs.size]?prefs.size:'m';vibrate=prefs.vibrate!==false;swipeJump=!!prefs.swipeJump;document.querySelector('#game').classList.toggle('left-handed',!!prefs.leftHanded);}catch{}
 function savePrefs(){try{localStorage.setItem('afterfall-controls-v3',JSON.stringify({quality,tapAction,size:controlSize,vibrate,swipeJump,leftHanded:$('#game').classList.contains('left-handed')}));}catch{}}
@@ -191,13 +191,13 @@ function loop(timestamp){const t=performance.now();const raw=last?timestamp-last
  const alpha=Math.min(1,accum/STEP);renderX=prevX+(player.x-prevX)*alpha;renderY=prevY+(player.y-prevY)*alpha;if(Math.abs(player.x-prevX)>20){renderX=player.x;renderY=player.y;}
  if(toastUntil&&now>toastUntil){ui.toast.classList.remove('show');toastUntil=0;}
  // Paint on every n-th display refresh: 60 Hz→1, 120 Hz→2, so frame pacing stays even instead of alternating.
- const fps=ecoFallback?30:QUALITY[quality].fps,every=Math.max(1,Math.round(1000/fps/rafDelta));rafCount++;
+ const fps=ecoFallback?QUALITY[quality].fps/2:QUALITY[quality].fps,every=Math.max(1,Math.round(1000/fps/rafDelta));rafCount++;
  if(assetsReady&&visible&&(dirtyFrame||active()&&rafCount>=every)){rafCount=0;paint();frames++;frameMs+=performance.now()-t;}
  // Telemetry counts only live gameplay: pauses, menus and the start screen must not look like slow frames.
  if(!active()){frames=0;frameMs=0;telemetryClock=0;fastWindows=0;}else telemetryClock+=elapsed;
- if(telemetryClock>=2){const rate=frames/telemetryClock;canvas.dataset.renderFps=Math.round(rate);canvas.dataset.cpuMs=(frameMs/Math.max(1,frames)).toFixed(2);if(showFps)setText($('#performance'),`${Math.round(rate)} FPS · найдовший кадр ${Math.round(worstMs)} мс · ривків ${hitches} · ${canvas.width}×${canvas.height}${ecoFallback?' · авто 30':''}`);
-  const goal=Math.min(fps,1000/rafDelta/every);if(quality!=='detail'&&rate<goal*.8)slowWindows++;else slowWindows=0;
-  if(slowWindows>=2){slowWindows=0;fastWindows=0;if(adaptiveScale>.55){adaptiveScale=Math.max(.55,adaptiveScale-.15);resize();}else if(quality==='smooth'&&!ecoFallback)ecoFallback=true;}
+ if(telemetryClock>=2){const rate=frames/telemetryClock;canvas.dataset.renderFps=Math.round(rate);canvas.dataset.cpuMs=(frameMs/Math.max(1,frames)).toFixed(2);if(showFps)setText($('#performance'),`${Math.round(rate)} FPS · найдовший кадр ${Math.round(worstMs)} мс · ривків ${hitches} · ${canvas.width}×${canvas.height}${ecoFallback?' · авто '+fps:''}`);
+  const goal=Math.min(fps,1000/rafDelta/every);if(rate<goal*.8)slowWindows++;else slowWindows=0;
+  if(slowWindows>=2){slowWindows=0;fastWindows=0;if(quality==='detail'){if(!ecoFallback&&fps>60)ecoFallback=true;}else if(adaptiveScale>.55){adaptiveScale=Math.max(.55,adaptiveScale-.15);resize();}else if(quality==='smooth'&&!ecoFallback)ecoFallback=true;}
   // Recover sharpness after ~10 s of steady frames, so one bad moment does not leave the picture blurry for good.
   else if(rate>=goal*.95&&worstMs<34){if(++fastWindows>=5){fastWindows=0;if(ecoFallback)ecoFallback=false;else if(adaptiveScale<1){adaptiveScale=Math.min(1,adaptiveScale+.15);resize();}}}else fastWindows=0;
   worstMs=0;frames=0;frameMs=0;telemetryClock=0;}

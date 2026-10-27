@@ -81,8 +81,8 @@
  .stick{width:calc(var(--cs)*104px);height:calc(var(--cs)*104px);margin:calc(var(--cs)*-52px) 0 0 calc(var(--cs)*-52px)}
  .target-label{top:auto;bottom:calc(var(--cs)*24px + 12px);max-width:40%}
 }
-/* Portrait: the hint sits just under the walkable ground line instead of over the hero. */
-@media(orientation:portrait){.target-label{top:calc(73% + 6px);bottom:auto}}
+/* Portrait: the hint floats above the hero (with room for a jump), clear of the stick and buttons. */
+@media(orientation:portrait){.target-label{top:auto;bottom:calc(27% + clamp(120px,38vw,180px))}}
 /* FPS line sits under the compass instead of on top of it. */
 #performance{top:calc(266px + env(safe-area-inset-top));left:14px;right:auto;max-width:calc(100% - 28px);white-space:normal}
 @media(max-height:500px) and (orientation:landscape){#performance{top:206px}}

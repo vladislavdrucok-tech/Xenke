@@ -1,6 +1,7 @@
 import {SAVE_KEY,LEGACY_KEY,ITEMS,RECIPES,freshState,parseSave,canCraft,craft,plant,quest} from './expedition.mjs?v=3';
 import atlasLayout from './assets/atlas-layout.mjs';
 import {icon} from './icons.mjs';
+import {bakeShellback} from './creatures.mjs';
 const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
 const ids=['world','welcome','start-btn','hp','food','thirst','day','restored','mission-title','mission-desc','waypoint','resource-strip','target-label','action-text','toast','saved','craft-dialog','bag-dialog','pause-dialog','win-dialog','station-note','recipes','inventory','drink-btn','eat-btn','quality-btn'];
 const ui=Object.fromEntries(ids.map(id=>[id,$('#'+id)]));
@@ -45,7 +46,7 @@ const nodes=[
  ];
 const forestPatches=[1810,2040,2260];
 const beds=[410,450,490],obstacle={x:1056,y:306,w:32,h:14};
-const mutant={x:1140,home:1140,dir:1,hp:3,stun:0};
+const mutant={x:1140,home:1140,dir:1,hp:3,stun:0,walk:0,flash:0,lunge:0,dying:0};
 let attackers=[],forestGuard=false;
 const particlesLimit=12;
 function active(){return started&&!modal&&visible;}
@@ -114,7 +115,7 @@ function finishAction(t){if(t.kind==='node'){const n=t.node;state.harvested[n.id
  else if(t.kind==='vault'){if(!state.built.generator){toast('Віднови живлення в крафті біля бази.');held.action=false;return;}state.vault=true;state.inv.seed+=3;burst(t.x,GROUND-30,'#c4e39b',18);toast('Насіння врятовано! Повернися до теплиці.');sound(820,.2);}
  else if(t.kind==='bed'){if(plant(state,t.index)){burst(t.x,GROUND-12,'#bfe49b',18);sound(740,.15);toast('Життя повертається · '+state.beds.filter(Boolean).length+'/3');if(state.completed&&!winShown){winShown=true;setTimeout(()=>{setText($('#win-dialog .win-stat'),`${Math.floor(state.time/60)}:${String(Math.floor(state.time%60)).padStart(2,'0')}`);openSheet('win-dialog');},1300);}}else{toast('Спершу створи набір для посадки в крафті.');held.action=false;}}
  else if(t.kind==='attacker'){t.mob.hp--;t.mob.stun=.35;burst(t.mob.x,GROUND-18,'#d7c5a0',4);sound(160,.04);}
- else if(t.kind==='mutant'){mutant.hp--;mutant.stun=1.1;mutant.x+=player.face*12;burst(mutant.x,GROUND-12,'#d5c6a1',5);sound(160,.06);if(mutant.hp<=0)toast('Панцирник відступив. Шлях вільний.');}
+ else if(t.kind==='mutant'){mutant.hp--;mutant.stun=1.1;mutant.flash=.14;mutant.x+=player.face*12;if(mutant.hp<=0)mutant.dying=.9;burst(mutant.x,GROUND-12,'#d5c6a1',5);sound(160,.06);if(mutant.hp<=0)toast('Панцирник відступив. Шлях вільний.');}
  else if(t.kind==='clean'){if(!state.built.purifier){toast('Потрібен очищувач ґрунту з крафту.');autoAction=false;held.action=false;return;}state.forest[t.index]=true;burst(t.x,GROUND-22,'#bfe49b',12);sound(850,.15);if(state.forest.every(Boolean)){toast('Ліс знову дихає. Друга місія виконана!');setText($('#win-dialog .eyebrow'),'ДРУГА МІСІЯ ВИКОНАНА');setText($('#win-dialog .sheet-note'),'Обидві місії завершено. Можна досліджувати світ або почати нову експедицію.');setText($('#win-dialog h2'),'Ліс знову дихає.');setText($('#win-dialog p'),'Теплиця і три лісові осередки відновлені. Твоя експедиція повернула життя ще одній ділянці планети.');setText($('#win-dialog .win-stat'),'3 / 3');openSheet('win-dialog');}else toast('Осередок очищено · '+state.forest.filter(Boolean).length+'/3');}
  autoAction=false;buzz(12);markSave();refreshHud();dirtyFrame=true;}
 function overlaps(x,y){return x-player.w/2<obstacle.x+obstacle.w&&x+player.w/2>obstacle.x&&y<obstacle.y+obstacle.h&&y+player.h>obstacle.y;}
@@ -128,9 +129,10 @@ function simulate(dt){if(!active())return;if(!state.forest.every(Boolean))state.
  targetNow=findTarget();const pressing=held.action||keys.KeyE||autoAction;
  if(pressing&&targetNow){if(interaction.key!==targetNow.key)interaction={key:targetNow.key,value:0};interaction.value+=dt;if(interaction.value>=targetNow.time){finishAction(targetNow);interaction.value=0;}}
  else {interaction={key:'',value:0};if(!targetNow)autoAction=false;}
- if(state.completed&&player.x>1600&&!forestGuard){forestGuard=true;mutant.x=2150;mutant.home=2150;mutant.hp=5;mutant.stun=0;toast('Зарослий панцирник охороняє ліс. Утримуй дію, щоб відігнати.');}
- if(mutant.hp>0&&!mutant.stun){mutant.x+=mutant.dir*11*dt;if(Math.abs(mutant.x-mutant.home)>32)mutant.dir*=-1;}
- if(mutant.hp>0&&Math.abs(player.x-mutant.x)<22&&player.y+player.h>GROUND-15&&!player.hurt){state.stats.hp=Math.max(0,state.stats.hp-8);player.hurt=1.8;buzz(45);toast('Панцирник! Утримуй кнопку дії або перестрибни.');}
+ if(state.completed&&player.x>1600&&!forestGuard){forestGuard=true;mutant.x=2150;mutant.home=2150;mutant.hp=5;mutant.stun=0;mutant.dying=0;toast('Зарослий панцирник охороняє ліс. Утримуй дію, щоб відігнати.');}
+ mutant.flash=Math.max(0,mutant.flash-dt);mutant.lunge=Math.max(0,mutant.lunge-dt);mutant.dying=Math.max(0,mutant.dying-dt);
+ if(mutant.hp>0&&!mutant.stun){mutant.x+=mutant.dir*11*dt;mutant.walk+=dt*7;if(Math.abs(mutant.x-mutant.home)>32)mutant.dir*=-1;}
+ if(mutant.hp>0&&Math.abs(player.x-mutant.x)<22&&player.y+player.h>GROUND-15&&!player.hurt){state.stats.hp=Math.max(0,state.stats.hp-8);player.hurt=1.8;mutant.lunge=.3;buzz(45);toast('Панцирник! Утримуй кнопку дії або перестрибни.');}
 
  if(state.beds.every(Boolean)&&!state.completed){state.defense.time=Math.min(90,state.defense.time+dt);const wave=Math.floor(state.defense.time/15)+1;if(wave>state.defense.wave&&wave<=6){state.defense.wave=wave;for(let i=0;i<(wave>3?2:1);i++)attackers.push({id:wave+'-'+i,x:i?185:790+i*30,hp:wave===6?5:3,stun:0,bite:0});toast(wave===1?'Шум генератора привабив мутантів. Захисти теплицю!':`Нова хвиля · ${wave}/6`);}for(const m of attackers){if(m.hp<=0)continue;m.stun=Math.max(0,m.stun-dt);m.bite=Math.max(0,m.bite-dt);const goal=m.x<430?405:490;if(!m.stun&&Math.abs(m.x-goal)>3)m.x+=Math.sign(goal-m.x)*24*dt;if(Math.abs(m.x-goal)<=5&&!m.bite){state.defense.hp-=6;m.bite=2.5;burst(goal,GROUND-15,'#dcaa83',3);}}attackers=attackers.filter(m=>m.hp>0);if(state.defense.hp<=0){state.defense={time:0,hp:100,wave:0};attackers=[];player.x=450;toast('Теплицю пошкоджено. Зберімося й спробуймо захист ще раз.');}if(state.defense.time>=90){state.completed=true;attackers=[];winShown=true;markSave();setTimeout(()=>{const seconds=Math.floor(state.time);setText($('#win-dialog .win-stat'),`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`);openSheet('win-dialog');},1200);}}
  if(state.stats.hp<=0){state.stats.hp=80;player.x=BASE;player.y=GROUND-player.h;toast('Повернення до укриття. Припаси збережено.');}
@@ -141,6 +143,10 @@ function simulate(dt){if(!active())return;if(!state.forest.every(Boolean))state.
 function refreshContext(){let label=targetNow?.name||'',verb=targetNow?.verb||'Дія';if(!targetNow&&state.beds.every(Boolean)&&!state.completed){label='Захищай грядки · утримуй дію, коли мутант наблизиться';verb='Захист';}else if(!targetNow&&nearBase()){label='Укриття · відкрий крафт для ремонту';verb='Крафт';}if(!targetNow&&player.x>1000&&player.x<1100)label='Повалена балка · натисни ↑, щоб перестрибнути';setText(ui['target-label'],label);setText(ui['action-text'],autoAction?'Стоп':verb);$('#action').classList.toggle('auto-working',autoAction);}
 function loadImage(src){return new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>{if(i.decode)i.decode().catch(()=>{}).then(()=>resolve(i));else resolve(i);};i.onerror=()=>reject(new Error(src));i.src=src;});}
 function drawObject(index,x,ground,width=55,flip=false){const a=atlases.objects?.[index];if(!a||x<camera.x-width||x>camera.x+VW+width)return;const h=a.h/a.w*width;ctx.save();ctx.translate(Math.round(x),Math.round(ground));if(flip)ctx.scale(-1,1);ctx.drawImage(art.objects,a.x,a.y,a.w,a.h,-width/2,-h,width,h);ctx.restore();}
+// Forest guard: walk cycle, bite lunge toward the hero, white hit flash, and sinking into the soil when beaten.
+function drawShellback(){const sb=rendered.shellback,near=Math.abs(player.x-mutant.x)<70&&mutant.hp>0,face=near?Math.sign(player.x-mutant.x)||1:mutant.dir;
+ const f=mutant.flash>0?5:mutant.lunge>0?4:mutant.stun>0||mutant.hp<=0?0:Math.floor(mutant.walk)%4,vis=mutant.hp>0?sb.h:Math.max(1,Math.round(sb.h*mutant.dying/.9));
+ ctx.save();ctx.translate(Math.round(mutant.x),GROUND+1);ctx.scale(face*1.3,1.3);ctx.drawImage(sb.canvas,f*sb.w,0,sb.w,vis,-sb.w/2,-vis,sb.w,vis);ctx.restore();}
 function rect(x,y,w,h,color){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),w,h);}
 function drawHero(){if(player.hurt>0&&Math.floor(now*9)%2===0)return;const frame=!player.ground?7:(held.action||keys.KeyE||autoAction)&&targetNow?5+Math.floor(now*7)%2:player.vx?Math.floor(player.walk)%4:4,a=atlases.hero?.[frame];if(!a)return;const k=72/atlases.heroMaxHeight;ctx.save();ctx.translate(Math.round(renderX),Math.round(renderY+player.h));ctx.scale(player.face,1);ctx.drawImage(art.hero,a.x,a.y,a.w,a.h,-a.anchor*k,-a.h*k,a.w*k,a.h*k);ctx.restore();}
 const FOREST={x:1600,w:800,ground:.7227*768/724};
@@ -176,7 +182,8 @@ function paint(){ctx.setTransform(scale,0,0,scale,0,0);ctx.imageSmoothingEnabled
  drawObject(0,1072,GROUND,47);
  const grow=state.beds.filter(Boolean).length;
  for(let i=0;i<3;i++){const x=beds[i];rect(x-15,GROUND-4,30,5,'#856443');rect(x-12,GROUND-5,24,2,'#493d2d');if(state.beds[i]){for(let j=0;j<4;j++){const xx=x-10+j*7,height=15+(j%2)*9;rect(xx,GROUND-height,2,height-4,'#93b36e');rect(xx-4,GROUND-height+3,5,3,'#b2ce82');rect(xx+2,GROUND-height-1,5,3,'#c6dda1');rect(xx+1,GROUND-height-4,3,3,j%2?'#dcc17f':'#bccea1');}}}
- if(mutant.hp>0&&mutant.x>camera.x-60&&mutant.x<camera.x+VW+60){drawObject(7,mutant.x,GROUND,forestGuard?68:54,mutant.dir>0);if(mutant.hp<(forestGuard?5:3)){rect(mutant.x-15,GROUND-37,30,3,'#152c2c');rect(mutant.x-15,GROUND-37,30*mutant.hp/(forestGuard?5:3),2,'#dac899');}}
+ if((mutant.hp>0||mutant.dying>0)&&mutant.x>camera.x-60&&mutant.x<camera.x+VW+60){if(forestGuard&&rendered.shellback)drawShellback();else drawObject(7,mutant.x,GROUND,54,mutant.dir>0);}
+ if(mutant.hp>0&&mutant.x>camera.x-60&&mutant.x<camera.x+VW+60){if(mutant.hp<(forestGuard?5:3)){const by=GROUND-(forestGuard?68:37);rect(mutant.x-15,by,30,3,'#152c2c');rect(mutant.x-15,by,30*mutant.hp/(forestGuard?5:3),2,'#dac899');}}
  for(const m of attackers)if(m.hp>0&&m.x>camera.x-60&&m.x<camera.x+VW+60){drawObject(7,m.x,GROUND,48,m.x<430);rect(m.x-14,GROUND-37,28,3,'#233537');rect(m.x-14,GROUND-37,28*Math.min(1,m.hp/3),2,'#d7ad8b');}
  if(state.vault)drawObject(6,545+Math.sin(now*.5)*14,GROUND,38,Math.sin(now*.5)<0);
  if(grow>0)for(let i=0;i<grow*2;i++){const x=440+Math.sin(now*.65+i*2)*65,y=GROUND-35+Math.sin(now*1.3+i)*12;rect(x-1,y,2,3,'#e4dcaa');rect(x-5,y-2,4,3,'#a9d9c7');rect(x+1,y-2,4,3,'#c5df9c');}
@@ -203,6 +210,6 @@ function loop(timestamp){const t=performance.now();const raw=last?timestamp-last
   worstMs=0;frames=0;frameMs=0;telemetryClock=0;}
  requestAnimationFrame(loop);
 }
-async function boot(){try{const loaded=await Promise.all([loadImage('assets/expedition-world.webp'),loadImage('assets/einstein-mobile.webp'),loadImage('assets/objects-mobile.webp')]);[art.environment,art.hero,art.objects]=loaded;atlases.hero=atlasLayout.hero;atlases.objects=atlasLayout.objects;atlases.heroMaxHeight=Math.max(...atlases.hero.map(a=>a.h));bakeBackground();assetsReady=true;ui['start-btn'].disabled=false;setText(ui['start-btn'],continuing?'Продовжити експедицію':'Почати експедицію');dirtyFrame=true;loadImage('assets/forest-world.webp').then(img=>{art.forest=img;bakeForest();}).catch(()=>{});}catch{setText(ui['start-btn'],'Не вдалося завантажити графіку');const note=ui.welcome.querySelector('small');if(note)setText(note,'Перевір з’єднання та онови сторінку.');}}
+async function boot(){try{const loaded=await Promise.all([loadImage('assets/expedition-world.webp'),loadImage('assets/einstein-mobile.webp'),loadImage('assets/objects-mobile.webp')]);[art.environment,art.hero,art.objects]=loaded;atlases.hero=atlasLayout.hero;atlases.objects=atlasLayout.objects;atlases.heroMaxHeight=Math.max(...atlases.hero.map(a=>a.h));bakeBackground();try{rendered.shellback=bakeShellback();}catch{}assetsReady=true;ui['start-btn'].disabled=false;setText(ui['start-btn'],continuing?'Продовжити експедицію':'Почати експедицію');dirtyFrame=true;loadImage('assets/forest-world.webp').then(img=>{art.forest=img;bakeForest();}).catch(()=>{});}catch{setText(ui['start-btn'],'Не вдалося завантажити графіку');const note=ui.welcome.querySelector('small');if(note)setText(note,'Перевір з’єднання та онови сторінку.');}}
 refreshHud();requestAnimationFrame(loop);if(typeof Image!=='undefined')boot();else{assetsReady=true;ui['start-btn'].disabled=false;}
 window.afterfall={snapshot:()=>structuredClone({state,player:{x:player.x,y:player.y,ground:player.ground},paused:!active(),nearBase:nearBase()})};

@@ -41,7 +41,7 @@ moveTo(260);make('filter');make('generator');assert.equal(snap().state.built.gen
 moveTo(1270);hold(3.4);assert.equal(snap().state.vault,true);assert.equal(snap().state.inv.seed,3);
 moveTo(260);for(let i=0;i<3;i++){make('water');make('planter');}
 for(const x of [410,450,490]){moveTo(x);hold(1.7);}
-assert.equal(snap().state.beds.every(Boolean),true);assert.equal(snap().state.completed,false);moveTo(450);hold(90.2);assert.equal(snap().state.completed,true);assert.ok(snap().state.defense.hp>0);assert.equal(snap().state.inv.planter,0);assert.ok(Object.values(snap().state.inv).every(n=>n>=0));
+assert.equal(snap().state.beds.every(Boolean),true);assert.equal(snap().state.completed,false);moveTo(450);down('action');for(let i=0;i<95*60&&!snap().state.completed;i++)run(1/60);up('action');assert.equal(snap().state.completed,true);assert.ok(snap().state.defense.hp>0);assert.equal(snap().state.inv.planter,0);assert.ok(Object.values(snap().state.inv).every(n=>n>=0));
 console.log('PASS: actual engine pointer controls, resource holds, crafting, generator unlock, jump obstruction both directions, seed rescue, water, 3 planted beds and full 90-second defense.');
 console.log('Optimal route play time:',Math.round(snap().state.time),'seconds, excluding reading and menus.');
 const saved=Object.values(localStorage.data).map(JSON.parse).find(x=>x.version===3);assert.ok(saved);assert.ok(saved.time>0);

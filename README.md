@@ -1,3 +1,11 @@
+# Afterfall · Остання теплиця — v0.4 (в розробці, не опублікована)
+
+Поточний стан і зміни v0.4: `docs/CHANGES_v0.4_UK.md`. Контекст передачі проєкту: `docs/START_HERE_UK.md`, `docs/NEXT_STEPS_UK.md`.
+Перевірки: `node tests.mjs && node engine-test.mjs && node --check dist/expedition-game.mjs`. Гра: роздати `dist/` через HTTP, напр. `python3 -m http.server 8000 --directory dist`.
+`dist/mobile-qa.html` — тимчасовий QA-екран, видалити перед публікацією. Оригінал фону лісу: `art/forest_background_NOT_INTEGRATED.png` (ігрова версія — `dist/assets/forest-world.webp`).
+
+Нижче — початковий опис v0.2 (збережено для історії).
+
 # Afterfall · Остання теплиця — v0.2
 
 A buildless browser prototype for mobile and desktop. Ukrainian interface, detailed pixel-art sprite atlases, a cached environment plate, and local-only progress. No backend or package install is required. v0.1 is retained in repository history.

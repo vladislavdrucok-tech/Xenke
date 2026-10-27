@@ -23,8 +23,10 @@ let raf;globalThis.requestAnimationFrame=f=>raf=f;
 globalThis.setTimeout=()=>1;globalThis.clearTimeout=()=>{};
 await import('./dist/expedition-game.mjs');
 let clock=0;function run(seconds){for(let i=0;i<Math.ceil(seconds*60);i++){clock+=1000/60;raf(clock);}}
-function down(id){for(const f of el(id).listeners.pointerdown||[])f({preventDefault(){},pointerId:1});}
-function up(id){for(const f of el(id).listeners.pointerup||[])f({});}
+const padSend=(type,pointerId,clientX,clientY=600)=>(el('move-pad').listeners[type]||[]).forEach(f=>f({pointerId,clientX,clientY,preventDefault(){}}));
+// The stick is a floating zone: 'left'/'right' press it and slide the thumb 60px.
+function down(id){if(id==='left'||id==='right'){padSend('pointerdown',1,200);padSend('pointermove',1,id==='right'?260:140);return;}for(const f of el(id).listeners.pointerdown||[])f({preventDefault(){},pointerId:1});}
+function up(id){if(id==='left'||id==='right'){padSend('pointerup',1,200);return;}for(const f of el(id).listeners.pointerup||[])f({});}
 function snap(){return window.afterfall.snapshot();}
 function moveTo(x){const sign=Math.sign(x-snap().player.x),dir=sign>0?'right':'left';down(dir);let iterations=0,jumping=false;while(Math.abs(snap().player.x-x)>2&&iterations++<2500){const px=snap().player.x;const needJump=sign>0?px>1025&&px<1100:px>1020&&px<1120;if(needJump&&!jumping){down('jump');jumping=true;}if(!needJump&&jumping){up('jump');jumping=false;}run(1/60);}up(dir);up('jump');assert.ok(Math.abs(snap().player.x-x)<4,`Could not move to ${x}; at ${snap().player.x}`);}
 function hold(seconds){down('action');run(seconds);up('action');}
@@ -45,16 +47,21 @@ console.log('Optimal route play time:',Math.round(snap().state.time),'seconds, e
 const saved=Object.values(localStorage.data).map(JSON.parse).find(x=>x.version===3);assert.ok(saved);assert.ok(saved.time>0);
 console.log('PASS: progress written to versioned local save.');
 
-for(const fps of [15,30,60]){moveTo(260);const before=snap().player.x;down('right');for(let i=0;i<fps;i++){clock+=1000/fps;raf(clock);}up('right');assert.ok(Math.abs((snap().player.x-before)-85)<2,`Physics drift at ${fps} FPS`);}
+for(const fps of [15,30,60,90,120]){moveTo(260);const before=snap().player.x;down('right');for(let i=0;i<fps;i++){clock+=1000/fps;raf(clock);}up('right');assert.ok(Math.abs((snap().player.x-before)-85)<2,`Physics drift at ${fps} FPS`);}
 assert.equal(resourceRebuilds,1,'Resource icons were rebuilt during gameplay');
-console.log('PASS: consistent movement at 15/30/60 FPS; resource HUD built once, not per frame.');
+console.log('PASS: consistent movement at 15/30/60/90/120 FPS; resource HUD built once, not per frame.');
 
 // Tap-to-harvest survives pointer release, movement cancels it, and independent fingers do not cancel each other.
 moveTo(690);let water=snap().state.inv.dirty;down('action');up('action');run(1);assert.equal(snap().state.inv.dirty,water+1);run(1);assert.equal(snap().state.inv.dirty,water+1,'Tap must collect exactly one bottle');
 down('action');up('action');down('right');run(.2);up('right');run(1);assert.equal(snap().state.inv.dirty,water+1,'Moving must cancel auto action');
 const pad=el('move-pad');const event=(pointerId,clientX)=>({pointerId,clientX,preventDefault(){}});const send=(type,e)=>pad.listeners[type].forEach(f=>f(e));
 moveTo(260);const x0=snap().player.x;send('pointerdown',event(7,350));run(.5);send('pointermove',event(7,20));run(.5);send('pointerup',event(8,20));run(.2);assert.ok(snap().player.x<x0-10,'Unrelated finger must not release movement');send('pointercancel',event(7,20));const stopped=snap().player.x;run(.5);assert.equal(snap().player.x,stopped,'Cancellation must stop movement');
-console.log('PASS: tap action, cancel on movement, sliding direction change, independent pointer IDs, pointer cancellation.');
+// Floating stick: small jitter inside the dead zone keeps a tap action running; reversing works after overshoot.
+moveTo(690);water=snap().state.inv.dirty;down('action');up('action');send('pointerdown',event(9,200));send('pointermove',event(9,206));run(1);send('pointerup',event(9,206));assert.equal(snap().state.inv.dirty,water+1,'Resting thumb in dead zone must not cancel tap action');
+moveTo(260);let x1=snap().player.x;send('pointerdown',event(10,200));send('pointermove',event(10,400));run(.3);assert.ok(snap().player.x>x1+20);x1=snap().player.x;send('pointermove',event(10,350));run(.3);assert.ok(snap().player.x<x1-20,'Base follows thumb: a 50px pull back after overshoot must reverse');send('pointerup',event(10,350));
+el('swipe-btn').onclick();run(.5);padSend('pointerdown',11,200,600);padSend('pointermove',11,200,550);run(.1);assert.equal(snap().player.ground,false,'Swipe up must jump when enabled');padSend('pointerup',11,200,550);run(1);assert.equal(snap().player.ground,true);el('swipe-btn').onclick();
+padSend('pointerdown',12,200,600);padSend('pointermove',12,200,550);run(.1);assert.equal(snap().player.ground,true,'Swipe jump is off by default');padSend('pointerup',12,200,550);
+console.log('PASS: tap action, cancel on movement, sliding direction change, independent pointer IDs, pointer cancellation, floating stick dead zone, reversal and optional swipe jump.');
 moveTo(1680);hold(3.1);assert.equal(snap().state.inv.scrap,8);moveTo(690);hold(2);moveTo(260);make('water');make('water');make('purifier');assert.equal(snap().state.built.purifier,true);
 for(const x of [1810,2040,2260]){moveTo(x);hold(4.3);}
 assert.deepEqual(snap().state.forest,[true,true,true]);assert.equal(resourceRebuilds,1);

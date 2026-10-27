@@ -35,3 +35,51 @@
 @media(max-height:500px) and (orientation:landscape){.controls{bottom:calc(12px + env(safe-area-inset-bottom));left:max(18px,env(safe-area-inset-left));right:max(18px,env(safe-area-inset-right))}.movement{height:76px;width:150px}.movement .move{height:76px;width:75px}#pad-thumb{top:11px}.actions{gap:14px}.actions .jump{width:62px;height:62px;margin-bottom:32px}.actions .main-action{width:78px;height:78px}.toolnav{bottom:16px}.target-label{bottom:112px;max-width:50%;font-size:9px}.hud{padding-top:5px;padding-bottom:0}.mission{top:54px;width:278px}.mission p{font-size:9px}.waypoint{top:170px}.resource-strip{top:60px}#performance{top:100px}.icon-btn{width:44px;height:44px}.welcome small{margin-top:10px}.welcome-content{padding:10px}}
 
 @media(max-height:500px) and (orientation:landscape){.target-label{top:164px;bottom:auto}}
+
+/* v0.4 controls: floating stick zone, big actions with enlarged touch targets, craft/bag in the HUD. */
+#game{--cs:1;-webkit-touch-callout:none;-webkit-user-select:none}
+#game.ctl-s{--cs:.85}
+#game.ctl-l{--cs:1.18}
+/* Text in these panels changes several times a second; containment keeps relayout local. */
+.hud,.mission,.resource-strip,.waypoint,#performance{contain:layout style}
+.controls,.controls *{-webkit-user-select:none;user-select:none}
+.controls{position:absolute;left:0;right:0;top:auto;bottom:0;height:48%;display:block;pointer-events:none}
+.stick-zone{position:absolute;left:0;bottom:0;width:50%;height:100%;pointer-events:auto;touch-action:none}
+#game.left-handed .stick-zone{left:auto;right:0}
+.stick{position:absolute;left:0;top:0;width:calc(var(--cs)*118px);height:calc(var(--cs)*118px);margin:calc(var(--cs)*-59px) 0 0 calc(var(--cs)*-59px);border-radius:50%;border:2px solid #c9e7b04d;background:#12262b9e;opacity:.6;will-change:transform;pointer-events:none;display:flex;align-items:center;justify-content:space-between;padding:0 calc(var(--cs)*10px)}
+.stick.on{opacity:1;border-color:#c9e7b099}
+.stick-arrow svg{width:calc(var(--cs)*22px);height:calc(var(--cs)*22px);color:#d7e8c7;opacity:.7}
+#pad-thumb{position:absolute;left:50%;top:50%;width:calc(var(--cs)*56px);height:calc(var(--cs)*56px);margin:calc(var(--cs)*-28px) 0 0 calc(var(--cs)*-28px);border-radius:50%;background:#c5e49a40;border:2px solid #d9efc2a0;will-change:transform;pointer-events:none}
+.stick.on #pad-thumb{background:#c5e49a80}
+.actions{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:calc(22px + env(safe-area-inset-bottom));display:flex;flex-direction:row;align-items:flex-end;gap:calc(var(--cs)*22px);pointer-events:auto}
+#game.left-handed .actions{right:auto;left:max(16px,env(safe-area-inset-left));flex-direction:row-reverse}
+#game.left-handed .controls{flex-direction:initial}
+.actions .control{position:relative}
+/* Invisible margin around each button: a slightly missed thumb still counts. */
+.actions .control::before{content:'';position:absolute;inset:calc(var(--cs)*-12px)}
+.actions .jump{width:calc(var(--cs)*74px);height:calc(var(--cs)*74px);margin:0 0 calc(var(--cs)*46px);border-radius:50%}
+.actions .main-action{width:calc(var(--cs)*92px);height:calc(var(--cs)*92px);border-radius:50%}
+.jump svg,.main-action svg{width:calc(var(--cs)*28px);height:calc(var(--cs)*28px)}
+.toolnav{display:none}
+.hud-tools{display:flex;gap:6px}
+.hud-tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:48px;min-height:44px;padding:4px 6px;background:#ffffff0c;border:1px solid var(--line);border-radius:10px;color:var(--green)}
+.hud-tool svg{width:18px;height:18px}
+.hud-tool small{font-size:8px;color:var(--text);font-weight:600}
+.vitals{margin-left:auto}
+.target-label{bottom:calc(var(--cs)*150px + 30px + env(safe-area-inset-bottom))}
+@media(max-width:650px){.actions{right:max(14px,env(safe-area-inset-right));bottom:calc(26px + env(safe-area-inset-bottom));gap:calc(var(--cs)*16px)}
+ #game.left-handed .actions{left:max(14px,env(safe-area-inset-left))}
+ .actions .jump{width:calc(var(--cs)*68px);height:calc(var(--cs)*68px);margin-bottom:calc(var(--cs)*44px)}
+ .actions .main-action{width:calc(var(--cs)*86px);height:calc(var(--cs)*86px)}
+ .target-label{bottom:calc(var(--cs)*150px + 34px + env(safe-area-inset-bottom))}
+}
+@media(max-width:430px){.brand{display:none}.hud-tool small{display:none}.hud-tool{min-width:44px}}
+@media(max-height:500px) and (orientation:landscape){.controls{height:62%}
+ .actions{bottom:calc(14px + env(safe-area-inset-bottom))}
+ .actions .jump{width:calc(var(--cs)*64px);height:calc(var(--cs)*64px);margin-bottom:calc(var(--cs)*36px)}
+ .actions .main-action{width:calc(var(--cs)*80px);height:calc(var(--cs)*80px)}
+ .stick{width:calc(var(--cs)*104px);height:calc(var(--cs)*104px);margin:calc(var(--cs)*-52px) 0 0 calc(var(--cs)*-52px)}
+ .target-label{top:auto;bottom:calc(var(--cs)*24px + 12px);max-width:40%}
+}
+/* Portrait: the hint sits just under the walkable ground line instead of over the hero. */
+@media(orientation:portrait){.target-label{top:calc(73% + 6px);bottom:auto}}

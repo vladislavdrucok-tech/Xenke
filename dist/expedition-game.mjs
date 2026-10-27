@@ -21,7 +21,7 @@ let keys={},held={left:false,right:false,jump:false,action:false},jumpLatch=fals
 let frames=0,frameMs=0,telemetryClock=0,winShown=state.completed,assetsReady=false;
 const art={},atlases={},rendered={};
 let autoAction=false,tapAction=true,movePointer=null,moveAxis=0,jumpBuffer=0,coyote=0,saveQueued=false;
-let adaptiveScale=1,slowWindows=0,showFps=false,ecoFallback=false,rafDelta=1000/60,rafCount=0,worstMs=0,hitches=0,prevX=player.x,prevY=player.y,renderX=player.x,renderY=player.y;
+let adaptiveScale=1,slowWindows=0,fastWindows=0,showFps=false,ecoFallback=false,rafDelta=1000/60,rafCount=0,worstMs=0,hitches=0,prevX=player.x,prevY=player.y,renderX=player.x,renderY=player.y;
 let controlSize='m',vibrate=true,swipeJump=false;
 const QUALITY={smooth:{label:'Графіка: плавно · 60 FPS, адаптивна',fps:60,area:200000,sharp:.62},eco:{label:'Графіка: економ · 30 FPS',fps:30,area:280000,sharp:.72},detail:{label:'Графіка: деталізація · 60 FPS',fps:60,area:650000,sharp:1.15}};
 const SIZES={s:'малі',m:'стандартні',l:'великі'};
@@ -193,8 +193,14 @@ function loop(timestamp){const t=performance.now();const raw=last?timestamp-last
  // Paint on every n-th display refresh: 60 Hz→1, 120 Hz→2, so frame pacing stays even instead of alternating.
  const fps=ecoFallback?30:QUALITY[quality].fps,every=Math.max(1,Math.round(1000/fps/rafDelta));rafCount++;
  if(assetsReady&&visible&&(dirtyFrame||active()&&rafCount>=every)){rafCount=0;paint();frames++;frameMs+=performance.now()-t;}
- telemetryClock+=elapsed;if(telemetryClock>=2){const rate=frames/telemetryClock;canvas.dataset.renderFps=Math.round(rate);canvas.dataset.cpuMs=(frameMs/Math.max(1,frames)).toFixed(2);if(showFps)setText($('#performance'),`${Math.round(rate)} FPS · найдовший кадр ${Math.round(worstMs)} мс · ривків ${hitches} · ${canvas.width}×${canvas.height}${ecoFallback?' · авто 30':''}`);worstMs=0;
-  const goal=Math.min(fps,1000/rafDelta/every);if(active()&&quality!=='detail'&&rate<goal*.8)slowWindows++;else slowWindows=0;if(slowWindows>=2){slowWindows=0;if(adaptiveScale>.55){adaptiveScale=Math.max(.55,adaptiveScale-.15);resize();}else if(quality==='smooth'&&!ecoFallback)ecoFallback=true;}frames=0;frameMs=0;telemetryClock=0;}
+ // Telemetry counts only live gameplay: pauses, menus and the start screen must not look like slow frames.
+ if(!active()){frames=0;frameMs=0;telemetryClock=0;fastWindows=0;}else telemetryClock+=elapsed;
+ if(telemetryClock>=2){const rate=frames/telemetryClock;canvas.dataset.renderFps=Math.round(rate);canvas.dataset.cpuMs=(frameMs/Math.max(1,frames)).toFixed(2);if(showFps)setText($('#performance'),`${Math.round(rate)} FPS · найдовший кадр ${Math.round(worstMs)} мс · ривків ${hitches} · ${canvas.width}×${canvas.height}${ecoFallback?' · авто 30':''}`);
+  const goal=Math.min(fps,1000/rafDelta/every);if(quality!=='detail'&&rate<goal*.8)slowWindows++;else slowWindows=0;
+  if(slowWindows>=2){slowWindows=0;fastWindows=0;if(adaptiveScale>.55){adaptiveScale=Math.max(.55,adaptiveScale-.15);resize();}else if(quality==='smooth'&&!ecoFallback)ecoFallback=true;}
+  // Recover sharpness after ~10 s of steady frames, so one bad moment does not leave the picture blurry for good.
+  else if(rate>=goal*.95&&worstMs<34){if(++fastWindows>=5){fastWindows=0;if(ecoFallback)ecoFallback=false;else if(adaptiveScale<1){adaptiveScale=Math.min(1,adaptiveScale+.15);resize();}}}else fastWindows=0;
+  worstMs=0;frames=0;frameMs=0;telemetryClock=0;}
  requestAnimationFrame(loop);
 }
 async function boot(){try{const loaded=await Promise.all([loadImage('assets/expedition-world.webp'),loadImage('assets/einstein-mobile.webp'),loadImage('assets/objects-mobile.webp')]);[art.environment,art.hero,art.objects]=loaded;atlases.hero=atlasLayout.hero;atlases.objects=atlasLayout.objects;atlases.heroMaxHeight=Math.max(...atlases.hero.map(a=>a.h));bakeBackground();assetsReady=true;ui['start-btn'].disabled=false;setText(ui['start-btn'],continuing?'Продовжити експедицію':'Почати експедицію');dirtyFrame=true;loadImage('assets/forest-world.webp').then(img=>{art.forest=img;bakeForest();}).catch(()=>{});}catch{setText(ui['start-btn'],'Не вдалося завантажити графіку');const note=ui.welcome.querySelector('small');if(note)setText(note,'Перевір з’єднання та онови сторінку.');}}

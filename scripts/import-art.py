@@ -82,15 +82,28 @@ def hand(c):
     if not pts:return [w*.8,h*.5]
     mx=max(x for x,_ in pts);near=[(x,y) for x,y in pts if x>mx-max(6,w*.05)]
     return [sum(x for x,_ in near)/len(near),sum(y for _,y in near)/len(near)]
-CELL=256;FIT=240
+def feet(c):
+    # Ground contact: the lowest opaque rows near the body. Returns (anchor x, foot y, stride width).
+    # Anchor = middle of the boots, so swapping poses never shifts the hero sideways; a tool that hangs
+    # below the boots (outside the body band) does not lift the hero off the ground.
+    a=c.getchannel('A').point(lambda v:255 if v>110 else 0);px=a.load();w,h=c.size
+    cols=[x for x in range(w) if any(px[x,y] for y in range(int(h*.55),h))]
+    mid=(min(cols)+max(cols))/2 if cols else w/2;band=h*.3
+    foot=max((y for y in range(h) for x in range(max(0,int(mid-band)),min(w,int(mid+band))) if px[x,y]),default=h-1)+1
+    row=[x for y in range(max(0,foot-int(h*.06)),foot) for x in range(w) if px[x,y] and abs(x-mid)<band*1.4]
+    return ((min(row)+max(row))/2 if row else mid),foot,(max(row)-min(row) if row else 0)
+FIT=240
 def hero(hid,path):
     if not re.fullmatch(r'[a-z0-9_-]+',hid):raise SystemExit('id: lowercase letters, digits, - or _')
     src=keyed(path);rows=4 if src.height>src.width else 2;parts=cells(src,4,rows);k=FIT/max(c.height for c,_ in parts)
-    sheet=Image.new('RGBA',(CELL*4,CELL*rows));frames=[]
-    for i,(c,anchor) in enumerate(parts):
-        hx,hy=hand(c);w,h=round(c.width*k),round(c.height*k);c=c.resize((w,h),Image.Resampling.LANCZOS)
+    # Cells grow to fit the widest pose (a swung pickaxe), so nothing is clipped into a neighbour.
+    CW=max(256,max(round(c.width*k) for c,_ in parts)+4);CH=256
+    sheet=Image.new('RGBA',(CW*4,CH*rows));frames=[]
+    for i,(c,_) in enumerate(parts):
+        hx,hy=hand(c);ax,fy,span=feet(c);w,h=round(c.width*k),round(c.height*k);c=c.resize((w,h),Image.Resampling.LANCZOS)
         a=c.getchannel('A').point(lambda v:255 if v>110 else 0);c.putalpha(a)
-        x,y=i%4*CELL+(CELL-w)//2,i//4*CELL+(CELL-h)//2;sheet.paste(c,(x,y));frames.append(dict(x=x,y=y,w=w,h=h,anchor=round(anchor*k,1),hand=[round(hx*k,1),round(hy*k,1)]))
+        x,y=i%4*CW+(CW-w)//2,i//4*CH+(CH-h)//2;sheet.paste(c,(x,y))
+        frames.append(dict(x=x,y=y,w=w,h=h,anchor=round(ax*k,1),foot=round(fy*k,1),stride=round(span*k,1),hand=[round(hx*k,1),round(hy*k,1)]))
     if hid=='einstein':
         # Einstein is the built-in hero: replace his atlas and keep the object frames in atlas-layout.mjs.
         sheet.save(assets/'einstein-mobile.webp',quality=92,method=6)

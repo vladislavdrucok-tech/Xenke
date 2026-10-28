@@ -42,11 +42,16 @@ function clearMobs(x,r=260,limit=30){down('attack');for(let i=0;i<limit*60;i++){
  padSend('pointerup',5,200);up('attack');assert.equal(mobsNear(x,r).length,0,`Mutants near ${x} must be defeated`);}
 function make(id){el('craft-btn').onclick();window.afterfall.pick(id);const button=el('craft-'+id);assert.equal(typeof button.onclick,'function',`Craft button ${id}`);button.onclick();el('resume-btn').onclick();}
 el('start-btn').onclick();el('hero-go').onclick();run(1);assert.equal(snap().player.ground,true);
-moveTo(520);hold(2.6);assert.equal(snap().state.inv.wood,12);
+moveTo(520);
+// Chopping is a series of strikes: progress moves on each contact and the wood arrives on the last one, once.
+{down('action');up('action');run(.2);assert.equal(snap().work.hits,0,'Wind-up before the first contact');run(.12);assert.equal(snap().work.hits,1,'First contact');assert.equal(snap().state.inv.wood,0);
+ run(1.2);assert.equal(snap().state.inv.wood,0,'No wood before the last strike');run(.6);assert.equal(snap().state.inv.wood,12);run(2);assert.equal(snap().state.inv.wood,12,'A cut tree gives wood once');
+ hold(3);assert.equal(snap().state.inv.wood,12,'The stump left behind cannot be chopped again');}
+console.log('PASS: tool work — wind-up, contact, progress per strike, single reward on the last strike, spent object cannot be farmed.');
 moveTo(590);hold(2.4);assert.equal(snap().state.inv.stone,10);
 moveTo(260);make('bench');assert.equal(snap().state.built.bench,true);
 moveTo(800);hold(2.6);moveTo(915);hold(3.4);assert.equal(snap().state.inv.scrap,8);assert.equal(snap().state.inv.fuse,1);
-moveTo(690);hold(2.6);assert.ok(snap().state.inv.dirty>=3);
+moveTo(690);{const d0=snap().state.inv.dirty;hold(2.6);assert.equal(snap().state.inv.dirty,d0+1,'Holding Use completes one action, not a stream of them');}for(let i=0;i<2;i++)hold(1);assert.ok(snap().state.inv.dirty>=3);
 moveTo(260);make('filter');make('generator');assert.equal(snap().state.built.generator,true);
 moveTo(1000);const ammo0=snap().state.inv.ammo,hp0=snap().mobs.find(m=>m.role==='guard').hp;down('shoot');up('shoot');run(.8);assert.equal(snap().state.inv.ammo,ammo0-1,'Shot uses a pebble');assert.equal(snap().mobs.find(m=>m.role==='guard').hp,hp0-1,'Pebble hits the mutant');
 moveTo(1100);let seen=false;for(let i=0;i<240&&!seen;i++){run(1/60);seen=snap().mobs.some(m=>m.st==='windup');}assert.ok(seen,'Mutant telegraphs before lunging');
@@ -64,6 +69,9 @@ console.log('PASS: progress written to versioned local save.');
 
 for(const fps of [15,30,60,90,120]){moveTo(260);const before=snap().player.x;down('right');for(let i=0;i<fps;i++){clock+=1000/fps;raf(clock);}up('right');assert.ok(Math.abs((snap().player.x-before)-85)<2,`Physics drift at ${fps} FPS`);}
 assert.equal(resourceRebuilds,1,'Resource icons were rebuilt during gameplay');
+// Jump height does not depend on the frame rate.
+{const peaks=[];for(const fps of [30,60,120]){moveTo(260);run(.5);const y0=snap().player.y;let top=y0;down('jump');for(let i=0;i<fps;i++){clock+=1000/fps;raf(clock);top=Math.min(top,snap().player.y);}up('jump');run(.5);peaks.push(y0-top);}
+ assert.ok(Math.max(...peaks)-Math.min(...peaks)<1.5,'Jump height at 30/60/120 FPS: '+peaks.map(p=>p.toFixed(1)).join(', '));console.log('PASS: jump height equal at 30/60/120 FPS ('+peaks[0].toFixed(1)+' units).');}
 {moveTo(260);const x0=snap().player.x;padSend('pointerdown',4,200);padSend('pointermove',4,240);run(1);padSend('pointerup',4,240);assert.ok(snap().player.x-x0>140,'Thumb at the stick edge runs');console.log('PASS: running when the thumb reaches the edge of the stick.');}
 console.log('PASS: consistent movement at 15/30/60/90/120 FPS; hotbar built once, not per frame.');
 
@@ -78,7 +86,7 @@ moveTo(260);let x1=snap().player.x;send('pointerdown',event(10,200));send('point
 window.afterfall.set('swipe',true);run(.5);padSend('pointerdown',11,200,600);padSend('pointermove',11,200,550);run(.1);assert.equal(snap().player.ground,false,'Swipe up must jump when enabled');padSend('pointerup',11,200,550);run(1);assert.equal(snap().player.ground,true);window.afterfall.set('swipe',false);
 padSend('pointerdown',12,200,600);padSend('pointermove',12,200,550);run(.1);assert.equal(snap().player.ground,true,'Swipe jump is off by default');padSend('pointerup',12,200,550);
 console.log('PASS: tap action, cancel on movement, sliding direction change, independent pointer IDs, pointer cancellation, floating stick dead zone, reversal and optional swipe jump.');
-moveTo(1680);hold(3.1);assert.equal(snap().state.inv.scrap,8);moveTo(690);hold(2);moveTo(260);make('water');make('water');make('purifier');assert.equal(snap().state.built.purifier,true);
+moveTo(1680);hold(3.1);assert.equal(snap().state.inv.scrap,8);moveTo(690);hold(1);hold(1);{const s0=snap().state.inv;moveTo(382);hold(1.6);const s1=snap().state.inv;assert.equal(s1.water,s0.water+1,'Filter in the world purifies water');assert.equal(s1.dirty,s0.dirty-1);console.log('PASS: built water filter works as equipment in the world.');}moveTo(260);make('water');make('purifier');assert.equal(snap().state.built.purifier,true);
 moveTo(1810);hold(4.3);moveTo(1990);const hpBefore=snap().state.stats.hp;clearMobs(2150,300,40);console.log('Info: hero health lost to the forest shellback when only striking:',Math.round(hpBefore-snap().state.stats.hp));for(const x of [2040,2260]){moveTo(x);hold(4.3);}
 assert.deepEqual(snap().state.forest,[true,true,true]);assert.equal(resourceRebuilds,1);
 console.log('PASS: combat — pebble shot, telegraphed lunge, interrupt by strike, combo kills, defense by strikes.');
@@ -88,6 +96,9 @@ console.log('PASS: second mission, forest cache, purifier crafting, three cleans
 {make('torch');assert.equal(snap().state.built.torch,true);moveTo(1420);hold(.5);assert.equal(snap().state.scene,'mine','Metro stairs lead into the mine');
  const climb=()=>{hold(.4);for(let i=0;i<600&&snap().player.climbing;i++)run(1/60);};
  moveTo(300);hold(2.8);assert.equal(snap().state.inv.ore,2);moveTo(930);climb();assert.equal(snap().player.floor,1,'Ladder leads to the middle level');
+// Priority: next to a hostile mutant, Use strikes it instead of mining the ore beside it.
+ {moveTo(1150);for(let i=0;i<240&&!snap().danger;i++)run(1/60);assert.ok(snap().danger,'Mutant becomes a threat');const ore0=snap().state.inv.ore,hp0=snap().mobs.find(m=>m.kind==='stoneback').hp;down('action');run(.3);up('action');
+  assert.equal(snap().state.inv.ore,ore0,'No mining while a mutant attacks');assert.ok(snap().mobs.find(m=>m.kind==='stoneback').hp<hp0,'Use struck the mutant');console.log('PASS: a dangerous mutant in reach takes priority over gathering.');}
  clearMobs(1080,300,40);moveTo(820);hold(2.8);moveTo(1180);hold(2.8);assert.equal(snap().state.inv.ore,6);
  moveTo(930);climb();assert.equal(snap().player.floor,0);moveTo(74);hold(.5);assert.equal(snap().state.scene,'surface');
  moveTo(260);make('wire');make('wire');assert.equal(snap().state.inv.wire,2);
@@ -104,6 +115,9 @@ console.log('PASS: second mission, forest cache, purifier crafting, three cleans
  moveTo(1140);hold(1.7);moveTo(1370);hold(2.6);assert.equal(snap().state.seedvault.door,true);assert.equal(quest(snap().state).step,20);
  assert.equal(el('win-dialog').open,true,'Fourth mission shows its win dialog');el('continue-btn').onclick();
  moveTo(90);hold(.5);assert.equal(snap().state.scene,'mine','Lift returns to the mine');assert.equal(snap().player.floor,2);
+ // Defeat: freezing without a torch knocks the hero out, then they wake at the shelter with health restored.
+ moveTo(1336);hold(.5);window.afterfall.useHot('torch');let wasDown=false;for(let i=0;i<200*60&&snap().state.scene!=='surface';i++){run(1/60);wasDown=wasDown||snap().player.down;}
+ assert.ok(wasDown,'Hero falls down at 0 health');assert.equal(snap().state.scene,'surface');assert.equal(snap().state.stats.hp>=79,true);window.afterfall.useHot('torch');
  console.log('PASS: mission 4 — lift to the vault, cold without torch, capsules, crystal deer boss, main door, lift back.');}
 globalThis.location={reload(){}};el('reset-yes').onclick();listeners.pagehide();assert.equal(JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']).completed,false);assert.equal(JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']).time,0);console.log('PASS: resetting cannot be overwritten by pagehide autosave.');
 {const {exportCode,freshState}=await import('./dist/expedition.mjs');const other=freshState();other.inv.wood=42;other.time=77;

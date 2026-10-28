@@ -237,9 +237,15 @@ input[type=range]::-moz-range-thumb{width:22px;height:26px;background:var(--gold
  .sheet h2{font-size:22px}
  .tabs button{font-size:13px;padding:6px 10px}
 }
-@media (orientation:portrait){.target-label{bottom:auto;top:calc(73% - clamp(150px,44vw,210px))}.hotbar{bottom:auto;top:calc(73% + 10px)}}
+/* Portrait: the hotbar stands upright at the stick-side edge, behind the hero, clear of the action buttons. */
+@media (orientation:portrait){.target-label{bottom:auto;top:calc(73% - clamp(150px,44vw,210px))}
+ .target-label{left:calc(50% + 30px);max-width:calc(100% - 76px)}
+ #game.left-handed .target-label{left:calc(50% - 30px)}
+ .hotbar{flex-direction:column;gap:3px;padding:4px;left:max(6px,env(safe-area-inset-left));right:auto;transform:none;top:auto;bottom:calc(27% + 6px)}
+ #game.left-handed .hotbar{left:auto;right:max(6px,env(safe-area-inset-right))}
+ .hotbar .slot{width:40px;height:40px}}
 @media (max-height:500px) and (orientation:landscape){
- .quest{width:min(320px,calc(100% - 430px));top:calc(6px + env(safe-area-inset-top));right:calc(160px + env(safe-area-inset-right))}
+ .quest{left:auto;width:min(320px,calc(100% - 430px));min-width:190px;top:calc(6px + env(safe-area-inset-top));right:calc(160px + env(safe-area-inset-right))}
  .quest .quest-body p{font-size:12px}
  .controls{height:62%}
  .actions{bottom:calc(10px + env(safe-area-inset-bottom));gap:calc(var(--cs)*8px)}

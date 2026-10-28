@@ -3,7 +3,7 @@ export const LEGACY_KEY='afterfall-last-greenhouse-v2';
 // Item ids map to i18n keys; names are resolved with t() in the UI.
 export const ITEMS=Object.fromEntries(['wood','stone','scrap','cloth','fuse','seed','dirty','water','planter','berry','ammo','ore','wire','medkit','can'].map(k=>[k,'item.'+k]));
 export const HEROES=['einstein','curie','tesla','darwin'];
-export const SCENES=['surface','mine'];
+export const SCENES=['surface','mine','vault'];
 // cat groups recipes into the workbench tabs.
 export const RECIPES=[
  {id:'bench',cat:'build',cost:{wood:6,stone:4},once:true},
@@ -19,7 +19,7 @@ export const RECIPES=[
  {id:'purifier',cat:'restore',cost:{scrap:6,cloth:1,water:2},station:true,once:true},
 ];
 export const MINE={ore:3,crates:2};
-export function freshState(){return {version:3,time:0,hero:'einstein',scene:'surface',inv:Object.fromEntries(Object.keys(ITEMS).map(k=>[k,k==='berry'?2:k==='ammo'?12:0])),built:{bench:false,filter:false,generator:false,purifier:false,torch:false},beds:[false,false,false],vault:false,harvested:{},player:{x:240,y:270},stats:{hp:100,food:95,thirst:95},defense:{time:0,hp:100,wave:0},completed:false,forest:[false,false,false],mine:{ore:Array(MINE.ore).fill(false),crates:Array(MINE.crates).fill(false),panel:false}};}
+export function freshState(){return {version:3,time:0,hero:'einstein',scene:'surface',inv:Object.fromEntries(Object.keys(ITEMS).map(k=>[k,k==='berry'?2:k==='ammo'?12:0])),built:{bench:false,filter:false,generator:false,purifier:false,torch:false},beds:[false,false,false],vault:false,harvested:{},player:{x:240,y:270},stats:{hp:100,food:95,thirst:95},defense:{time:0,hp:100,wave:0},completed:false,forest:[false,false,false],mine:{ore:Array(MINE.ore).fill(false),crates:Array(MINE.crates).fill(false),panel:false},seedvault:{caps:[false,false,false],boss:false,door:false}};}
 export function parseSave(raw){try{const x=JSON.parse(raw);if(![2,3].includes(x?.version)||!x.inv||!x.built||!Array.isArray(x.beds)||x.beds.length!==3||!x.player||!x.stats)return null;const s=freshState();
  // Items added in later versions start at their default instead of invalidating older saves.
  for(const k of Object.keys(ITEMS)){const v=x.inv[k]===undefined?s.inv[k]:x.inv[k];if(!Number.isFinite(v)||v<0||v>9999)return null;s.inv[k]=Math.floor(v);}
@@ -27,8 +27,9 @@ export function parseSave(raw){try{const x=JSON.parse(raw);if(![2,3].includes(x?
  if(!Number.isFinite(x.player.x)||!Number.isFinite(x.player.y)||!Number.isFinite(x.time))return null;s.player={x:Math.max(24,Math.min(2376,x.player.x)),y:Math.max(0,Math.min(900,x.player.y))};s.time=Math.max(0,x.time);s.vault=!!x.vault;s.beds=x.beds.map(Boolean);
  s.defense={time:Math.max(0,Math.min(90,Number(x.defense?.time)||0)),hp:Math.max(1,Math.min(100,Number(x.defense?.hp)||100)),wave:Math.max(0,Math.min(7,Math.floor(Number(x.defense?.wave)||0)))};s.completed=s.beds.every(Boolean)&&s.defense.time>=90;s.forest=Array.from({length:3},(_,i)=>s.completed&&!!x.forest?.[i]);
  for(const[k,v]of Object.entries(x.harvested||{}))if(Number.isFinite(v)&&v>=0&&v<=10)s.harvested[k]=Math.floor(v);
- s.hero=HEROES.includes(x.hero)?x.hero:'einstein';const minesOpen=s.forest.every(Boolean);s.scene=minesOpen&&SCENES.includes(x.scene)?x.scene:'surface';if(s.scene==='surface'&&x.scene&&x.scene!=='surface')s.player={x:1420,y:270};
+ s.hero=HEROES.includes(x.hero)?x.hero:'einstein';const minesOpen=s.forest.every(Boolean),vaultOpen=minesOpen&&!!x.mine?.panel;s.scene=minesOpen&&SCENES.includes(x.scene)&&(x.scene!=='vault'||vaultOpen)?x.scene:'surface';if(s.scene==='surface'&&x.scene&&x.scene!=='surface')s.player={x:1420,y:270};
  s.mine={ore:Array.from({length:MINE.ore},(_,i)=>minesOpen&&!!x.mine?.ore?.[i]),crates:Array.from({length:MINE.crates},(_,i)=>minesOpen&&!!x.mine?.crates?.[i]),panel:minesOpen&&!!x.mine?.panel};
+ s.seedvault={caps:[0,1,2].map(i=>vaultOpen&&!!x.seedvault?.caps?.[i]),boss:vaultOpen&&!!x.seedvault?.boss,door:vaultOpen&&!!x.seedvault?.door};
  return s;}catch{return null;}}
 // Returns null when craftable, otherwise an i18n key with the reason.
 export function canCraft(s,r,near=true){if(r.id==='purifier'&&!s.completed)return 'reason.defendFirst';if(r.once&&s.built[r.id])return 'reason.done';if((r.once||r.station)&&!r.anywhere&&!near)return 'reason.goBase';if(r.station&&!s.built.bench)return 'reason.needBench';if(r.filter&&!s.built.filter)return 'reason.needFilter';if(Object.entries(r.cost).some(([k,n])=>s.inv[k]<n))return 'reason.short';return null;}
@@ -38,7 +39,14 @@ export function plant(s,i){if(!Number.isInteger(i)||i<0||i>2||s.beds[i]||s.inv.p
 export function quest(s){
  const Q=(step,id,x,params={},need=null,scene='surface')=>({step,title:'q'+id+'.t',desc:'q'+id+'.d',params,x,need,scene});
  if(s.completed&&s.forest.every(Boolean)){
-  const m=s.mine;if(m.panel)return Q(16,16,2140);
+  const m=s.mine,v=s.seedvault;
+  if(m.panel){
+   if(v.door)return Q(20,20,1370,{},null,'vault');
+   if(s.scene!=='vault')return Q(16,16,1336,{},null,'mine');
+   const n=v.caps.filter(Boolean).length;
+   if(n<3)return Q(17,17,[650,900,1140][v.caps.findIndex(c=>!c)],{n},null,'vault');
+   if(!v.boss)return Q(18,18,1180,{},null,'vault');
+   return Q(19,19,1370,{},null,'vault');}
   const oreTotal=s.inv.ore+s.inv.wire*2;
   if(!s.built.torch)return Q(11,11,260,{},{wood:2,cloth:1});
   if(oreTotal<4&&m.ore.some(v=>!v))return s.scene==='mine'?Q(13,13,[300,820,1180][m.ore.findIndex(v=>!v)],{},{ore:4},'mine'):Q(12,12,1420);

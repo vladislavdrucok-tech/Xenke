@@ -94,6 +94,16 @@ console.log('PASS: second mission, forest cache, purifier crafting, three cleans
  moveTo(1240);hold(3);assert.equal(snap().state.mine.panel,true,'Panel repaired with two wires');assert.equal(snap().state.inv.wire,0);assert.equal(quest(snap().state).step,16);
  run(1.5);assert.equal(el('win-dialog').open,true,'Third mission shows its win dialog');el('continue-btn').onclick();
  console.log('PASS: mission 3 — torch, metro door, mine ladders, ore, stone armadillo, wire crafting, panel repair, win dialog.');}
+// Mission 4: freight lift, cold without a torch, seed capsules, the crystal deer, the main vault door.
+{moveTo(1336);hold(.5);assert.equal(snap().state.scene,'vault','Lift leads to the seed vault');
+ window.afterfall.useHot('torch');const hpCold=snap().state.stats.hp;run(3);assert.ok(snap().state.stats.hp<hpCold-1,'Cold drains health without a torch');window.afterfall.useHot('torch');
+ moveTo(650);hold(1.7);moveTo(900);hold(1.7);assert.deepEqual(snap().state.seedvault.caps,[true,true,false]);
+ moveTo(1370);hold(2.6);assert.equal(snap().state.seedvault.door,false,'Door stays shut while the deer guards it');
+ window.afterfall.useHot('medkit');window.afterfall.useHot('food');clearMobs(1180,600,60);assert.equal(snap().state.seedvault.boss,true,'Crystal deer defeated');
+ moveTo(1140);hold(1.7);moveTo(1370);hold(2.6);assert.equal(snap().state.seedvault.door,true);assert.equal(quest(snap().state).step,20);
+ assert.equal(el('win-dialog').open,true,'Fourth mission shows its win dialog');el('continue-btn').onclick();
+ moveTo(90);hold(.5);assert.equal(snap().state.scene,'mine','Lift returns to the mine');assert.equal(snap().player.floor,2);
+ console.log('PASS: mission 4 — lift to the vault, cold without torch, capsules, crystal deer boss, main door, lift back.');}
 globalThis.location={reload(){}};el('reset-yes').onclick();listeners.pagehide();assert.equal(JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']).completed,false);assert.equal(JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']).time,0);console.log('PASS: resetting cannot be overwritten by pagehide autosave.');
 {const {exportCode,freshState}=await import('./dist/expedition.mjs');const other=freshState();other.inv.wood=42;other.time=77;
 el('import-code').value='garbage';el('import-btn').onclick();assert.equal(el('import-confirm').hidden,true,'Garbage code must not offer import');

@@ -17,8 +17,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 button:disabled{cursor:default}
 svg{width:20px;height:20px;display:block;flex-shrink:0}
 [data-icon]{display:inline-flex}
-/* Item sprites from items.webp (8×3 grid of 96 px cells). */
-.ico{display:inline-block;flex-shrink:0;width:28px;height:28px;background:url('assets/items.webp') no-repeat;background-size:800% 300%}
+/* Item sprites from items.webp (8×4 grid of 96 px cells). */
+.ico{display:inline-block;flex-shrink:0;width:28px;height:28px;background:url('assets/items.webp') no-repeat;background-size:800% 400%}
 .ico.svg{background:none;display:inline-flex;align-items:center;justify-content:center;color:var(--amber)}
 .ico.svg svg{width:80%;height:80%}
 .ico.big{width:44px;height:44px}.ico.huge{width:128px;height:128px}

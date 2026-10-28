@@ -45,3 +45,8 @@ console.log('PASS: 5 languages complete; items, recipes, quests translated witho
  const early=freshState();early.scene='mine';assert.equal(parseSave(JSON.stringify(early)).scene,'surface','The mine is closed before the forest is saved');
  const old=JSON.parse(JSON.stringify(freshState()));delete old.inv.ore;delete old.mine;delete old.scene;delete old.hero;assert.ok(parseSave(JSON.stringify(old)),'v0.5 saves still load');}
 console.log('PASS: mission 3 quest chain (torch, mine, ore, wire, panel), scene and mine progress saved, older saves load.');
+
+{const m=freshState();Object.assign(m,{completed:true,beds:[true,true,true],forest:[true,true,true]});m.defense.time=90;m.built.torch=true;m.mine.panel=true;
+ assert.equal(quest(m).step,16);m.scene='vault';assert.equal(quest(m).step,17);m.seedvault.caps=[true,true,true];assert.equal(quest(m).step,18);m.seedvault.boss=true;assert.equal(quest(m).step,19);m.seedvault.door=true;assert.equal(quest(m).step,20);
+ assert.equal(parseSave(JSON.stringify(m)).scene,'vault');const noPower=JSON.parse(JSON.stringify(m));noPower.mine.panel=false;assert.equal(parseSave(JSON.stringify(noPower)).scene,'surface','Vault needs the mine panel');assert.equal(parseSave(JSON.stringify(noPower)).seedvault.door,false);}
+console.log('PASS: mission 4 quest chain (lift, capsules, deer, door), vault scene saved only after the panel.');

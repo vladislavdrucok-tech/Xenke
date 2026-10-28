@@ -1,6 +1,6 @@
-# Afterfall · Остання теплиця — v0.4 (в розробці, не опублікована)
+# Afterfall · Остання теплиця — v0.5 (в розробці)
 
-Поточний стан і зміни v0.4: `docs/CHANGES_v0.4_UK.md`. Контекст передачі проєкту: `docs/START_HERE_UK.md`, `docs/NEXT_STEPS_UK.md`.
+Зміни: `docs/CHANGES_v0.5_UK.md` (бій, інтерфейс, мови, музика), `docs/CHANGES_v0.4_UK.md` (плавність, керування, ліс). Контекст передачі проєкту: `docs/START_HERE_UK.md`, `docs/NEXT_STEPS_UK.md`.
 Перевірки: `node tests.mjs && node engine-test.mjs && node --check dist/expedition-game.mjs`. Гра: роздати `dist/` через HTTP, напр. `python3 -m http.server 8000 --directory dist`.
 `dist/mobile-qa.html` — тимчасовий QA-екран, видалити перед публікацією. Оригінал фону лісу: `art/forest_background_NOT_INTEGRATED.png` (ігрова версія — `dist/assets/forest-world.webp`).
 

@@ -7,6 +7,10 @@ class El{
  get innerHTML(){return this._html;}
  addEventListener(n,f){(this.listeners[n]||=[]).push(f);}
  setPointerCapture(){}
+ setAttribute(k,v){(this.attrs||={})[k]=v;}
+ getAttribute(k){return this.attrs?.[k]??null;}
+ querySelector(){return null;}
+ querySelectorAll(){return [];}
  getBoundingClientRect(){return {width:390,height:844,left:0,top:0,right:390,bottom:844};}
  showModal(){this.open=true;}
  close(){this.open=false;}
@@ -15,7 +19,7 @@ function el(id){if(!elements.has(id))elements.set(id,new El(id));return elements
 const gradient={addColorStop(){}};
 const context=new Proxy({createLinearGradient:()=>gradient,createRadialGradient:()=>gradient},{get:(o,k)=>k in o?o[k]:()=>{}});
 el('world').getContext=()=>context;
-for(const id of ['craft-dialog','bag-dialog','pause-dialog','win-dialog'])el(id);
+for(const id of ['craft-dialog','bag-dialog','pause-dialog','settings-dialog','win-dialog'])el(id);
 globalThis.document={hidden:false,querySelector(s){if(s==='dialog[open]')return [...elements.values()].find(e=>e.id.endsWith('-dialog')&&e.open)||null;return el(s.slice(1));},querySelectorAll(s){if(s==='dialog[open]')return [...elements.values()].filter(e=>e.id.endsWith('-dialog')&&e.open);if(s==='dialog')return [...elements.values()].filter(e=>e.id.endsWith('-dialog'));if(s==='[data-craft]')return [...elements.values()].filter(e=>e.dataset.craft);return [];},addEventListener(){}};
 globalThis.window={requestIdleCallback:f=>f(),addEventListener(n,f){listeners[n]=f;}};
 globalThis.localStorage={data:{},getItem(k){return this.data[k]||null;},setItem(k,v){this.data[k]=v;},removeItem(k){delete this.data[k];}};
@@ -30,18 +34,28 @@ function up(id){if(id==='left'||id==='right'){padSend('pointerup',1,200);return;
 function snap(){return window.afterfall.snapshot();}
 function moveTo(x){const sign=Math.sign(x-snap().player.x),dir=sign>0?'right':'left';down(dir);let iterations=0,jumping=false;while(Math.abs(snap().player.x-x)>2&&iterations++<2500){const px=snap().player.x;const needJump=sign>0?px>1025&&px<1100:px>1020&&px<1120;if(needJump&&!jumping){down('jump');jumping=true;}if(!needJump&&jumping){up('jump');jumping=false;}run(1/60);}up(dir);up('jump');assert.ok(Math.abs(snap().player.x-x)<4,`Could not move to ${x}; at ${snap().player.x}`);}
 function hold(seconds){down('action');run(seconds);up('action');}
+const mobsNear=(x,r)=>snap().mobs.filter(m=>m.hp>0&&Math.abs(m.x-x)<r);
+// Walk into melee range of the nearest mutant around `x` and keep striking until none are left.
+function clearMobs(x,r=260,limit=30){down('attack');for(let i=0;i<limit*60;i++){const list=mobsNear(x,r);if(!list.length)break;const px=snap().player.x,m=list.sort((a,b)=>Math.abs(a.x-px)-Math.abs(b.x-px))[0];const d=m.x-px;
+  if(Math.abs(d)>34){padSend('pointerdown',5,200);padSend('pointermove',5,d>0?260:140);}else padSend('pointerup',5,200);run(1/60);}
+ padSend('pointerup',5,200);up('attack');assert.equal(mobsNear(x,r).length,0,`Mutants near ${x} must be defeated`);}
 function make(id){el('craft-btn').onclick();const button=el('craft-'+id);assert.equal(typeof button.onclick,'function',`Craft button ${id}`);button.onclick();el('resume-btn').onclick();}
 el('start-btn').onclick();run(1);assert.equal(snap().player.ground,true);
 moveTo(520);hold(2.6);assert.equal(snap().state.inv.wood,12);
-moveTo(590);hold(2.4);assert.equal(snap().state.inv.stone,8);
+moveTo(590);hold(2.4);assert.equal(snap().state.inv.stone,10);
 moveTo(260);make('bench');assert.equal(snap().state.built.bench,true);
 moveTo(800);hold(2.6);moveTo(915);hold(3.4);assert.equal(snap().state.inv.scrap,8);assert.equal(snap().state.inv.fuse,1);
 moveTo(690);hold(2.6);assert.ok(snap().state.inv.dirty>=3);
 moveTo(260);make('filter');make('generator');assert.equal(snap().state.built.generator,true);
+moveTo(1000);const ammo0=snap().state.inv.ammo,hp0=snap().mobs.find(m=>m.role==='guard').hp;down('shoot');up('shoot');run(.8);assert.equal(snap().state.inv.ammo,ammo0-1,'Shot uses a pebble');assert.equal(snap().mobs.find(m=>m.role==='guard').hp,hp0-1,'Pebble hits the mutant');
+moveTo(1100);let seen=false;for(let i=0;i<240&&!seen;i++){run(1/60);seen=snap().mobs.some(m=>m.st==='windup');}assert.ok(seen,'Mutant telegraphs before lunging');
+const before=snap().state.stats.hp;run(.9);assert.ok(snap().state.stats.hp<before,'Standing in a lunge hurts');
+for(let i=0;i<300&&!snap().mobs.some(m=>m.st==='windup');i++)run(1/60);const hpW=snap().mobs.find(m=>m.hp>0).hp;down('attack');up('attack');run(.15);const mw=snap().mobs.find(m=>m.role==='guard');assert.ok(!mw||mw.hp<hpW,'Strike lands');assert.ok(!mw||mw.hp<=0||mw.st==='stagger','Striking a wind-up interrupts it');
+clearMobs(1160);
 moveTo(1270);hold(3.4);assert.equal(snap().state.vault,true);assert.equal(snap().state.inv.seed,3);
 moveTo(260);for(let i=0;i<3;i++){make('water');make('planter');}
 for(const x of [410,450,490]){moveTo(x);hold(1.7);}
-assert.equal(snap().state.beds.every(Boolean),true);assert.equal(snap().state.completed,false);moveTo(450);down('action');for(let i=0;i<95*60&&!snap().state.completed;i++)run(1/60);up('action');assert.equal(snap().state.completed,true);assert.ok(snap().state.defense.hp>0);assert.equal(snap().state.inv.planter,0);assert.ok(Object.values(snap().state.inv).every(n=>n>=0));
+assert.equal(snap().state.beds.every(Boolean),true);assert.equal(snap().state.completed,false);moveTo(450);down('attack');for(let i=0;i<95*60&&!snap().state.completed;i++)run(1/60);up('attack');assert.equal(snap().state.completed,true);assert.ok(snap().state.defense.hp>0);assert.equal(snap().state.inv.planter,0);assert.ok(Object.values(snap().state.inv).every(n=>n>=0));
 console.log('PASS: actual engine pointer controls, resource holds, crafting, generator unlock, jump obstruction both directions, seed rescue, water, 3 planted beds and full 90-second defense.');
 console.log('Optimal route play time:',Math.round(snap().state.time),'seconds, excluding reading and menus.');
 const saved=Object.values(localStorage.data).map(JSON.parse).find(x=>x.version===3);assert.ok(saved);assert.ok(saved.time>0);
@@ -59,12 +73,13 @@ moveTo(260);const x0=snap().player.x;send('pointerdown',event(7,350));run(.5);se
 // Floating stick: small jitter inside the dead zone keeps a tap action running; reversing works after overshoot.
 moveTo(690);water=snap().state.inv.dirty;down('action');up('action');send('pointerdown',event(9,200));send('pointermove',event(9,206));run(1);send('pointerup',event(9,206));assert.equal(snap().state.inv.dirty,water+1,'Resting thumb in dead zone must not cancel tap action');
 moveTo(260);let x1=snap().player.x;send('pointerdown',event(10,200));send('pointermove',event(10,400));run(.3);assert.ok(snap().player.x>x1+20);x1=snap().player.x;send('pointermove',event(10,350));run(.3);assert.ok(snap().player.x<x1-20,'Base follows thumb: a 50px pull back after overshoot must reverse');send('pointerup',event(10,350));
-el('swipe-btn').onclick();run(.5);padSend('pointerdown',11,200,600);padSend('pointermove',11,200,550);run(.1);assert.equal(snap().player.ground,false,'Swipe up must jump when enabled');padSend('pointerup',11,200,550);run(1);assert.equal(snap().player.ground,true);el('swipe-btn').onclick();
+window.afterfall.set('swipe',true);run(.5);padSend('pointerdown',11,200,600);padSend('pointermove',11,200,550);run(.1);assert.equal(snap().player.ground,false,'Swipe up must jump when enabled');padSend('pointerup',11,200,550);run(1);assert.equal(snap().player.ground,true);window.afterfall.set('swipe',false);
 padSend('pointerdown',12,200,600);padSend('pointermove',12,200,550);run(.1);assert.equal(snap().player.ground,true,'Swipe jump is off by default');padSend('pointerup',12,200,550);
 console.log('PASS: tap action, cancel on movement, sliding direction change, independent pointer IDs, pointer cancellation, floating stick dead zone, reversal and optional swipe jump.');
 moveTo(1680);hold(3.1);assert.equal(snap().state.inv.scrap,8);moveTo(690);hold(2);moveTo(260);make('water');make('water');make('purifier');assert.equal(snap().state.built.purifier,true);
-for(const x of [1810,2040,2260]){moveTo(x);hold(4.3);}
+moveTo(1810);hold(4.3);moveTo(1990);const hpBefore=snap().state.stats.hp;clearMobs(2150,300,40);console.log('Info: hero health lost to the forest shellback when only striking:',Math.round(hpBefore-snap().state.stats.hp));for(const x of [2040,2260]){moveTo(x);hold(4.3);}
 assert.deepEqual(snap().state.forest,[true,true,true]);assert.equal(resourceRebuilds,1);
+console.log('PASS: combat — pebble shot, telegraphed lunge, interrupt by strike, combo kills, defense by strikes.');
 console.log('PASS: second mission, forest cache, purifier crafting, three cleansing sites, completion.');
 
 globalThis.location={reload(){}};el('reset-yes').onclick();listeners.pagehide();assert.equal(JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']).completed,false);assert.equal(JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']).time,0);console.log('PASS: resetting cannot be overwritten by pagehide autosave.');

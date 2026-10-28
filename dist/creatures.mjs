@@ -1,10 +1,13 @@
 // Procedural pixel art for the overgrown shellback that guards the forest.
 // Frames are generated once at boot; pixels() is pure so it can be tested without a canvas.
 export const SHELLBACK={w:72,h:46,frames:['walk0','walk1','walk2','walk3','bite','hurt']};
-const C={line:'#1a1420',seam:'#22301f',shell:['#26342b','#33482f','#4a6a40','#678f50','#8fb866'],belly:['#3d3140','#5a4757'],leg:['#2e2530','#4b3d48'],moss:['#7fae4e','#a9d06f'],cap:['#7d5a96','#a57ec2','#dcc3ef'],stem:'#cdbfd6',eye:'#f6d56a',eyeGlow:'#fff3b8',jaw:'#c9b48e'};
+const BASE={line:'#1a1420',seam:'#22301f',shell:['#26342b','#33482f','#4a6a40','#678f50','#8fb866'],belly:['#3d3140','#5a4757'],leg:['#2e2530','#4b3d48'],moss:['#7fae4e','#a9d06f'],cap:['#7d5a96','#a57ec2','#dcc3ef'],stem:'#cdbfd6',eye:'#f6d56a',eyeGlow:'#fff3b8',jaw:'#c9b48e'};
 const BAYER=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
 const hash=(x,y)=>{let h=(x*374761393+y*668265263)|0;h=(h^(h>>>13))*1274126177|0;return ((h^(h>>>16))>>>0)/4294967296;};
-export function pixels(frame){
+// Palettes: the forest shellback, and a stone armadillo for the mine (grey plates, amber crystals).
+export const PALETTES={moss:{},stone:{shell:['#2a2622','#3d3730','#5a5248','#7b7166','#9d9384'],seam:'#1c1815',moss:['#6b6157','#8a7f72'],cap:['#8a4a1c','#d9762c','#ffc070'],stem:'#7a5236',eye:'#ff4a3a',eyeGlow:'#ffd0b0'}};
+let C=BASE;
+export function pixels(frame,palette='moss'){C={...BASE,...PALETTES[palette]};
  const {w,h}=SHELLBACK,px=Array.from({length:h},()=>Array(w).fill(null));
  const set=(x,y,c)=>{x=Math.round(x);y=Math.round(y);if(x>=0&&y>=0&&x<w&&y<h)px[y][x]=c;};
  const walk=frame.startsWith('walk')?+frame[4]:0,bite=frame==='bite';
@@ -38,7 +41,7 @@ export function pixels(frame){
  return px;
 }
 // Paint every frame into one strip canvas; returns {canvas, w, h} with frame i at x=i*w.
-export function bakeShellback(doc=document){const {w,h,frames}=SHELLBACK,c=doc.createElement('canvas');c.width=w*frames.length;c.height=h;const g=c.getContext('2d');
- frames.forEach((f,i)=>{const px=pixels(f==='hurt'?'walk0':f);for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(px[y][x]){g.fillStyle=px[y][x];g.fillRect(i*w+x,y,1,1);}
+export function bakeShellback(doc=document,palette='moss'){const {w,h,frames}=SHELLBACK,c=doc.createElement('canvas');c.width=w*frames.length;c.height=h;const g=c.getContext('2d');
+ frames.forEach((f,i)=>{const px=pixels(f==='hurt'?'walk0':f,palette);for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(px[y][x]){g.fillStyle=px[y][x];g.fillRect(i*w+x,y,1,1);}
   if(f==='hurt'){g.globalCompositeOperation='source-atop';g.fillStyle='rgba(255,246,226,.72)';g.fillRect(i*w,0,w,h);g.globalCompositeOperation='source-over';}});
  return {canvas:c,w,h};}

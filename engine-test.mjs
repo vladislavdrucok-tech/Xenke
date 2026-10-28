@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 const elements=new Map(),listeners={};let resourceRebuilds=0;
 class El{
  constructor(id=''){this.id=id;this.dataset={};this.listeners={};this.open=false;this._html='';this.textContent='';this.hidden=false;this.style={};this.classes=new Set();this.classList={add:(v)=>this.classes.add(v),remove:(v)=>this.classes.delete(v),contains:(v)=>this.classes.has(v),toggle:(v,on)=>{const yes=on===undefined?!this.classes.has(v):on;yes?this.classes.add(v):this.classes.delete(v);return yes;}};}
- set innerHTML(v){if(this.id==='resource-strip')resourceRebuilds++;this._html=v;for(const match of v.matchAll(/data-craft="(\w+)"/g)){const b=new El('craft-'+match[1]);b.dataset.craft=match[1];elements.set(b.id,b);}}
+ set innerHTML(v){if(this.id==='hotbar')resourceRebuilds++;this._html=v;for(const match of v.matchAll(/data-(craft|pick)="(\w+)"/g)){const b=new El(match[1]+'-'+match[2]);b.dataset[match[1]]=match[2];elements.set(b.id,b);}}
  get innerHTML(){return this._html;}
  addEventListener(n,f){(this.listeners[n]||=[]).push(f);}
  setPointerCapture(){}
@@ -20,12 +20,13 @@ const gradient={addColorStop(){}};
 const context=new Proxy({createLinearGradient:()=>gradient,createRadialGradient:()=>gradient},{get:(o,k)=>k in o?o[k]:()=>{}});
 el('world').getContext=()=>context;
 for(const id of ['craft-dialog','bag-dialog','pause-dialog','settings-dialog','win-dialog'])el(id);
-globalThis.document={hidden:false,querySelector(s){if(s==='dialog[open]')return [...elements.values()].find(e=>e.id.endsWith('-dialog')&&e.open)||null;return el(s.slice(1));},querySelectorAll(s){if(s==='dialog[open]')return [...elements.values()].filter(e=>e.id.endsWith('-dialog')&&e.open);if(s==='dialog')return [...elements.values()].filter(e=>e.id.endsWith('-dialog'));if(s==='[data-craft]')return [...elements.values()].filter(e=>e.dataset.craft);return [];},addEventListener(){}};
+globalThis.document={hidden:false,querySelector(s){if(s==='dialog[open]')return [...elements.values()].find(e=>e.id.endsWith('-dialog')&&e.open)||null;return el(s.slice(1));},querySelectorAll(s){if(s==='dialog[open]')return [...elements.values()].filter(e=>e.id.endsWith('-dialog')&&e.open);if(s==='dialog')return [...elements.values()].filter(e=>e.id.endsWith('-dialog'));if(s==='[data-craft]')return [...elements.values()].filter(e=>e.dataset.craft);if(s==='[data-pick]')return [...elements.values()].filter(e=>e.dataset.pick);return [];},addEventListener(){}};
 globalThis.window={requestIdleCallback:f=>f(),addEventListener(n,f){listeners[n]=f;}};
 globalThis.localStorage={data:{},getItem(k){return this.data[k]||null;},setItem(k,v){this.data[k]=v;},removeItem(k){delete this.data[k];}};
 let raf;globalThis.requestAnimationFrame=f=>raf=f;
 globalThis.setTimeout=()=>1;globalThis.clearTimeout=()=>{};
 await import('./dist/expedition-game.mjs');
+const {quest}=await import('./dist/expedition.mjs?v=6');
 let clock=0;function run(seconds){for(let i=0;i<Math.ceil(seconds*60);i++){clock+=1000/60;raf(clock);}}
 const padSend=(type,pointerId,clientX,clientY=600)=>(el('move-pad').listeners[type]||[]).forEach(f=>f({pointerId,clientX,clientY,preventDefault(){}}));
 // The stick is a floating zone: 'left'/'right' press it and slide the thumb 60px.
@@ -34,13 +35,13 @@ function up(id){if(id==='left'||id==='right'){padSend('pointerup',1,200);return;
 function snap(){return window.afterfall.snapshot();}
 function moveTo(x){const sign=Math.sign(x-snap().player.x),dir=sign>0?'right':'left';down(dir);let iterations=0,jumping=false;while(Math.abs(snap().player.x-x)>2&&iterations++<2500){const px=snap().player.x;const needJump=sign>0?px>1025&&px<1100:px>1020&&px<1120;if(needJump&&!jumping){down('jump');jumping=true;}if(!needJump&&jumping){up('jump');jumping=false;}run(1/60);}up(dir);up('jump');assert.ok(Math.abs(snap().player.x-x)<4,`Could not move to ${x}; at ${snap().player.x}`);}
 function hold(seconds){down('action');run(seconds);up('action');}
-const mobsNear=(x,r)=>snap().mobs.filter(m=>m.hp>0&&Math.abs(m.x-x)<r);
+const mobsNear=(x,r)=>snap().mobs.filter(m=>m.hp>0&&m.same!==false&&Math.abs(m.x-x)<r);
 // Walk into melee range of the nearest mutant around `x` and keep striking until none are left.
 function clearMobs(x,r=260,limit=30){down('attack');for(let i=0;i<limit*60;i++){const list=mobsNear(x,r);if(!list.length)break;const px=snap().player.x,m=list.sort((a,b)=>Math.abs(a.x-px)-Math.abs(b.x-px))[0];const d=m.x-px;
   if(Math.abs(d)>34){padSend('pointerdown',5,200);padSend('pointermove',5,d>0?260:140);}else padSend('pointerup',5,200);run(1/60);}
  padSend('pointerup',5,200);up('attack');assert.equal(mobsNear(x,r).length,0,`Mutants near ${x} must be defeated`);}
-function make(id){el('craft-btn').onclick();const button=el('craft-'+id);assert.equal(typeof button.onclick,'function',`Craft button ${id}`);button.onclick();el('resume-btn').onclick();}
-el('start-btn').onclick();run(1);assert.equal(snap().player.ground,true);
+function make(id){el('craft-btn').onclick();window.afterfall.pick(id);const button=el('craft-'+id);assert.equal(typeof button.onclick,'function',`Craft button ${id}`);button.onclick();el('resume-btn').onclick();}
+el('start-btn').onclick();el('hero-go').onclick();run(1);assert.equal(snap().player.ground,true);
 moveTo(520);hold(2.6);assert.equal(snap().state.inv.wood,12);
 moveTo(590);hold(2.4);assert.equal(snap().state.inv.stone,10);
 moveTo(260);make('bench');assert.equal(snap().state.built.bench,true);
@@ -63,7 +64,7 @@ console.log('PASS: progress written to versioned local save.');
 
 for(const fps of [15,30,60,90,120]){moveTo(260);const before=snap().player.x;down('right');for(let i=0;i<fps;i++){clock+=1000/fps;raf(clock);}up('right');assert.ok(Math.abs((snap().player.x-before)-85)<2,`Physics drift at ${fps} FPS`);}
 assert.equal(resourceRebuilds,1,'Resource icons were rebuilt during gameplay');
-console.log('PASS: consistent movement at 15/30/60/90/120 FPS; resource HUD built once, not per frame.');
+console.log('PASS: consistent movement at 15/30/60/90/120 FPS; hotbar built once, not per frame.');
 
 // Tap-to-harvest survives pointer release, movement cancels it, and independent fingers do not cancel each other.
 moveTo(690);let water=snap().state.inv.dirty;down('action');up('action');run(1);assert.equal(snap().state.inv.dirty,water+1);run(1);assert.equal(snap().state.inv.dirty,water+1,'Tap must collect exactly one bottle');
@@ -82,6 +83,17 @@ assert.deepEqual(snap().state.forest,[true,true,true]);assert.equal(resourceRebu
 console.log('PASS: combat — pebble shot, telegraphed lunge, interrupt by strike, combo kills, defense by strikes.');
 console.log('PASS: second mission, forest cache, purifier crafting, three cleansing sites, completion.');
 
+// Mission 3: torch, metro, ore on two levels, ladders, the stone armadillo, wire at the workbench, panel repair.
+{make('torch');assert.equal(snap().state.built.torch,true);moveTo(1420);hold(.5);assert.equal(snap().state.scene,'mine','Metro stairs lead into the mine');
+ const climb=()=>{hold(.4);for(let i=0;i<600&&snap().player.climbing;i++)run(1/60);};
+ moveTo(300);hold(2.8);assert.equal(snap().state.inv.ore,2);moveTo(930);climb();assert.equal(snap().player.floor,1,'Ladder leads to the middle level');
+ clearMobs(1080,300,40);moveTo(820);hold(2.8);moveTo(1180);hold(2.8);assert.equal(snap().state.inv.ore,6);
+ moveTo(930);climb();assert.equal(snap().player.floor,0);moveTo(74);hold(.5);assert.equal(snap().state.scene,'surface');
+ moveTo(260);make('wire');make('wire');assert.equal(snap().state.inv.wire,2);
+ moveTo(1420);hold(.5);moveTo(930);climb();moveTo(1330);climb();assert.equal(snap().player.floor,2);clearMobs(1100,400,40);
+ moveTo(1240);hold(3);assert.equal(snap().state.mine.panel,true,'Panel repaired with two wires');assert.equal(snap().state.inv.wire,0);assert.equal(quest(snap().state).step,16);
+ run(1.5);assert.equal(el('win-dialog').open,true,'Third mission shows its win dialog');el('continue-btn').onclick();
+ console.log('PASS: mission 3 — torch, metro door, mine ladders, ore, stone armadillo, wire crafting, panel repair, win dialog.');}
 globalThis.location={reload(){}};el('reset-yes').onclick();listeners.pagehide();assert.equal(JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']).completed,false);assert.equal(JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']).time,0);console.log('PASS: resetting cannot be overwritten by pagehide autosave.');
 {const {exportCode,freshState}=await import('./dist/expedition.mjs');const other=freshState();other.inv.wood=42;other.time=77;
 el('import-code').value='garbage';el('import-btn').onclick();assert.equal(el('import-confirm').hidden,true,'Garbage code must not offer import');

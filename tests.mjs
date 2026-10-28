@@ -15,7 +15,7 @@ const noFilter=freshState();noFilter.built.bench=true;noFilter.inv.dirty=1;asser
 console.log('PASS: complete v0.2 economy, station gates, no duplicate planting, defense completion, save validation.');
 
 const old=JSON.parse(JSON.stringify(s));old.version=2;delete old.forest;delete old.built.purifier;const migrated=parseSave(JSON.stringify(old));assert.equal(migrated.version,3);assert.equal(migrated.completed,true);assert.deepEqual(migrated.forest,[false,false,false]);assert.equal(migrated.inv.wood,s.inv.wood);
-const purifier=RECIPES.find(r=>r.id==='purifier');assert.equal(canCraft(freshState(),purifier),'reason.defendFirst');Object.assign(migrated.inv,{scrap:6,cloth:1,water:2});assert.equal(craft(migrated,'purifier'),true);assert.equal(craft(migrated,'purifier'),false);assert.equal(quest(migrated).step,8);migrated.forest=[true,true,true];assert.equal(quest(migrated).step,10);assert.deepEqual(parseSave(JSON.stringify(migrated)).forest,[true,true,true]);
+const purifier=RECIPES.find(r=>r.id==='purifier');assert.equal(canCraft(freshState(),purifier),'reason.defendFirst');Object.assign(migrated.inv,{scrap:6,cloth:1,water:2});assert.equal(craft(migrated,'purifier'),true);assert.equal(craft(migrated,'purifier'),false);assert.equal(quest(migrated).step,8);migrated.forest=[true,true,true];assert.equal(quest(migrated).step,11,'After the forest the mine mission starts with a torch');assert.deepEqual(parseSave(JSON.stringify(migrated)).forest,[true,true,true]);
 console.log('PASS: v0.2 save migration, forest unlock and purifier gate, forest save round-trip.');
 import {exportCode,importCode} from './dist/expedition.mjs';
 const code=exportCode(migrated);assert.ok(code.startsWith('AFTERFALL-1:'));assert.deepEqual(importCode(code),parseSave(JSON.stringify(migrated)));
@@ -33,3 +33,15 @@ for(const l of Object.keys(LANGS)){setLang(l);
 setLang('uk');const v3=JSON.parse(JSON.stringify(freshState()));delete v3.inv.ammo;assert.equal(parseSave(JSON.stringify(v3)).inv.ammo,12,'Old saves get starting pebbles');
 assert.equal(craft(freshState(),'ammo'),false);const am=freshState();am.inv.stone=1;assert.equal(craft(am,'ammo',false),true,'Pebbles can be crafted away from base');assert.equal(am.inv.ammo,17);
 console.log('PASS: 5 languages complete; items, recipes, quests translated without unfilled params; slingshot pebbles recipe and migration.');
+
+// Mission 3: torch → mine → ore → wire → panel, and the save keeps the scene and mine progress.
+{const m=parseSave(JSON.stringify(migrated));assert.equal(m.scene,'surface');assert.equal(m.hero,'einstein');assert.deepEqual(m.mine,{ore:[false,false,false],crates:[false,false],panel:false});
+ m.inv.wood=2;m.inv.cloth=1;assert.equal(craft(m,'torch',false),true,'Torch can be crafted away from base');assert.equal(m.built.torch,true);
+ assert.equal(quest(m).step,12);assert.equal(quest(m).x,1420);m.scene='mine';assert.equal(quest(m).step,13);assert.equal(quest(m).scene,'mine');
+ m.mine.ore=[true,true,false];m.inv.ore=4;m.scene='surface';assert.equal(quest(m).step,14);
+ m.inv.scrap=2;assert.equal(craft(m,'wire',true),true);assert.equal(craft(m,'wire',true),true);assert.equal(m.inv.wire,2);assert.equal(quest(m).step,15);assert.equal(quest(m).scene,'mine');
+ m.scene='mine';const r=parseSave(JSON.stringify(m));assert.equal(r.scene,'mine');assert.deepEqual(r.mine.ore,[true,true,false]);
+ m.mine.panel=true;assert.equal(quest(m).step,16);
+ const early=freshState();early.scene='mine';assert.equal(parseSave(JSON.stringify(early)).scene,'surface','The mine is closed before the forest is saved');
+ const old=JSON.parse(JSON.stringify(freshState()));delete old.inv.ore;delete old.mine;delete old.scene;delete old.hero;assert.ok(parseSave(JSON.stringify(old)),'v0.5 saves still load');}
+console.log('PASS: mission 3 quest chain (torch, mine, ore, wire, panel), scene and mine progress saved, older saves load.');

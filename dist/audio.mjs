@@ -6,6 +6,7 @@ const MOODS={
  // Chords as semitone offsets from A3 (220 Hz); each lasts one bar of 16 steps.
  city:{bpm:84,chords:[[0,3,7],[-4,0,3],[3,7,10],[-2,2,5]],arp:[0,1,2,1,2,3,2,1],drums:false},
  forest:{bpm:76,chords:[[-7,-4,0],[-11,-7,-4],[-4,0,3],[-5,-2,2]],arp:[0,2,1,3,2,1,0,2],drums:false},
+ mine:{bpm:70,chords:[[-12,-9,-5],[-14,-10,-7],[-16,-12,-9],[-11,-7,-4]],arp:[0,2,0,1,0,2,1,0],drums:false},
  defense:{bpm:112,chords:[[0,3,7],[-2,2,5],[-4,0,3],[-5,-1,2]],arp:[0,1,2,3,2,1,2,3],drums:true},
 };
 const hz=semi=>220*Math.pow(2,semi/12);

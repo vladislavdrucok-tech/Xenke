@@ -95,6 +95,8 @@ svg{width:20px;height:20px;display:block;flex-shrink:0}
 #game.left-handed .stick-zone{left:auto;right:0}
 .stick{position:absolute;left:0;top:0;width:calc(var(--cs)*116px);height:calc(var(--cs)*116px);margin:calc(var(--cs)*-58px) 0 0 calc(var(--cs)*-58px);display:flex;align-items:center;justify-content:space-between;padding:0 calc(var(--cs)*10px);background:#0b101480;clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);box-shadow:inset 0 0 0 3px #6d879866;opacity:.65;will-change:transform;pointer-events:none}
 .stick.on{opacity:1;box-shadow:inset 0 0 0 3px var(--gold)}
+.stick.run{box-shadow:inset 0 0 0 3px var(--amber)}
+.stick.run #pad-thumb{background:var(--amber)}
 .stick-arrow svg{width:calc(var(--cs)*20px);height:calc(var(--cs)*20px);color:var(--text)}
 #pad-thumb{position:absolute;left:50%;top:50%;width:calc(var(--cs)*48px);height:calc(var(--cs)*48px);margin:calc(var(--cs)*-24px) 0 0 calc(var(--cs)*-24px);background:var(--gold);clip-path:polygon(25% 0,75% 0,100% 25%,100% 75%,75% 100%,25% 100%,0 75%,0 25%);box-shadow:inset 0 4px 0 var(--gold-hi),inset 0 -5px 0 var(--gold-dark);will-change:transform;opacity:.8}
 .actions{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));display:grid;grid-template-areas:"shoot jump" "attack action";gap:calc(var(--cs)*12px);align-items:end;justify-items:end;pointer-events:auto}

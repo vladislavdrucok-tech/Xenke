@@ -88,3 +88,42 @@ a few orange iron ore specks, damp patches, detailed Terraria-like style matchin
 - Іконки предметів і портрет Ейнштейна вирізані з концептів (тимчасово).
 - Шахта, кам'яний броненосець і вхід у метро намальовані кодом (тимчасово).
 - `scripts/import-art.py` перевірено: тестовий аркуш на пурпуровому фоні розрізається правильно, герой з'являється на екрані вибору.
+
+---
+
+# Додаток v0.8: нові рухи й предмети в руках
+
+У грі вже працюють біг, лазіння драбиною, меч у руці під час бою, рогатка й факел. Поки ці рухи зібрані з наявних 8 поз, тому виглядають простіше, ніж могли б. Щоб вони стали справжніми, потрібен **розширений аркуш героя 4×4**. Скрипт розпізнає його сам, а гра почне брати пози з нього.
+
+## А. Розширений аркуш героя (по одному на кожного героя)
+Розмір **1024×1536** (вертикальний), 4 стовпці × 4 рядки, клітинка 256×384, **прозорий фон**, герой дивиться праворуч, у всіх позах однаковий масштаб і ноги на одній лінії.
+Рядки:
+1. хода — 4 кадри;
+2. **біг** — 4 кадри (довгий крок, корпус нахилений уперед, руки активно працюють);
+3. **лізе по драбині** — 4 кадри, вигляд збоку, руки по черзі тягнуться вгору, ноги на щаблях (саму драбину **не** малювати);
+4. стоїть з порожніми руками · замах (рука з порожнім кулаком позаду над головою) · удар (рука витягнута вперед-вниз) · стрибок.
+
+**Інструментів у руках не малювати.** Гра сама вкладає в кулак меч, кирку, сокиру, рогатку чи факел.
+
+```
+Pixel art character sprite sheet for a 2D side-scrolling survival game, same character and style as the attached sheet.
+Layout: 4 columns × 4 rows, 1024×1536 px, each cell 256×384, one full-body pose per cell, same scale, feet on the same baseline, facing right, transparent background.
+Row 1: walk cycle, 4 frames. Row 2: run cycle, 4 frames, long stride, body leaning forward, arms pumping.
+Row 3: climbing a ladder seen from the side, 4 frames, hands reaching up alternately, feet on rungs — do NOT draw the ladder.
+Row 4: idle with empty hands, wind-up with an empty fist raised behind the head, forward strike with the arm extended down-forward, mid-air jump.
+No tools or weapons in the hands, no text, no ground, no shadows.
+```
+Потім надішли файл мені з підписом, наприклад: «розширений аркуш Ейнштейна».
+
+## Б. Зброя та інструменти в руку (один аркуш)
+**1024×512**, 4×2 клітинки по 256×256, прозорий фон, кожен предмет **вертикально, робочою частиною вгору**, руків'я внизу по центру клітинки:
+меч, кирка, сокира, рогатка, факел, ліхтарик, лопата, гайковий ключ.
+```
+Pixel art held items for a 2D side-scrolling game, detailed style matching the attached hero sheet. 4 columns × 2 rows, 1024×512, 256 px cells, transparent background.
+Each item standing upright with the working end at the top and the grip at the bottom centre of its cell: sword, pickaxe, axe, slingshot, torch, flashlight, shovel, wrench. No text.
+```
+
+## В. Вороги з рухом
+Зараз у кожного ворога одна поза, а рух малює код. Для живої анімації потрібен аркуш **1536×768**: 4×2 клітинки по 384×384, прозорий фон, ворог дивиться **ліворуч** (як на твоїх картинках).
+Рядок 1: хода, 4 кадри. Рядок 2: стоїть, підготовка до кидка (присів), кидок/укус, отримав удар.
+Потрібні три таких аркуші: моховий саламандр, кам'яний броненосець і кришталевий олень.

@@ -30,7 +30,7 @@ const {quest}=await import('./dist/expedition.mjs?v=6');
 let clock=0;function run(seconds){for(let i=0;i<Math.ceil(seconds*60);i++){clock+=1000/60;raf(clock);}}
 const padSend=(type,pointerId,clientX,clientY=600)=>(el('move-pad').listeners[type]||[]).forEach(f=>f({pointerId,clientX,clientY,preventDefault(){}}));
 // The stick is a floating zone: 'left'/'right' press it and slide the thumb 60px.
-function down(id){if(id==='left'||id==='right'){padSend('pointerdown',1,200);padSend('pointermove',1,id==='right'?260:140);return;}for(const f of el(id).listeners.pointerdown||[])f({preventDefault(){},pointerId:1});}
+function down(id){if(id==='left'||id==='right'){padSend('pointerdown',1,200);padSend('pointermove',1,id==='right'?225:175);return;}for(const f of el(id).listeners.pointerdown||[])f({preventDefault(){},pointerId:1});}
 function up(id){if(id==='left'||id==='right'){padSend('pointerup',1,200);return;}for(const f of el(id).listeners.pointerup||[])f({});}
 function snap(){return window.afterfall.snapshot();}
 function moveTo(x){const sign=Math.sign(x-snap().player.x),dir=sign>0?'right':'left';down(dir);let iterations=0,jumping=false;while(Math.abs(snap().player.x-x)>2&&iterations++<2500){const px=snap().player.x;const needJump=sign>0?px>1025&&px<1100:px>1020&&px<1120;if(needJump&&!jumping){down('jump');jumping=true;}if(!needJump&&jumping){up('jump');jumping=false;}run(1/60);}up(dir);up('jump');assert.ok(Math.abs(snap().player.x-x)<4,`Could not move to ${x}; at ${snap().player.x}`);}
@@ -64,6 +64,7 @@ console.log('PASS: progress written to versioned local save.');
 
 for(const fps of [15,30,60,90,120]){moveTo(260);const before=snap().player.x;down('right');for(let i=0;i<fps;i++){clock+=1000/fps;raf(clock);}up('right');assert.ok(Math.abs((snap().player.x-before)-85)<2,`Physics drift at ${fps} FPS`);}
 assert.equal(resourceRebuilds,1,'Resource icons were rebuilt during gameplay');
+{moveTo(260);const x0=snap().player.x;padSend('pointerdown',4,200);padSend('pointermove',4,240);run(1);padSend('pointerup',4,240);assert.ok(snap().player.x-x0>140,'Thumb at the stick edge runs');console.log('PASS: running when the thumb reaches the edge of the stick.');}
 console.log('PASS: consistent movement at 15/30/60/90/120 FPS; hotbar built once, not per frame.');
 
 // Tap-to-harvest survives pointer release, movement cancels it, and independent fingers do not cancel each other.

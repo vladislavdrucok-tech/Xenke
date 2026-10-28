@@ -11,9 +11,26 @@ from PIL import Image
 from pathlib import Path
 import json,sys,re
 root=Path(__file__).resolve().parents[1];assets=root/'dist/assets'
+def clean(im):
+    # Hard pixel edges, then strip red/magenta halo left over from chroma backgrounds, only on the outline.
+    px=im.load();w,h=im.size
+    for y in range(h):
+        for x in range(w):
+            r,g,b,a=px[x,y]
+            px[x,y]=(r,g,b,0) if a<110 else (r,g,b,255)
+    def tinted(r,g,b):return (r>120 and g<0.62*r and b>0.55*r) or (r>140 and g<0.5*r and b<0.6*r)
+    for _ in range(3):
+        drop=[]
+        for y in range(1,h-1):
+            for x in range(1,w-1):
+                r,g,b,a=px[x,y]
+                if a and tinted(r,g,b) and (px[x-1,y][3]==0 or px[x+1,y][3]==0 or px[x,y-1][3]==0 or px[x,y+1][3]==0):drop.append((x,y))
+        for x,y in drop:px[x,y]=(0,0,0,0)
+        if not drop:break
+    return im
 def keyed(path):
     im=Image.open(path).convert('RGBA');px=im.load();w,h=im.size
-    if im.getextrema()[3][0]<200:return im   # already has transparency
+    if im.getextrema()[3][0]<200:return clean(im)   # already has transparency
     corners=[px[2,2],px[w-3,2],px[2,h-3],px[w-3,h-3]];bg=max(set(corners),key=corners.count)
     tol=90
     for y in range(h):
@@ -21,7 +38,7 @@ def keyed(path):
             r,g,b,_=px[x,y]
             if abs(r-bg[0])+abs(g-bg[1])+abs(b-bg[2])<tol:px[x,y]=(0,0,0,0)
             elif bg[0]>200 and bg[2]>200 and g<120 and r>150 and b>150:px[x,y]=(0,0,0,0)  # magenta fringe
-    return im
+    return clean(im)
 def cells(im,cols=4,rows=2):
     cw,ch=im.width/cols,im.height/rows;out=[]
     for i in range(cols*rows):
@@ -37,6 +54,11 @@ def hero(hid,path):
     for i,(c,anchor) in enumerate(parts):
         w,h=round(c.width*k),round(c.height*k);c=c.resize((w,h),Image.Resampling.NEAREST)
         x,y=i%4*160+(160-w)//2,i//4*160+(160-h)//2;sheet.paste(c,(x,y));frames.append(dict(x=x,y=y,w=w,h=h,anchor=anchor*k))
+    if hid=='einstein':
+        # Einstein is the built-in hero: replace his atlas and keep the object frames in atlas-layout.mjs.
+        sheet.save(assets/'einstein-mobile.webp',lossless=True,method=6)
+        lay=assets/'atlas-layout.mjs';data=json.loads(re.search(r'export default (\{.*\});',lay.read_text(),re.S).group(1));data['hero']=frames
+        lay.write_text('export default '+json.dumps(data,separators=(',',':'))+';\n');print('hero einstein replaced');return
     sheet.save(assets/f'hero-{hid}.webp',lossless=True,method=6)
     reg=assets/'heroes.mjs';data={}
     if reg.exists():

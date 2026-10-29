@@ -1,0 +1,3954 @@
+{
+  "project": "Afterfall",
+  "date": "2026-10-28",
+  "asset_count": 22,
+  "status": "Generated source art; integration and animation QA pending",
+  "original_png_bytes_preserved": true,
+  "pivot_note": "null means not yet authored; cell centers are not validated gameplay anchors",
+  "assets": [
+    {
+      "id": "01",
+      "title_uk": "Ейнштейн - розширені рухи",
+      "file": "assets/einstein/moves_4x4.png",
+      "kind": "moves",
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGBA",
+      "sha256": "235073687ad0a0db44eb774f6f8591cb45b7d891d72fae6be0c5a48045d65288",
+      "bytes": 1952921,
+      "columns": 4,
+      "rows": 4,
+      "order_uk": [
+        "Хода 1",
+        "Хода 2",
+        "Хода 3",
+        "Хода 4",
+        "Біг 1",
+        "Біг 2",
+        "Біг 3",
+        "Біг 4",
+        "Лазіння 1",
+        "Лазіння 2",
+        "Лазіння 3",
+        "Лазіння 4",
+        "Спокій",
+        "Замах",
+        "Удар",
+        "Стрибок"
+      ],
+      "notes_uk": "Порожні руки. Вирівняти стопи та масштаб; перевірити чергування рук і ніг у циклах ходи та лазіння.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Хода 1",
+          "rect": [
+            0,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            65,
+            140,
+            206,
+            343
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Хода 2",
+          "rect": [
+            256,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            67,
+            139,
+            191,
+            345
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Хода 3",
+          "rect": [
+            512,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            57,
+            137,
+            202,
+            345
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Хода 4",
+          "rect": [
+            768,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            68,
+            140,
+            191,
+            345
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Біг 1",
+          "rect": [
+            0,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            56,
+            129,
+            225,
+            337
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Біг 2",
+          "rect": [
+            256,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            60,
+            126,
+            199,
+            341
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Біг 3",
+          "rect": [
+            512,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            28,
+            128,
+            213,
+            332
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Біг 4",
+          "rect": [
+            768,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            53,
+            128,
+            192,
+            339
+          ],
+          "pivot": null
+        },
+        {
+          "index": 8,
+          "name_uk": "Лазіння 1",
+          "rect": [
+            0,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            60,
+            82,
+            205,
+            324
+          ],
+          "pivot": null
+        },
+        {
+          "index": 9,
+          "name_uk": "Лазіння 2",
+          "rect": [
+            256,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            58,
+            98,
+            213,
+            323
+          ],
+          "pivot": null
+        },
+        {
+          "index": 10,
+          "name_uk": "Лазіння 3",
+          "rect": [
+            512,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            48,
+            79,
+            192,
+            324
+          ],
+          "pivot": null
+        },
+        {
+          "index": 11,
+          "name_uk": "Лазіння 4",
+          "rect": [
+            768,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            55,
+            91,
+            215,
+            323
+          ],
+          "pivot": null
+        },
+        {
+          "index": 12,
+          "name_uk": "Спокій",
+          "rect": [
+            0,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            56,
+            85,
+            187,
+            299
+          ],
+          "pivot": null
+        },
+        {
+          "index": 13,
+          "name_uk": "Замах",
+          "rect": [
+            256,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            56,
+            63,
+            206,
+            299
+          ],
+          "pivot": null
+        },
+        {
+          "index": 14,
+          "name_uk": "Удар",
+          "rect": [
+            512,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            38,
+            87,
+            211,
+            298
+          ],
+          "pivot": null
+        },
+        {
+          "index": 15,
+          "name_uk": "Стрибок",
+          "rect": [
+            768,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            51,
+            68,
+            200,
+            266
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1175989,
+      "alpha_intermediate_pixels": 396875,
+      "cell_width": 256,
+      "cell_height": 384
+    },
+    {
+      "id": "02",
+      "title_uk": "Ейнштейн - поранення та стрибок",
+      "file": "assets/einstein/damage_jump_4x2.png",
+      "kind": "damage",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "efe1106c40e8d8f7e07506d62081c7dd27afc063b81fee5dfb7464319a325525",
+      "bytes": 1595836,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Реакція на удар",
+        "Падіння назад",
+        "Лежання",
+        "Підведення на коліно",
+        "Присідання перед стрибком",
+        "Зліт",
+        "Падіння вниз",
+        "Приземлення"
+      ],
+      "notes_uk": "Порожні руки. Для лежання та стрибка потрібні окремі опорні точки; не масштабувати кадри за висотою їхніх меж.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Реакція на удар",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            105,
+            185,
+            304,
+            434
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Падіння назад",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            75,
+            218,
+            337,
+            421
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Лежання",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            55,
+            337,
+            354,
+            419
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Підведення на коліно",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            93,
+            220,
+            285,
+            426
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Присідання перед стрибком",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            85,
+            189,
+            291,
+            379
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Зліт",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            105,
+            99,
+            305,
+            358
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Падіння вниз",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            106,
+            93,
+            287,
+            366
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Приземлення",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            92,
+            196,
+            301,
+            380
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1328226,
+      "alpha_intermediate_pixels": 244638,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "03",
+      "title_uk": "Предмети для рук героя",
+      "file": "assets/props/held_items_4x2.png",
+      "kind": "items",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "77982b0163631a6511ec2df0af9a9a9a13aeb4092fcf24d31598b2271d7670a2",
+      "bytes": 1594938,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Меч",
+        "Кирка",
+        "Сокира",
+        "Рогатка",
+        "Факел",
+        "Ліхтарик",
+        "Лопата",
+        "Гайковий ключ"
+      ],
+      "notes_uk": "Визначити точку хвату для кожного предмета. Розміри предметів у руці налаштовувати окремо від розміру клітинки.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Меч",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            139,
+            96,
+            258,
+            452
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Кирка",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            55,
+            120,
+            329,
+            450
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Сокира",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            113,
+            107,
+            272,
+            451
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Рогатка",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            74,
+            160,
+            309,
+            452
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Факел",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            151,
+            62,
+            251,
+            427
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Ліхтарик",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            140,
+            112,
+            267,
+            422
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Лопата",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            110,
+            39,
+            241,
+            420
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Гайковий ключ",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            120,
+            76,
+            240,
+            422
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1337801,
+      "alpha_intermediate_pixels": 235063,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "04",
+      "title_uk": "Стани об’єктів",
+      "file": "assets/props/object_states_4x2.png",
+      "kind": "props",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "ff8d665c25159d2675eb0b1fc2e0c716eb550208ec5722cfb9a2400934faf452",
+      "bytes": 1672728,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Зрубаний пень",
+        "Виснажена руда",
+        "Відкритий ящик",
+        "Очищений ґрунт",
+        "Кам’яна брила",
+        "Уламки каменю",
+        "Двері сховища",
+        "Впала сталева балка"
+      ],
+      "notes_uk": "Статичні стани об’єктів, не анімаційний цикл. Колізії, доступність взаємодії та витрачений ресурс задаються кодом.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Зрубаний пень",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            73,
+            322,
+            315,
+            449
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Виснажена руда",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            56,
+            234,
+            352,
+            443
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Відкритий ящик",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            70,
+            218,
+            310,
+            432
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Очищений ґрунт",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            48,
+            315,
+            329,
+            446
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Кам’яна брила",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            51,
+            151,
+            339,
+            371
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Уламки каменю",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            56,
+            239,
+            339,
+            375
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Двері сховища",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            33,
+            107,
+            345,
+            370
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Впала сталева балка",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            39,
+            265,
+            348,
+            385
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1232010,
+      "alpha_intermediate_pixels": 340854,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "05",
+      "title_uk": "Мутант-краулер",
+      "file": "assets/enemies/crawler_4x2.png",
+      "kind": "crawler",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "38fac0e202c1ad7aa520588dff6da66c9ed299ac261652691ca510853e8cb44e",
+      "bytes": 1556119,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Хода 1",
+        "Хода 2",
+        "Хода 3",
+        "Хода 4",
+        "Спокій",
+        "Підготовка до кидка",
+        "Кидок з укусом",
+        "Реакція на удар"
+      ],
+      "notes_uk": "Кадр кидка має дуже малий правий відступ. Після вирізання додати запас і вирівняти масштаб тіла та опорні точки.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Хода 1",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            50,
+            243,
+            341,
+            414
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Хода 2",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            60,
+            243,
+            349,
+            418
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Хода 3",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            59,
+            249,
+            354,
+            417
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Хода 4",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            67,
+            244,
+            348,
+            419
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Спокій",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            61,
+            230,
+            341,
+            403
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Підготовка до кидка",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            64,
+            260,
+            340,
+            402
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Кидок з укусом",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            41,
+            210,
+            381,
+            381
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Реакція на удар",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            123,
+            202,
+            344,
+            409
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1289148,
+      "alpha_intermediate_pixels": 283716,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "06",
+      "title_uk": "Моховий саламандр",
+      "file": "assets/enemies/salamander_4x2.png",
+      "kind": "salamander",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "553369e8d5106348bb1d92546d660ae442fdf67bd25ef8972a03184286ed13d7",
+      "bytes": 1499871,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Хода 1",
+        "Хода 2",
+        "Хода 3",
+        "Хода 4",
+        "Спокій",
+        "Присідання перед атакою",
+        "Укус",
+        "Реакція на удар"
+      ],
+      "notes_uk": "Вирівняти контакт лап із землею; перевірити послідовність ходи та момент укусу після підключення.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Хода 1",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            63,
+            236,
+            340,
+            380
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Хода 2",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            58,
+            236,
+            338,
+            380
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Хода 3",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            51,
+            235,
+            332,
+            381
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Хода 4",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            49,
+            236,
+            325,
+            384
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Спокій",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            66,
+            180,
+            341,
+            329
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Присідання перед атакою",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            58,
+            204,
+            349,
+            331
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Укус",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            70,
+            183,
+            337,
+            331
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Реакція на удар",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            73,
+            176,
+            319,
+            333
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1361362,
+      "alpha_intermediate_pixels": 211502,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "07",
+      "title_uk": "Кам’яний броненосець",
+      "file": "assets/enemies/armadillo_4x2.png",
+      "kind": "armadillo",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "b9778f3d6564614588fe3e4b62724aa8db1e8b2823a21312bdc47f28590acfc1",
+      "bytes": 1587515,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Хода 1",
+        "Хода 2",
+        "Хода 3",
+        "Хода 4",
+        "Спокій",
+        "Згортання в клубок",
+        "Атака клубком",
+        "Реакція на удар"
+      ],
+      "notes_uk": "Для клубка потрібен центр обертання. Перевірити, щоб перехід між звичайною позою та клубком не змінював місце персонажа.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Хода 1",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            62,
+            234,
+            352,
+            402
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Хода 2",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            61,
+            233,
+            347,
+            403
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Хода 3",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            48,
+            234,
+            330,
+            402
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Хода 4",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            35,
+            233,
+            321,
+            403
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Спокій",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            61,
+            171,
+            357,
+            343
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Згортання в клубок",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            108,
+            170,
+            301,
+            339
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Атака клубком",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            98,
+            177,
+            279,
+            342
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Реакція на удар",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            53,
+            163,
+            323,
+            346
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1303376,
+      "alpha_intermediate_pixels": 269488,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "08",
+      "title_uk": "Кришталевий олень - бос",
+      "file": "assets/enemies/crystal_stag_4x2.png",
+      "kind": "stag",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "1a3a80d398524c099cca5b6f479a6fbd951e6fdbd073173959e7c820fb5c36a1",
+      "bytes": 2093549,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Хода 1",
+        "Хода 2",
+        "Хода 3",
+        "Хода 4",
+        "Спокій",
+        "Підготовка рогами",
+        "Ривок",
+        "Оглушення"
+      ],
+      "notes_uk": "Кадр ривка вийшов помітно меншим. Вирівняти масштаб за тулубом і головою, потім перепакувати з запасом для рогів.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Хода 1",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            72,
+            133,
+            359,
+            472
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Хода 2",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            61,
+            133,
+            354,
+            474
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Хода 3",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            51,
+            134,
+            343,
+            472
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Хода 4",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            51,
+            134,
+            343,
+            475
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Спокій",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            61,
+            53,
+            337,
+            393
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Підготовка рогами",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            28,
+            120,
+            370,
+            380
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Ривок",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            76,
+            182,
+            354,
+            356
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Оглушення",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            98,
+            59,
+            339,
+            394
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1093147,
+      "alpha_intermediate_pixels": 479717,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "09",
+      "title_uk": "Марія Кюрі - розширені рухи",
+      "file": "assets/curie/moves_4x4.png",
+      "kind": "moves",
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGBA",
+      "sha256": "3e46422693913a56db93d9e84435e1894a92866b99a136116d8944476f509723",
+      "bytes": 1963748,
+      "columns": 4,
+      "rows": 4,
+      "order_uk": [
+        "Хода 1",
+        "Хода 2",
+        "Хода 3",
+        "Хода 4",
+        "Біг 1",
+        "Біг 2",
+        "Біг 3",
+        "Біг 4",
+        "Лазіння 1",
+        "Лазіння 2",
+        "Лазіння 3",
+        "Лазіння 4",
+        "Спокій",
+        "Замах",
+        "Удар",
+        "Стрибок"
+      ],
+      "notes_uk": "Порожні руки. Вирівняти стопи та масштаб; перевірити чергування рук і ніг у циклах ходи та лазіння.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Хода 1",
+          "rect": [
+            0,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            73,
+            151,
+            208,
+            361
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Хода 2",
+          "rect": [
+            256,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            71,
+            151,
+            203,
+            362
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Хода 3",
+          "rect": [
+            512,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            64,
+            151,
+            206,
+            362
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Хода 4",
+          "rect": [
+            768,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            56,
+            150,
+            183,
+            363
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Біг 1",
+          "rect": [
+            0,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            49,
+            118,
+            226,
+            340
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Біг 2",
+          "rect": [
+            256,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            61,
+            117,
+            203,
+            346
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Біг 3",
+          "rect": [
+            512,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            41,
+            119,
+            219,
+            345
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Біг 4",
+          "rect": [
+            768,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            48,
+            117,
+            195,
+            347
+          ],
+          "pivot": null
+        },
+        {
+          "index": 8,
+          "name_uk": "Лазіння 1",
+          "rect": [
+            0,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            64,
+            77,
+            206,
+            315
+          ],
+          "pivot": null
+        },
+        {
+          "index": 9,
+          "name_uk": "Лазіння 2",
+          "rect": [
+            256,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            71,
+            90,
+            219,
+            317
+          ],
+          "pivot": null
+        },
+        {
+          "index": 10,
+          "name_uk": "Лазіння 3",
+          "rect": [
+            512,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            58,
+            76,
+            198,
+            321
+          ],
+          "pivot": null
+        },
+        {
+          "index": 11,
+          "name_uk": "Лазіння 4",
+          "rect": [
+            768,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            52,
+            75,
+            193,
+            321
+          ],
+          "pivot": null
+        },
+        {
+          "index": 12,
+          "name_uk": "Спокій",
+          "rect": [
+            0,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            65,
+            56,
+            193,
+            283
+          ],
+          "pivot": null
+        },
+        {
+          "index": 13,
+          "name_uk": "Замах",
+          "rect": [
+            256,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            63,
+            52,
+            221,
+            285
+          ],
+          "pivot": null
+        },
+        {
+          "index": 14,
+          "name_uk": "Удар",
+          "rect": [
+            512,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            54,
+            72,
+            220,
+            285
+          ],
+          "pivot": null
+        },
+        {
+          "index": 15,
+          "name_uk": "Стрибок",
+          "rect": [
+            768,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            46,
+            65,
+            198,
+            261
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1165840,
+      "alpha_intermediate_pixels": 407024,
+      "cell_width": 256,
+      "cell_height": 384
+    },
+    {
+      "id": "10",
+      "title_uk": "Марія Кюрі - поранення та стрибок",
+      "file": "assets/curie/damage_jump_4x2.png",
+      "kind": "damage",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "ef0f67151104e59338efdc999e5d41acb85956e4827acdbb117943a923e30188",
+      "bytes": 1394200,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Реакція на удар",
+        "Падіння назад",
+        "Лежання",
+        "Підведення на коліно",
+        "Присідання перед стрибком",
+        "Зліт",
+        "Падіння вниз",
+        "Приземлення"
+      ],
+      "notes_uk": "Порожні руки. Для лежання та стрибка потрібні окремі опорні точки; не масштабувати кадри за висотою їхніх меж.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Реакція на удар",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            123,
+            188,
+            282,
+            368
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Падіння назад",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            101,
+            203,
+            309,
+            344
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Лежання",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            77,
+            273,
+            317,
+            351
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Підведення на коліно",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            121,
+            190,
+            256,
+            364
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Присідання перед стрибком",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            122,
+            180,
+            263,
+            350
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Зліт",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            138,
+            119,
+            287,
+            343
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Падіння вниз",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            133,
+            115,
+            261,
+            349
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Приземлення",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            116,
+            179,
+            258,
+            350
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1417867,
+      "alpha_intermediate_pixels": 154997,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "11",
+      "title_uk": "Нікола Тесла - основний аркуш",
+      "file": "assets/tesla/base_4x2.png",
+      "kind": "base",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "b198610fcad38a517b9ea345b7cbe790fcea298b9f0ca29303d7e81299fec3aa",
+      "bytes": 1627145,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Хода 1",
+        "Хода 2",
+        "Хода 3",
+        "Хода 4",
+        "Спокій із киркою",
+        "Замах киркою",
+        "Удар киркою",
+        "Стрибок"
+      ],
+      "notes_uk": "Кирка намальована в трьох кадрах дії. Не накладати поверх неї другу кирку; для змінних предметів використовувати аркуш рухів.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Хода 1",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            104,
+            151,
+            291,
+            414
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Хода 2",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            114,
+            150,
+            268,
+            414
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Хода 3",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            93,
+            150,
+            288,
+            414
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Хода 4",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            101,
+            146,
+            261,
+            414
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Спокій із киркою",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            106,
+            121,
+            312,
+            384
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Замах киркою",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            102,
+            74,
+            308,
+            380
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Удар киркою",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            44,
+            132,
+            343,
+            382
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Стрибок",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            94,
+            101,
+            278,
+            343
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1310380,
+      "alpha_intermediate_pixels": 262484,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "12",
+      "title_uk": "Нікола Тесла - розширені рухи",
+      "file": "assets/tesla/moves_4x4.png",
+      "kind": "moves",
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGBA",
+      "sha256": "73774f3198d13715e4dd7149715c46ccdda291dd2103d095ea4feb6f14f0c2b5",
+      "bytes": 1741415,
+      "columns": 4,
+      "rows": 4,
+      "order_uk": [
+        "Хода 1",
+        "Хода 2",
+        "Хода 3",
+        "Хода 4",
+        "Біг 1",
+        "Біг 2",
+        "Біг 3",
+        "Біг 4",
+        "Лазіння 1",
+        "Лазіння 2",
+        "Лазіння 3",
+        "Лазіння 4",
+        "Спокій",
+        "Замах",
+        "Удар",
+        "Стрибок"
+      ],
+      "notes_uk": "Порожні руки. Вирівняти стопи та масштаб; перевірити чергування рук і ніг у циклах ходи та лазіння.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Хода 1",
+          "rect": [
+            0,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            58,
+            177,
+            200,
+            367
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Хода 2",
+          "rect": [
+            256,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            75,
+            176,
+            180,
+            367
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Хода 3",
+          "rect": [
+            512,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            58,
+            177,
+            208,
+            367
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Хода 4",
+          "rect": [
+            768,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            76,
+            177,
+            183,
+            367
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Біг 1",
+          "rect": [
+            0,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            42,
+            162,
+            212,
+            348
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Біг 2",
+          "rect": [
+            256,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            72,
+            160,
+            187,
+            348
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Біг 3",
+          "rect": [
+            512,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            39,
+            160,
+            228,
+            345
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Біг 4",
+          "rect": [
+            768,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            76,
+            159,
+            209,
+            349
+          ],
+          "pivot": null
+        },
+        {
+          "index": 8,
+          "name_uk": "Лазіння 1",
+          "rect": [
+            0,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            64,
+            106,
+            203,
+            325
+          ],
+          "pivot": null
+        },
+        {
+          "index": 9,
+          "name_uk": "Лазіння 2",
+          "rect": [
+            256,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            60,
+            119,
+            207,
+            323
+          ],
+          "pivot": null
+        },
+        {
+          "index": 10,
+          "name_uk": "Лазіння 3",
+          "rect": [
+            512,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            57,
+            105,
+            191,
+            325
+          ],
+          "pivot": null
+        },
+        {
+          "index": 11,
+          "name_uk": "Лазіння 4",
+          "rect": [
+            768,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            61,
+            120,
+            207,
+            321
+          ],
+          "pivot": null
+        },
+        {
+          "index": 12,
+          "name_uk": "Спокій",
+          "rect": [
+            0,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            63,
+            90,
+            171,
+            293
+          ],
+          "pivot": null
+        },
+        {
+          "index": 13,
+          "name_uk": "Замах",
+          "rect": [
+            256,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            46,
+            82,
+            192,
+            293
+          ],
+          "pivot": null
+        },
+        {
+          "index": 14,
+          "name_uk": "Удар",
+          "rect": [
+            512,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            30,
+            115,
+            212,
+            293
+          ],
+          "pivot": null
+        },
+        {
+          "index": 15,
+          "name_uk": "Стрибок",
+          "rect": [
+            768,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            56,
+            85,
+            202,
+            250
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1276689,
+      "alpha_intermediate_pixels": 296175,
+      "cell_width": 256,
+      "cell_height": 384
+    },
+    {
+      "id": "13",
+      "title_uk": "Нікола Тесла - поранення та стрибок",
+      "file": "assets/tesla/damage_jump_4x2.png",
+      "kind": "damage",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "e0e63ab8b21bd68343028f3dafb5044cfd0d40c272ad8c1baa07ab98f2d6c10d",
+      "bytes": 1461406,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Реакція на удар",
+        "Падіння назад",
+        "Лежання",
+        "Підведення на коліно",
+        "Присідання перед стрибком",
+        "Зліт",
+        "Падіння вниз",
+        "Приземлення"
+      ],
+      "notes_uk": "Порожні руки. Для лежання та стрибка потрібні окремі опорні точки; не масштабувати кадри за висотою їхніх меж.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Реакція на удар",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            115,
+            173,
+            302,
+            382
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Падіння назад",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            92,
+            201,
+            313,
+            376
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Лежання",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            49,
+            303,
+            339,
+            381
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Підведення на коліно",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            106,
+            201,
+            277,
+            383
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Присідання перед стрибком",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            103,
+            182,
+            265,
+            352
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Зліт",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            108,
+            76,
+            283,
+            339
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Падіння вниз",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            112,
+            82,
+            252,
+            340
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Приземлення",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            106,
+            194,
+            286,
+            354
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1383208,
+      "alpha_intermediate_pixels": 189656,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "14",
+      "title_uk": "Нікола Тесла - портрет",
+      "file": "assets/tesla/portrait.png",
+      "kind": "portrait",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "856eba425edcb7d6d6ff53e44cf7e7e8a245e2c14a0089900f821cf68af0e97c",
+      "bytes": 1652422,
+      "columns": 0,
+      "rows": 0,
+      "order_uk": [],
+      "notes_uk": "Для меню вибору героя. Зберегти пропорції; не обрізати голову, зачіску або бороду.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": []
+    },
+    {
+      "id": "15",
+      "title_uk": "Чарльз Дарвін - основний аркуш",
+      "file": "assets/darwin/base_4x2.png",
+      "kind": "base",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "cdc2140da7f7708b7a0dc5ead1ec394b2f7efe8634b31cdddc733270bbeab9b7",
+      "bytes": 1758047,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Хода 1",
+        "Хода 2",
+        "Хода 3",
+        "Хода 4",
+        "Спокій із киркою",
+        "Замах киркою",
+        "Удар киркою",
+        "Стрибок"
+      ],
+      "notes_uk": "Кирка намальована в трьох кадрах дії. Не накладати поверх неї другу кирку; для змінних предметів використовувати аркуш рухів.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Хода 1",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            121,
+            176,
+            308,
+            430
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Хода 2",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            123,
+            173,
+            295,
+            430
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Хода 3",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            112,
+            176,
+            297,
+            433
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Хода 4",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            112,
+            178,
+            285,
+            433
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Спокій із киркою",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            119,
+            117,
+            340,
+            376
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Замах киркою",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            109,
+            72,
+            297,
+            376
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Удар киркою",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            83,
+            135,
+            371,
+            378
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Стрибок",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            107,
+            99,
+            303,
+            341
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1253010,
+      "alpha_intermediate_pixels": 319854,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "16",
+      "title_uk": "Чарльз Дарвін - розширені рухи",
+      "file": "assets/darwin/moves_4x4.png",
+      "kind": "moves",
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGBA",
+      "sha256": "967f257dfbf3fe6ff67a26943537ef4fcff828637c53f6ab1595a7ee89386d15",
+      "bytes": 1815725,
+      "columns": 4,
+      "rows": 4,
+      "order_uk": [
+        "Хода 1",
+        "Хода 2",
+        "Хода 3",
+        "Хода 4",
+        "Біг 1",
+        "Біг 2",
+        "Біг 3",
+        "Біг 4",
+        "Лазіння 1",
+        "Лазіння 2",
+        "Лазіння 3",
+        "Лазіння 4",
+        "Спокій",
+        "Замах",
+        "Удар",
+        "Стрибок"
+      ],
+      "notes_uk": "Порожні руки. Вирівняти стопи та масштаб; перевірити чергування рук і ніг у циклах ходи та лазіння.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Хода 1",
+          "rect": [
+            0,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            82,
+            156,
+            208,
+            331
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Хода 2",
+          "rect": [
+            256,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            73,
+            153,
+            189,
+            331
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Хода 3",
+          "rect": [
+            512,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            67,
+            154,
+            201,
+            333
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Хода 4",
+          "rect": [
+            768,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            71,
+            153,
+            192,
+            331
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Біг 1",
+          "rect": [
+            0,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            55,
+            130,
+            216,
+            303
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Біг 2",
+          "rect": [
+            256,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            60,
+            128,
+            191,
+            307
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Біг 3",
+          "rect": [
+            512,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            50,
+            126,
+            220,
+            294
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Біг 4",
+          "rect": [
+            768,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            74,
+            128,
+            204,
+            307
+          ],
+          "pivot": null
+        },
+        {
+          "index": 8,
+          "name_uk": "Лазіння 1",
+          "rect": [
+            0,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            71,
+            70,
+            198,
+            297
+          ],
+          "pivot": null
+        },
+        {
+          "index": 9,
+          "name_uk": "Лазіння 2",
+          "rect": [
+            256,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            73,
+            97,
+            202,
+            293
+          ],
+          "pivot": null
+        },
+        {
+          "index": 10,
+          "name_uk": "Лазіння 3",
+          "rect": [
+            512,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            64,
+            73,
+            195,
+            297
+          ],
+          "pivot": null
+        },
+        {
+          "index": 11,
+          "name_uk": "Лазіння 4",
+          "rect": [
+            768,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            64,
+            84,
+            201,
+            295
+          ],
+          "pivot": null
+        },
+        {
+          "index": 12,
+          "name_uk": "Спокій",
+          "rect": [
+            0,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            70,
+            77,
+            184,
+            262
+          ],
+          "pivot": null
+        },
+        {
+          "index": 13,
+          "name_uk": "Замах",
+          "rect": [
+            256,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            64,
+            65,
+            206,
+            262
+          ],
+          "pivot": null
+        },
+        {
+          "index": 14,
+          "name_uk": "Удар",
+          "rect": [
+            512,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            29,
+            95,
+            217,
+            262
+          ],
+          "pivot": null
+        },
+        {
+          "index": 15,
+          "name_uk": "Стрибок",
+          "rect": [
+            768,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            66,
+            51,
+            200,
+            215
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1124705,
+      "alpha_intermediate_pixels": 448159,
+      "cell_width": 256,
+      "cell_height": 384
+    },
+    {
+      "id": "17",
+      "title_uk": "Чарльз Дарвін - поранення та стрибок",
+      "file": "assets/darwin/damage_jump_4x2.png",
+      "kind": "damage",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "54e35911a017b799cbcca211142f799895f3d64df19614d4d68f53b8ba4563f3",
+      "bytes": 1543611,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Реакція на удар",
+        "Падіння назад",
+        "Лежання",
+        "Підведення на коліно",
+        "Присідання перед стрибком",
+        "Зліт",
+        "Падіння вниз",
+        "Приземлення"
+      ],
+      "notes_uk": "Порожні руки. Для лежання та стрибка потрібні окремі опорні точки; не масштабувати кадри за висотою їхніх меж.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Реакція на удар",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            93,
+            163,
+            275,
+            391
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Падіння назад",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            86,
+            183,
+            312,
+            369
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Лежання",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            65,
+            279,
+            332,
+            378
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Підведення на коліно",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            107,
+            177,
+            279,
+            382
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Присідання перед стрибком",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            81,
+            187,
+            256,
+            375
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Зліт",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            111,
+            107,
+            307,
+            375
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Падіння вниз",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            115,
+            98,
+            275,
+            374
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Приземлення",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            125,
+            187,
+            298,
+            375
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1356349,
+      "alpha_intermediate_pixels": 216515,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "18",
+      "title_uk": "Чарльз Дарвін - портрет",
+      "file": "assets/darwin/portrait.png",
+      "kind": "portrait",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "7c1fddef5a16f1b8e3df4418108ed19a84935e7a95462cb9ea318880e3101063",
+      "bytes": 1894325,
+      "columns": 0,
+      "rows": 0,
+      "order_uk": [],
+      "notes_uk": "Для меню вибору героя. Зберегти пропорції; не обрізати голову, зачіску або бороду.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": []
+    },
+    {
+      "id": "19",
+      "title_uk": "Дональд Трамп - основний аркуш",
+      "file": "assets/trump/base_4x2.png",
+      "kind": "base",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "c6aba2091fc0caef33801402c1c0158c60d4d7694bd595a3ed996d9709b002e3",
+      "bytes": 1709901,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Хода 1",
+        "Хода 2",
+        "Хода 3",
+        "Хода 4",
+        "Спокій із киркою",
+        "Замах киркою",
+        "Удар киркою",
+        "Стрибок"
+      ],
+      "notes_uk": "Кирка намальована в трьох кадрах дії. Не накладати поверх неї другу кирку; для змінних предметів використовувати аркуш рухів.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Хода 1",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            108,
+            137,
+            301,
+            414
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Хода 2",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            110,
+            138,
+            281,
+            412
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Хода 3",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            95,
+            141,
+            304,
+            414
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Хода 4",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            107,
+            139,
+            281,
+            415
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Спокій із киркою",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            96,
+            118,
+            312,
+            381
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Замах киркою",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            114,
+            77,
+            301,
+            383
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Удар киркою",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            81,
+            147,
+            358,
+            380
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Стрибок",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            108,
+            102,
+            292,
+            347
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1278470,
+      "alpha_intermediate_pixels": 294394,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "20",
+      "title_uk": "Дональд Трамп - розширені рухи",
+      "file": "assets/trump/moves_4x4.png",
+      "kind": "moves",
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGBA",
+      "sha256": "3d7168375966f1ca1cbe6fc2bc3e13ecd301df4b993b72fa542c041eec0e3b8b",
+      "bytes": 1835308,
+      "columns": 4,
+      "rows": 4,
+      "order_uk": [
+        "Хода 1",
+        "Хода 2",
+        "Хода 3",
+        "Хода 4",
+        "Біг 1",
+        "Біг 2",
+        "Біг 3",
+        "Біг 4",
+        "Лазіння 1",
+        "Лазіння 2",
+        "Лазіння 3",
+        "Лазіння 4",
+        "Спокій",
+        "Замах",
+        "Удар",
+        "Стрибок"
+      ],
+      "notes_uk": "Порожні руки. Вирівняти стопи та масштаб; перевірити чергування рук і ніг у циклах ходи та лазіння.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Хода 1",
+          "rect": [
+            0,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            63,
+            174,
+            199,
+            364
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Хода 2",
+          "rect": [
+            256,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            67,
+            174,
+            192,
+            364
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Хода 3",
+          "rect": [
+            512,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            54,
+            174,
+            192,
+            365
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Хода 4",
+          "rect": [
+            768,
+            0,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            57,
+            174,
+            184,
+            365
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Біг 1",
+          "rect": [
+            0,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            52,
+            164,
+            210,
+            350
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Біг 2",
+          "rect": [
+            256,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            51,
+            164,
+            188,
+            354
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Біг 3",
+          "rect": [
+            512,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            36,
+            164,
+            210,
+            344
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Біг 4",
+          "rect": [
+            768,
+            384,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            59,
+            164,
+            202,
+            359
+          ],
+          "pivot": null
+        },
+        {
+          "index": 8,
+          "name_uk": "Лазіння 1",
+          "rect": [
+            0,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            65,
+            141,
+            209,
+            353
+          ],
+          "pivot": null
+        },
+        {
+          "index": 9,
+          "name_uk": "Лазіння 2",
+          "rect": [
+            256,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            64,
+            151,
+            211,
+            353
+          ],
+          "pivot": null
+        },
+        {
+          "index": 10,
+          "name_uk": "Лазіння 3",
+          "rect": [
+            512,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            57,
+            139,
+            193,
+            353
+          ],
+          "pivot": null
+        },
+        {
+          "index": 11,
+          "name_uk": "Лазіння 4",
+          "rect": [
+            768,
+            768,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            49,
+            139,
+            175,
+            353
+          ],
+          "pivot": null
+        },
+        {
+          "index": 12,
+          "name_uk": "Спокій",
+          "rect": [
+            0,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            58,
+            129,
+            175,
+            317
+          ],
+          "pivot": null
+        },
+        {
+          "index": 13,
+          "name_uk": "Замах",
+          "rect": [
+            256,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            62,
+            139,
+            195,
+            317
+          ],
+          "pivot": null
+        },
+        {
+          "index": 14,
+          "name_uk": "Удар",
+          "rect": [
+            512,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            37,
+            156,
+            219,
+            317
+          ],
+          "pivot": null
+        },
+        {
+          "index": 15,
+          "name_uk": "Стрибок",
+          "rect": [
+            768,
+            1152,
+            256,
+            384
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            55,
+            124,
+            200,
+            289
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1194523,
+      "alpha_intermediate_pixels": 378341,
+      "cell_width": 256,
+      "cell_height": 384
+    },
+    {
+      "id": "21",
+      "title_uk": "Дональд Трамп - поранення та стрибок",
+      "file": "assets/trump/damage_jump_4x2.png",
+      "kind": "damage",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "103264bb88b41a08cc6d9c0e30a0e992b817bacdd800d7d135725430867fb92d",
+      "bytes": 1643078,
+      "columns": 4,
+      "rows": 2,
+      "order_uk": [
+        "Реакція на удар",
+        "Падіння назад",
+        "Лежання",
+        "Підведення на коліно",
+        "Присідання перед стрибком",
+        "Зліт",
+        "Падіння вниз",
+        "Приземлення"
+      ],
+      "notes_uk": "Порожні руки. Для лежання та стрибка потрібні окремі опорні точки; не масштабувати кадри за висотою їхніх меж.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": [
+        {
+          "index": 0,
+          "name_uk": "Реакція на удар",
+          "rect": [
+            0,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            92,
+            161,
+            315,
+            426
+          ],
+          "pivot": null
+        },
+        {
+          "index": 1,
+          "name_uk": "Падіння назад",
+          "rect": [
+            384,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            67,
+            178,
+            345,
+            404
+          ],
+          "pivot": null
+        },
+        {
+          "index": 2,
+          "name_uk": "Лежання",
+          "rect": [
+            768,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            52,
+            309,
+            368,
+            418
+          ],
+          "pivot": null
+        },
+        {
+          "index": 3,
+          "name_uk": "Підведення на коліно",
+          "rect": [
+            1152,
+            0,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            105,
+            191,
+            310,
+            420
+          ],
+          "pivot": null
+        },
+        {
+          "index": 4,
+          "name_uk": "Присідання перед стрибком",
+          "rect": [
+            0,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            79,
+            196,
+            287,
+            407
+          ],
+          "pivot": null
+        },
+        {
+          "index": 5,
+          "name_uk": "Зліт",
+          "rect": [
+            384,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            95,
+            113,
+            306,
+            389
+          ],
+          "pivot": null
+        },
+        {
+          "index": 6,
+          "name_uk": "Падіння вниз",
+          "rect": [
+            768,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            104,
+            100,
+            286,
+            402
+          ],
+          "pivot": null
+        },
+        {
+          "index": 7,
+          "name_uk": "Приземлення",
+          "rect": [
+            1152,
+            512,
+            384,
+            512
+          ],
+          "content_bbox_local_alpha_gt_80": [
+            108,
+            221,
+            307,
+            410
+          ],
+          "pivot": null
+        }
+      ],
+      "alpha_zero_pixels": 1306043,
+      "alpha_intermediate_pixels": 266821,
+      "cell_width": 384,
+      "cell_height": 512
+    },
+    {
+      "id": "22",
+      "title_uk": "Дональд Трамп - портрет",
+      "file": "assets/trump/portrait.png",
+      "kind": "portrait",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "64691e17c13b84a85a8b58b3be6ca8257395119ea28278d72de7aa17e5eb8e19",
+      "bytes": 1857292,
+      "columns": 0,
+      "rows": 0,
+      "order_uk": [],
+      "notes_uk": "Для меню вибору героя. Зберегти пропорції; не обрізати голову, зачіску або бороду.",
+      "frame_order": "row-major, left-to-right, top-to-bottom",
+      "frames": []
+    }
+  ]
+}

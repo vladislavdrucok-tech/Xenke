@@ -9,12 +9,19 @@ spec=importlib.util.spec_from_file_location('imp',root/'scripts/import-art.py');
 # name: (file, longest side in the atlas). Larger sprites keep detail on high-density phone screens.
 PROPS={'stump':('prop-stump',240),'greenhouse':('prop-greenhouse',560),'purifier':('prop-purifier',220),'fox':('creature-fox',190),
  'crate':('prop-crate',180),'ore':('prop-ore',210),'generator':('prop-generator',200),'lift':('prop-lift',260),'filter':('prop-filter',220),
- 'metro':('prop-metro',300),'workbench':('prop-workbench',260),'salamander':('enemy-salamander',300),'deer':('enemy-deer',420),'armadillo':('enemy-armadillo',300)}
+ 'metro':('prop-metro',300),'workbench':('prop-workbench',260)}
+# Mutants moved to dist/assets/mobs.webp (scripts/import-set22.py), with walk, attack and hit frames.
 def load(name):
     im=imp.clean(Image.open(gen/f'{name}.png').convert('RGBA'));return im.crop(im.getbbox())
+# Object states from the owner's set (art/set22, 4x2 sheet with clean alpha): what remains after an action.
+STATES=[('stumpCut',200),('oreSpent',210),('crateOpen',180),('soilClean',200),('boulder',210),('rubble',170),('vaultDoor',260),('beam',240)]
 sprites={}
 for k,(f,side) in PROPS.items():
-    im=load(f);s=side/max(im.size);sprites[k]=im.resize((max(1,round(im.width*s)),max(1,round(im.height*s))),Image.Resampling.LANCZOS)
+    sprites[k]=load(f)
+sheet=Image.open(root/'art/set22/props/object_states_4x2.png').convert('RGBA');sheet.putalpha(sheet.getchannel('A').point(lambda v:255 if v>110 else 0))
+for (k,side),(im,_) in zip(STATES,imp.cells(sheet,4,2)):sprites[k]=im;PROPS[k]=(None,side)
+for k,(f,side) in PROPS.items():
+    im=sprites[k];s=side/max(im.size);sprites[k]=im.resize((max(1,round(im.width*s)),max(1,round(im.height*s))),Image.Resampling.LANCZOS)
     a=sprites[k].getchannel('A').point(lambda v:255 if v>110 else 0);sprites[k].putalpha(a)
 # Shelf packing, tallest first.
 W=1024;order=sorted(sprites,key=lambda k:-sprites[k].height);x=y=row=0;pos={}

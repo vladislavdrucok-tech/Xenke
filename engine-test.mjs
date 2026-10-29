@@ -41,7 +41,7 @@ function clearMobs(x,r=260,limit=30){down('attack');for(let i=0;i<limit*60;i++){
   if(Math.abs(d)>34){padSend('pointerdown',5,200);padSend('pointermove',5,d>0?260:140);}else padSend('pointerup',5,200);run(1/60);}
  padSend('pointerup',5,200);up('attack');assert.equal(mobsNear(x,r).length,0,`Mutants near ${x} must be defeated`);}
 function make(id){el('craft-btn').onclick();window.afterfall.pick(id);const button=el('craft-'+id);assert.equal(typeof button.onclick,'function',`Craft button ${id}`);button.onclick();el('resume-btn').onclick();}
-el('start-btn').onclick();el('hero-go').onclick();run(1);assert.equal(snap().player.ground,true);
+el("start-btn").onclick();el("hero-go").onclick();run(1);assert.equal(snap().player.ground,true);
 moveTo(520);
 // Chopping is a series of strikes: progress moves on each contact and the wood arrives on the last one, once.
 {down('action');up('action');run(.2);assert.equal(snap().work.hits,0,'Wind-up before the first contact');run(.12);assert.equal(snap().work.hits,1,'First contact');assert.equal(snap().state.inv.wood,0);
@@ -125,3 +125,13 @@ el('import-code').value='garbage';el('import-btn').onclick();assert.equal(el('im
 el('import-code').value=exportCode(other);el('import-btn').onclick();assert.equal(el('import-confirm').hidden,false);el('import-yes').onclick();listeners.pagehide();
 const saved=JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']);assert.equal(saved.inv.wood,42);assert.equal(saved.time,77);
 console.log('PASS: progress import through the pause menu, rejected garbage, not overwritten by pagehide autosave.');}
+// Atlases built by scripts/import-set22.py: every frame the game asks for exists, has a foot line and stays inside its image.
+{const {readFileSync}=await import('node:fs');const size=f=>{const b=readFileSync('dist/assets/'+f);const i=b.indexOf('VP8X');return i>0?[1+b.readUIntLE(i+12,3),1+b.readUIntLE(i+15,3)]:null;};
+ const heroes=(await import('./dist/assets/heroes.mjs')).default,mobs=(await import('./dist/assets/mobs-layout.mjs')).default,held=(await import('./dist/assets/held-layout.mjs')).default,props=(await import('./dist/assets/props-layout.mjs')).default;
+ for(const [id,h] of Object.entries(heroes)){assert.ok([8,27].includes(h.frames.length),`${id}: 8 or 27 frames`);assert.ok(h.unit>0);const [W,H]=size(`hero-${id}.webp`);
+  for(const f of h.frames){assert.ok(f.x+f.w<=W&&f.y+f.h<=H,`${id} frame inside the atlas`);assert.ok(f.foot>0&&f.foot<=f.h+1,`${id} foot line`);}}
+ assert.equal(heroes.einstein.frames.length,27,'Einstein has the full move, damage and pickaxe set');
+ const [MW,MH]=size('mobs.webp');for(const k of ['crawler','salamander','armadillo','deer']){assert.equal(mobs[k].frames.length,8,k);for(const f of mobs[k].frames)assert.ok(f.x+f.w<=MW&&f.y+f.h<=MH,`${k} frame inside mobs.webp`);}
+ for(const k of ['sword','axe','sling','torch','wrench'])assert.ok(held[k]?.len>0,k);
+ for(const k of ['stumpCut','oreSpent','crateOpen','soilClean','boulder','rubble','vaultDoor','beam'])assert.ok(props[k],k);
+ console.log('PASS: hero, mutant, held-item and object-state atlases complete and in bounds.');}

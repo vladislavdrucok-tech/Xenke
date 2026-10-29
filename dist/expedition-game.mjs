@@ -1,8 +1,10 @@
-import {SAVE_KEY,LEGACY_KEY,ITEMS,RECIPES,HEROES,freshState,parseSave,canCraft,craft,plant,quest,exportCode,importCode} from './expedition.mjs?v=7';
+import {SAVE_KEY,LEGACY_KEY,ITEMS,RECIPES,HEROES,freshState,parseSave,canCraft,craft,plant,quest,exportCode,importCode} from './expedition.mjs?v=8';
 import atlasLayout from './assets/atlas-layout.mjs';
 import itemLayout from './assets/items-layout.mjs';
 import extraHeroes from './assets/heroes.mjs';
 import propLayout from './assets/props-layout.mjs';
+import mobLayout from './assets/mobs-layout.mjs';
+import heldLayout from './assets/held-layout.mjs';
 import {icon} from './icons.mjs';
 import {bakeShellback} from './creatures.mjs';
 import {LANGS,t,setLang,getLang,detectLang} from './i18n.mjs';
@@ -22,9 +24,12 @@ const continuing=!!state;state=state||freshState();
 const GROUND=320,WORLD=2400,BASE=260,STEP=1/60,METRO=1420;
 // Hero perks. Only heroes with finished art are selectable; the rest wait for their sprite sheets.
 const HERO_ART={einstein:true,...Object.fromEntries(Object.keys(extraHeroes).map(k=>[k,true]))};
-let heroLoaded='einstein';
-// Sprite sheets imported with scripts/import-art.py replace Einstein's atlas for the chosen hero.
-async function loadHeroArt(id){if(heroLoaded===id||!extraHeroes[id]||typeof Image==='undefined')return;try{art.hero=await loadImage(`assets/hero-${id}.webp`);for(const k in rendered)if(k.startsWith('hero-'))delete rendered[k];atlases.hero=extraHeroes[id];atlases.heroMaxHeight=Math.max(...atlases.hero.map(a=>a.h));heroLoaded=id;}catch{}}
+let heroLoaded='';
+// Every hero's poses live in heroes.mjs (scripts/import-set22.py or import-art.py): unit = walking height in atlas pixels,
+// drawn 70 world units tall. 27 frames = moves + damage + pickaxe poses; 8 frames = the older single sheet.
+const heroId=id=>extraHeroes[id]?id:'einstein';
+function useHero(id,img){const d=extraHeroes[id];art.hero=img;atlases.hero=Array.isArray(d)?d:d.frames;atlases.heroMaxHeight=(d.unit||Math.max(...atlases.hero.map(a=>a.h))*.97)*72/70;for(const k in rendered)if(k.startsWith('hero'))delete rendered[k];heroLoaded=id;}
+async function loadHeroArt(id){id=heroId(id);if(heroLoaded===id||typeof Image==='undefined')return;try{useHero(id,await loadImage(`assets/hero-${id}.webp`));}catch{}}
 const PERK={einstein:{work:1.2},curie:{clean:2,armor:.85},tesla:{light:1.5,repair:true},darwin:{aggro:.65}};
 const perk=(k,d)=>PERK[state.hero]?.[k]??d;
 // The mine under the metro: three levels joined by ladders. Coordinates are the mine's own.
@@ -32,7 +37,7 @@ const MINEMAP={w:1400,h:900,floors:[{y:300,x1:46,x2:960},{y:560,x1:380,x2:1362},
  ladders:[{x:930,a:0,b:1},{x:1330,a:1,b:2}],exit:{x:74,f:0},ore:[{x:300,f:0},{x:820,f:1},{x:1180,f:1}],
  crates:[{x:560,f:0,loot:{can:2,cloth:1}},{x:770,f:2,loot:{medkit:1,scrap:1,ammo:5}}],panel:{x:1240,f:2},lift:{x:1336,f:2},
  lamps:[[150,0],[420,0],[700,0],[520,1],[1000,1],[1240,1],[860,2],[1100,2]]};
-const player={x:state.player.x,y:state.player.y,w:15,h:36,vx:0,vy:0,face:1,ground:false,walk:0,hurt:0,kb:0,floor:0,climb:null};
+const player={x:state.player.x,y:state.player.y,w:15,h:36,vx:0,vy:0,face:1,ground:false,walk:0,hurt:0,kb:0,floor:0,climb:null,hitT:0,getup:0,land:0};
 // The seed vault under the institute (mission 4): one hall, capsules on shelves, the crystal deer by the main door.
 const VAULT={w:1600,exit:90,caps:[650,900,1140],door:1370,deer:1180};
 if(state.scene==='mine'){player.floor=0;player.x=110;player.y=MINEMAP.floors[0].y-player.h;}
@@ -124,12 +129,14 @@ function spawnVaultMobs(){return state.seedvault.boss?[]:[makeMob('deer',VAULT.d
 const sceneArt={};let sceneBusy=false;
 function goScene(scene){if(sceneBusy)return;const p=sceneArt[scene];if(!p){enterScene(scene);return;}sceneBusy=true;toast(t('toast.loading'));
  p.then(()=>{prewarm(scene==='mine'?'mine':scene==='vault'?'vault':toneAt(METRO));}).catch(()=>{}).finally(()=>{sceneBusy=false;enterScene(scene);});}
-const PREWARM={city:['greenhouse','metro','stump','workbench','filter','generator','purifier','crate','fox'],garden:['greenhouse','metro','stump','workbench','filter','generator','purifier','crate','fox'],forest:['salamander','fox','crate','stump','purifier'],mine:['ore','crate','lift','armadillo'],vault:['lift','deer']};
-const SPENT={stump:1,crate:1,ore:1};
-function prewarm(tone){if(!art.props||typeof document==='undefined'||!document.createElement)return;for(const n of PREWARM[tone]||[]){const b=propLayout[n];if(!b)continue;graded(art.props,b.x,b.y,b.w,b.h,n,tone,FAR[n]||0);if(SPENT[n])graded(art.props,b.x,b.y,b.w,b.h,n+'~',tone,FAR[n]||0,true);}
- if(art.hero){graded(art.hero,0,0,art.hero.width,art.hero.height,'hero-'+heroLoaded,tone);heroRed();}
- // Hit and wind-up flashes of the scene's mutants, so the first fight does not stall on building them.
- for(const n of PREWARM[tone]||[])if(['salamander','armadillo','deer'].includes(n)){propTint(n,'#fff6e2');propTint(n,'#ff5a3c');}}
+const PREWARM={city:['greenhouse','metro','stump','workbench','filter','generator','purifier','crate','fox'],garden:['greenhouse','metro','stump','workbench','filter','generator','purifier','crate','fox'],forest:['fox','crate','stump','purifier','stumpCut','crateOpen','soilClean'],mine:['ore','oreSpent','crate','crateOpen','lift'],vault:['lift']};
+for(const k of ['city','garden'])PREWARM[k].push('stumpCut','crateOpen','boulder','rubble','vaultDoor','beam');
+// Mutants seen under each light, so their frames are tinted before the first encounter.
+const MOBS_AT={city:['crawler'],garden:['crawler'],forest:['salamander','crawler'],mine:['armadillo','crawler'],vault:['deer']};
+const SPENT={};
+function prewarm(tone){if(!art.props||typeof document==='undefined'||!document.createElement)return;for(const n of PREWARM[tone]||[]){const b=propLayout[n];if(!b)continue;graded(art.props,b.x,b.y,b.w,b.h,n,tone,FAR[n]||0);}
+ for(const n of MOBS_AT[tone]||[])if(art.mobs&&mobLayout[n]){mobArt(n,tone);mobTint(n,'#fff6e2');mobTint(n,'#ff5a3c');}
+ if(art.hero){graded(art.hero,0,0,art.hero.width,art.hero.height,'hero-'+heroLoaded,tone);heroRed();}}
 function prewarmLater(tones){const run=()=>{const t0=tones.shift();if(!t0)return;prewarm(t0);if(tones.length)(window.requestIdleCallback||setTimeout)(run,{timeout:2000});};(window.requestIdleCallback||setTimeout)(run,{timeout:2000});}
 function enterScene(scene){const prev=state.scene;sceneMobs[prev]=mobs;state.scene=scene;shots.length=0;effects.length=0;player.kb=0;player.vy=0;player.climb=null;player.floor=0;
  if(scene==='mine'){if(prev==='vault'){player.floor=2;player.x=MINEMAP.lift.x-36;}else player.x=110;player.y=MINEMAP.floors[player.floor].y-player.h;mobs=spawnMineMobs();
@@ -172,7 +179,7 @@ $('#new-btn').onclick=()=>$('#new-confirm').hidden=false;$('#new-no').onclick=()
 $('#new-btn').hidden=!continuing;
 function beginGame(){started=true;ui.welcome.hidden=true;$('#hero-select').hidden=true;$('#portrait').src=`assets/portrait-${HERO_ART[state.hero]?state.hero:'einstein'}.webp`;resetInput();sfx('craft');toast(t(continuing?'toast.back':'toast.welcome'));refreshHud();dirtyFrame=true;}
 ui['start-btn'].onclick=()=>{if(!assetsReady)return;initAudio();if(continuing)return beginGame();renderHeroes();ui.welcome.hidden=true;$('#hero-select').hidden=false;};
-$('#hero-go').onclick=()=>{state.hero=pickedHero;if(extraHeroes[state.hero]&&heroLoaded!==state.hero)loadHeroArt(state.hero).then(()=>prewarm(toneAt(player.x))).finally(beginGame);else beginGame();};
+$('#hero-go').onclick=()=>{state.hero=pickedHero;if(typeof Image!=='undefined'&&heroLoaded!==heroId(state.hero))loadHeroArt(state.hero).then(()=>prewarm(toneAt(player.x))).finally(beginGame);else beginGame();};
 const clock=s=>{s=Math.floor(s);return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;};
 // ---------- workbench ----------
 let craftCat='build',craftPick=null;
@@ -326,7 +333,7 @@ function hitMob(m,dmg,kb){const P=KIND[m.kind];m.hp-=dmg;m.flash=.12;m.kb=P.armo
  // Poise stops endless stun-locks; armoured shellbacks only flinch from the heavy third hit.
  if(m.poise<=0&&(P.armored?dmg>1:m.st==='windup'||dmg>1)){m.st='stagger';m.t=.45;m.poise=1.4;}
  if(m.hp<=0){m.dying=.9;m.st='dead';sfx('mob');if(m.kind==='deer'){state.seedvault.boss=true;save();toast(t('toast.deerDown'));refreshHud();return;}if(m.role==='guard')toast(t(m.kind==='crawler'?'toast.mutantDown':'toast.guardDown'));}}
-function hurtPlayer(m){if(downTime)return;const P=KIND[m.kind];state.stats.hp=Math.max(0,state.stats.hp-P.dmg*perk('armor',1));player.hurt=1.2;player.kb=(player.x<m.x?-1:1)*160;if(player.ground)player.vy=-80;if(prefs.effects)shake=.12;buzz(45);sfx('hurt');if(!bittenHint){bittenHint=true;toast(t('toast.bitten'));}}
+function hurtPlayer(m){if(downTime)return;const P=KIND[m.kind];state.stats.hp=Math.max(0,state.stats.hp-P.dmg*perk('armor',1));player.hurt=1.2;player.hitT=.28;player.kb=(player.x<m.x?-1:1)*160;if(player.ground)player.vy=-80;if(prefs.effects)shake=.12;buzz(45);sfx('hurt');if(!bittenHint){bittenHint=true;toast(t('toast.bitten'));}}
 function updateMobs(dt){
  for(const m of mobs){const P=KIND[m.kind];m.flash=Math.max(0,m.flash-dt);m.poise=Math.max(0,m.poise-dt);m.kb=Math.abs(m.kb)<4?0:m.kb*(1-8*dt);m.x+=m.kb*dt;m.x=Math.max(m.min,Math.min(m.max_x,m.x));
   if(m.st==='dead'){m.dying=Math.max(0,m.dying-dt);continue;}
@@ -348,9 +355,9 @@ function updateShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i];s.v
   if(gone)shots.splice(i,1);}}
 
 // ---------- simulation ----------
-function respawn(){state.stats.hp=80;if(inMine()||inVault())enterScene('surface');player.x=BASE;player.y=GROUND-player.h;player.kb=0;player.vy=0;prevX=renderX=player.x;for(const m of mobs)if(m.st!=='dead'&&m.role==='guard'){m.st='patrol';m.x=m.home;}player.hurt=1.5;toast(t('toast.respawn'));}
+function respawn(){state.stats.hp=80;if(inMine()||inVault())enterScene('surface');player.x=BASE;player.y=GROUND-player.h;player.kb=0;player.vy=0;prevX=renderX=player.x;for(const m of mobs)if(m.st!=='dead'&&m.role==='guard'){m.st='patrol';m.x=m.home;}player.hurt=1.5;player.getup=.5;player.hitT=0;toast(t('toast.respawn'));}
 function simulate(dt){if(!active())return;if(hitstop>0){hitstop-=dt;return;}
- if(downTime>0){downTime-=dt;effects.forEach(e=>{e.life-=dt;});if(downTime<=0){downTime=0;respawn();}return;}shake=Math.max(0,shake-dt);for(const k in nodeShake)nodeShake[k]=Math.max(0,nodeShake[k]-dt);for(let i=floats.length-1;i>=0;i--){floats[i].life-=dt;floats[i].y-=dt*16;if(floats[i].life<=0)floats.splice(i,1);}if(!state.forest.every(Boolean))state.time+=dt;player.hurt=Math.max(0,player.hurt-dt);
+ if(downTime>0){downTime-=dt;effects.forEach(e=>{e.life-=dt;});if(downTime<=0){downTime=0;respawn();}return;}shake=Math.max(0,shake-dt);for(const k in nodeShake)nodeShake[k]=Math.max(0,nodeShake[k]-dt);for(let i=floats.length-1;i>=0;i--){floats[i].life-=dt;floats[i].y-=dt*16;if(floats[i].life<=0)floats.splice(i,1);}if(!state.forest.every(Boolean))state.time+=dt;player.hurt=Math.max(0,player.hurt-dt);player.hitT=Math.max(0,player.hitT-dt);player.getup=Math.max(0,player.getup-dt);player.land=Math.max(0,player.land-dt);
  const right=moveAxis>0||keys.KeyD||keys.ArrowRight,left=moveAxis<0||keys.KeyA||keys.ArrowLeft,up=held.jump||keys.Space||keys.KeyW||keys.ArrowUp;
  // Ladders: climbing is automatic once started, so it needs no vertical stick on a phone.
  if(player.climb){const c=player.climb,dir=Math.sign(c.to-player.y);player.y+=dir*120*dt;player.walk+=dt*6;if((c.to-player.y)*dir<=0){player.y=c.to;player.floor=c.floor;player.climb=null;player.vy=0;player.ground=true;}targetNow=null;interaction={key:'',value:0};updateMobs(dt);updateShots(dt);uiClock+=dt;if(uiClock>=.25){refreshHud();refreshContext();uiClock=0;}return;}
@@ -367,7 +374,7 @@ function simulate(dt){if(!active())return;if(hitstop>0){hitstop-=dt;return;}
  else{if(!overlaps(player.x+dx,player.y))player.x+=dx;player.x=Math.max(24,Math.min(state.completed?WORLD-24:1550,player.x));
  player.ground=false;const nextY=player.y+player.vy*dt;if(player.vy>0&&overlaps(player.x,nextY)&&player.y+player.h<=obstacle.y+2){player.y=obstacle.y-player.h;player.vy=0;player.ground=true;}else player.y=nextY;
  if(player.y+player.h>=GROUND){player.y=GROUND-player.h;player.vy=0;player.ground=true;}else if(player.y+player.h<obstacle.y-1)player.ground=false;}
- if(player.ground&&!wasGround&&player.vy===0){squash=.13;burst(player.x,player.y+player.h-1,'#9c9378',3);sfx('land');}squash=Math.abs(squash)<.01?0:squash*(1-12*dt);
+ if(player.ground&&!wasGround&&player.vy===0){squash=.13;player.land=.1;burst(player.x,player.y+player.h-1,'#9c9378',3);sfx('land');}squash=Math.abs(squash)<.01?0:squash*(1-12*dt);
  // Combat timers; holding Strike keeps the combo going.
  atk.cool=Math.max(0,atk.cool-dt);atk.comboT=Math.max(0,atk.comboT-dt);sling.cool=Math.max(0,sling.cool-dt);sling.anim=Math.max(0,sling.anim-dt);if(slash){slash.life-=dt;if(slash.life<=0)slash=null;}
  if(atk.anim>0){atk.anim-=dt;if(!atk.hitDone&&atk.anim<=.14){atk.hitDone=true;resolveStrike();}}
@@ -430,10 +437,25 @@ function propTint(name,color){const key=name+color;if(rendered[key])return rende
 function tinted(src,sx,sy,w,h,color){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(src,sx,sy,w,h,0,0,w,h);g.globalCompositeOperation='source-atop';g.fillStyle=color;g.fillRect(0,0,w,h);return c;}
 function rect(x,y,w,h,color){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),w,h);}
 // One draw routine for every mutant: walk, red wind-up glow with a "!" marker, lunge, hit flash, sinking when beaten.
+// Mutant frames (mobs.webp): walk x4, idle, wind-up, attack, hit. Each kind is one block, graded per scene light.
+const MOB_ART={crawler:'crawler',shellback:'salamander',stoneback:'armadillo',deer:'deer'};
+function mobArt(n,tone){const b=mobLayout[n].box;return graded(art.mobs,b[0],b[1],b[2],b[3],'mob-'+n,tone);}
+function mobTint(n,color){const key='mob-'+n+color;if(rendered[key])return rendered[key];const b=mobLayout[n].box;return rendered[key]=tinted(art.mobs,b[0],b[1],b[2],b[3],color);}
+function mobFrame(m){if(m.st==='dead'||m.flash>0||m.st==='stagger')return 7;if(m.st==='windup')return 5;if(m.st==='lunge')return 6;
+ if(m.st==='recover')return m.kind==='deer'?7:4;   // the stag stands dazed after a charge: that is the opening to hit it
+ if(m.role==='raider'&&m.goal!==undefined&&Math.abs(m.x-m.goal)<=3)return m.bite>2.2?6:4;
+ return m.st==='patrol'||m.st==='chase'?Math.floor(m.walk)%4:4;}
 function drawMob(m){const P=KIND[m.kind];if(m.x<camera.x-P.width||m.x>camera.x+VW+P.width)return;
  const sink=m.st==='dead'?Math.round(P.height*(1-m.dying/.9)):0,wind=m.st==='windup',jit=wind&&Math.floor(now*30)%2?1:0,x=Math.round(m.x)+jit;
  ctx.save();if(sink){ctx.beginPath();ctx.rect(x-P.width,m.gy-P.height-30,P.width*2,P.height+31);ctx.clip();}
- if(P.sprite&&art.props&&propLayout[P.sprite]){
+ const n=MOB_ART[m.kind],L=art.mobs&&mobLayout[n];
+ if(L){const fi=mobFrame(m),f=L.frames[fi],b=L.box,kk=P.width/L.walk*(m.role==='raider'?.9:1),sx=f.x-b[0],sy=f.y-b[1];
+  if(!sink)drawShadow(x,m.gy+1,P.width*.85);ctx.translate(x+(m.st==='lunge'?m.dir*3:0),m.gy+1+sink);if(m.face>0)ctx.scale(-1,1);ctx.imageSmoothingEnabled=smoothFor(1/kk);
+  // The armadillo's attack frame is a ball: roll it about its centre as it travels.
+  if(n==='armadillo'&&fi===6){const r=f.h*kk/2;ctx.translate(0,-r);ctx.rotate(-(m.x*m.face)/r);ctx.translate(0,r);}
+  const dx=-f.ax*kk,dy=-f.fy*kk,dw=f.w*kk,dh=f.h*kk;ctx.drawImage(mobArt(n,toneAt(m.x)),sx,sy,f.w,f.h,dx,dy,dw,dh);
+  const over=m.flash>0&&prefs.effects?mobTint(n,'#fff6e2'):wind&&Math.floor(now*10)%2?mobTint(n,'#ff5a3c'):null;if(over){ctx.globalAlpha=.55;ctx.drawImage(over,sx,sy,f.w,f.h,dx,dy,dw,dh);}ctx.imageSmoothingEnabled=false;}
+ else if(P.sprite&&art.props&&propLayout[P.sprite]){
   // Single generated pose, animated in code: stride bob, crouch on wind-up, lean into the lunge. Sprites face left.
   const b=propLayout[P.sprite],w=P.width,h=b.h/b.w*w,moving=m.st==='patrol'||m.st==='chase',bob=moving?Math.round(Math.abs(Math.sin(m.walk*1.6))*-2):0,lean=m.st==='lunge'?-.09:m.st==='stagger'?.06:0,sq=wind?.94:1;
   if(!sink)drawShadow(x,m.gy+1,w*.9);const img=graded(art.props,b.x,b.y,b.w,b.h,P.sprite,toneAt(m.x));ctx.translate(x+(m.st==='lunge'?m.dir*4:0),m.gy+1+sink+bob);if(m.face>0)ctx.scale(-1,1);ctx.rotate(lean);ctx.scale(1/sq*.98+.02,sq);ctx.imageSmoothingEnabled=true;ctx.drawImage(img,0,0,b.w,b.h,-w/2,-h,w,h);
@@ -446,7 +468,10 @@ function drawMob(m){const P=KIND[m.kind];if(m.x<camera.x-P.width||m.x>camera.x+V
  if(m.hp>0&&m.hp<m.max){const by=m.gy-P.height-8;rect(m.x-15,by,30,3,'#120d09');rect(m.x-15,by,30*m.hp/m.max,2,m.kind==='shellback'?'#c99ae0':m.kind==='stoneback'?'#e0802c':m.kind==='deer'?'#9fe0ff':'#e6c48f');}}
 // What the hero holds: a sword near enemies and while striking, the slingshot when shooting, a lit torch underground.
 function stepLength(){const a=atlases.hero;if(!a)return 34;const k=72/atlases.heroMaxHeight,s=Math.max(...a.slice(0,4).map(f=>f.stride||0));return s?Math.max(22,s*.75*k):34;}
-function heldItem(working){if(player.climb||working)return null;if(sling.anim>0)return 'sling';if(atk.anim>0||nearestMob(120))return 'sword';if((inMine()||inVault())&&state.built.torch&&torchOn)return 'torch';return null;}
+// Which tool a job needs: pickaxe poses are drawn into the sheet, an axe goes in the empty hand, low jobs are done kneeling.
+function toolFor(tg){if(swingKind(tg))return tg.kind==='node'&&tg.node.type==='wood'?'axe':'pick';
+ if(tg.kind==='bed'||tg.kind==='river'||tg.kind==='crate'||tg.kind==='node')return 'kneel';return tg.kind==='panel'||tg.kind==='purify'||tg.kind==='clean'?'wrench':'';}
+function heldItem(working){if(player.climb)return null;if(working){const tl=toolFor(targetNow);return atlases.hero?.length>=27&&(tl==='axe'||tl==='wrench')?tl:null;}if(sling.anim>0)return 'sling';if(atk.anim>0||nearestMob(120))return 'sword';if((inMine()||inVault())&&state.built.torch&&torchOn)return 'torch';return null;}
 function bakeWeapons(){if(rendered.sword||typeof document==='undefined'||!document.createElement)return;
  // Sword at 4 px per world unit, blade pointing up, grip centre at (14,104).
  const c=document.createElement('canvas');c.width=28;c.height=120;const g=c.getContext('2d');
@@ -461,19 +486,36 @@ function bakeWeapons(){if(rendered.sword||typeof document==='undefined'||!docume
 // Angle of the sword (0 = blade up, positive = forward) through wind-up and strike.
 function swordAngle(){if(atk.anim<=0)return .45;const heavy=atk.heavy?1.25:1;if(atk.anim>.14){const p=(.22-atk.anim)/.08;return .45-p*2.35*heavy;}const p=1-atk.anim/.14,e=1-(1-p)*(1-p);return -1.9*heavy+e*(3.9*heavy);}
 function heroRed(){const k='heroRed-'+heroLoaded;return rendered[k]||(rendered[k]=tinted(art.hero,0,0,art.hero.width,art.hero.height,'#ff4630'));}
+// Axe through a chop: raised back on the wind-up, driven forward-down at contact, then lowered.
+function axeAngle(){const p=swing%1;if(p<CONTACT)return .6-(p/CONTACT)*2.5;if(p<.82)return 2.1;return 2.1-(p-.82)/.18*.9;}
 function drawHeld(item,a,k){const hx=-a.anchor*k+a.hand[0]*k,hy=-(a.foot??a.h)*k+a.hand[1]*k;ctx.save();ctx.translate(hx,hy);ctx.imageSmoothingEnabled=true;
- if(item==='sword'&&rendered.sword){ctx.rotate(swordAngle());ctx.drawImage(rendered.sword,-3.5,-26,7,30);}
+ const L=art.held&&heldLayout[item==='sling'?'sling':item];
+ if(L){const sc=L.len/L.h,ang=item==='sword'?swordAngle():item==='sling'?1.15:item==='torch'?.25:item==='axe'?axeAngle():item==='wrench'?.9+Math.sin(now*9)*.25:0;
+  ctx.rotate(ang);ctx.drawImage(art.held,L.x,L.y,L.w,L.h,-L.gx*sc,-L.gy*sc,L.w*sc,L.h*sc);
+  if(item==='torch'){const fl=Math.floor(now*14)%3,top=-L.gy*sc;ctx.globalAlpha=.55;rect(-2,top-1-fl,4,3+fl,'#ffe27a');ctx.globalAlpha=1;}}
+ else if(item==='sword'&&rendered.sword){ctx.rotate(swordAngle());ctx.drawImage(rendered.sword,-3.5,-26,7,30);}
  else if(item==='sling'&&rendered.sling){ctx.rotate(1.15);ctx.drawImage(rendered.sling,-3.5,-11.5,7,14);}
  else if(item==='torch'){ctx.rotate(.25);if(art.items&&itemLayout.index.torch!==undefined){const i=itemLayout.index.torch,c=itemLayout.cell;ctx.drawImage(art.items,(i%itemLayout.cols)*c,Math.floor(i/itemLayout.cols)*c,c,c,-8,-20,16,24);}else{rect(-1,-12,3,14,'#6b4a2c');}
   const fl=Math.floor(now*14)%3;ctx.globalAlpha=.9;rect(-2,-24-fl,5,6+fl,'#ff9a2e');rect(-1,-26-fl,3,4,'#ffe27a');ctx.globalAlpha=1;}
  ctx.restore();ctx.imageSmoothingEnabled=false;}
-function drawHero(){const working=(held.action||keys.KeyE||autoAction)&&targetNow,item=heldItem(working),ext=atlases.hero?.length>=16;
+// Full hero sheet (27 frames): 0-3 walk, 4-7 run, 8-11 climb, 12 idle, 13 wind-up, 14 strike, 15 jump, 16 hit, 17 falling back,
+// 18 lying, 19 kneel, 20 crouch, 21 take-off, 22 falling, 23 landing, 24-26 pickaxe idle / wind-up / strike.
+function heroFrame(working){const step=Math.floor(player.walk),p=swing%1;
+ if(downTime)return 1.6-downTime<.3?17:18;if(player.getup>0)return 19;if(player.hitT>0)return 16;
+ if(player.climb)return 8+step%4;if(!player.ground)return player.vy<-90?21:player.vy>90?22:15;
+ if(atk.anim>0)return atk.anim>.14?13:14;if(sling.anim>0)return 14;
+ if(working){const tl=toolFor(targetNow);if(tl==='pick')return p<CONTACT?25:p<.82?26:24;if(tl==='axe')return p<CONTACT?13:p<.82?14:12;return tl==='kneel'?19:12;}
+ if(player.land>0)return 23;if(player.vx)return (player.running?4:0)+step%4;return 12;}
+// Items stay in hand only in poses whose fist is where the item belongs (not while hit, fallen, kneeling or landing).
+const HOLDS=f=>f<=15||f===21;
+function drawHero(){const working=(held.action||keys.KeyE||autoAction)&&targetNow,full=atlases.hero?.length>=27;let item=heldItem(working),ext=!full&&atlases.hero?.length>=16;
  if(player.ground&&!player.climb)drawShadow(renderX,groundY()+1,30,.8);
- if(player.hurt>0&&player.hurt<1&&!downTime&&Math.floor(now*12)%2===0)return;
+ if(player.hurt>0&&player.hurt<1&&!downTime&&!player.getup&&Math.floor(now*12)%2===0)return;
  const walkF=i=>ext&&player.running?4+i%4:i%4,step=Math.floor(player.walk);
  // Climbing: a climb row in an extended sheet, otherwise alternate mirrored strides while hands-and-feet bob on the rungs.
  let frame,mirror=1,bob=0,lean=0;
- if(player.climb){if(ext)frame=8+step%4;else{frame=step%2?7:3;mirror=step%2?-1:1;bob=Math.round(Math.sin(player.walk*Math.PI)*2);}}
+ if(full){frame=heroFrame(working);if(!HOLDS(frame))item=null;}
+ else if(player.climb){if(ext)frame=8+step%4;else{frame=step%2?7:3;mirror=step%2?-1:1;bob=Math.round(Math.sin(player.walk*Math.PI)*2);}}
  else if(!player.ground)frame=ext?15:7;
  else if(atk.anim>0)frame=ext?(atk.anim>.14?13:14):3;
  else if(sling.anim>0)frame=ext?14:3;
@@ -481,12 +523,12 @@ function drawHero(){const working=(held.action||keys.KeyE||autoAction)&&targetNo
  else if(player.vx)frame=walkF(step);
  else frame=item?(ext?12:3):(ext?12:4);
  const a=atlases.hero?.[frame];if(!a)return;
- const k=72/atlases.heroMaxHeight;if(working&&!swingKind(targetNow))bob=Math.round(Math.sin(now*9));if(player.running&&player.ground)lean=.07;
+ const k=72/atlases.heroMaxHeight;if(working&&!swingKind(targetNow)&&frame!==19)bob=Math.round(Math.sin(now*9));if(player.running&&player.ground)lean=.07;
  // Hurt: lean back from the hit for a moment. Defeat: fall to the side (temporary until a fall frame exists).
- if(player.hurt>.95&&!downTime)lean=-.16;let fall=downTime?Math.min(1,(1.6-downTime)/.35):0;
+ if(player.hurt>.95&&!downTime&&!full)lean=-.16;let fall=downTime&&!full?Math.min(1,(1.6-downTime)/.35):0;
  const lunge=atk.anim>0&&atk.anim<=.14?player.face*3:0,face=player.face*mirror,img=graded(art.hero,0,0,art.hero.width,art.hero.height,'hero-'+heroLoaded,toneAt(player.x));
  const fy=(a.foot??a.h)*k;ctx.save();ctx.translate(Math.round(renderX)+lunge,Math.round(renderY+player.h)+bob);ctx.scale(face*(1+squash*.6),1-squash);ctx.rotate(lean+(atk.anim>0&&atk.anim<=.14?.05:0)-fall*1.45);
- ctx.imageSmoothingEnabled=true;ctx.drawImage(img,a.x,a.y,a.w,a.h,-a.anchor*k,-fy,a.w*k,a.h*k);if(player.hurt>1&&!downTime&&prefs.effects){ctx.globalAlpha=.45;ctx.drawImage(heroRed(),a.x,a.y,a.w,a.h,-a.anchor*k,-fy,a.w*k,a.h*k);ctx.globalAlpha=1;}if(item&&a.hand&&!downTime)drawHeld(item,a,k-0);ctx.restore();ctx.imageSmoothingEnabled=false;
+ ctx.imageSmoothingEnabled=true;ctx.drawImage(img,a.x,a.y,a.w,a.h,-a.anchor*k,-fy,a.w*k,a.h*k);if(player.hurt>1&&!downTime&&!player.getup&&prefs.effects){ctx.globalAlpha=.45;ctx.drawImage(heroRed(),a.x,a.y,a.w,a.h,-a.anchor*k,-fy,a.w*k,a.h*k);ctx.globalAlpha=1;}if(item&&a.hand&&!downTime)drawHeld(item,a,k-0);ctx.restore();ctx.imageSmoothingEnabled=false;
  // Rails in front of the climber make it read as being on the ladder, not floating beside it.
  if(player.climb){const x=Math.round(player.climb.x),y=Math.round(renderY);for(const dx of [-10,8]){rect(x+dx,y-6,3,player.h+10,'#5b3b22');rect(x+dx,y-6,1,player.h+10,'#8c6136');}for(let ry=y+((player.walk*9)%9)-6;ry<y+player.h;ry+=9)rect(x-9,Math.round(ry),18,2,'#8c6136');}}
 // Slash trail: a tapered bright arc in front of the hero; wider on the heavy third hit.
@@ -559,8 +601,8 @@ function paintMine(){const M=MINEMAP;
    ctx.drawImage(fade,F.x1-34-camera.x,top,60,wh);ctx.save();ctx.translate(F.x2+34-camera.x,top);ctx.scale(-1,1);ctx.drawImage(fade,0,0,60,wh);ctx.restore();ctx.save();ctx.translate(F.x1-34-camera.x,top);ctx.rotate(Math.PI/2);ctx.scale(1,-1);ctx.drawImage(fade,0,0,36,F.x2-F.x1+68);ctx.restore();});
   ctx.imageSmoothingEnabled=false;layer(rendered.mineFront);}
  ctx.save();ctx.translate(-camera.x,-camera.y);
- M.ore.forEach((o,i)=>{const y=M.floors[o.f].y,wob=nodeShake['ore-'+i]>0?Math.round(Math.sin(now*80)*1.5):0,x=o.x+wob;if(state.mine.ore[i]){if(art.props)drawProp('ore',x,y+2,46,false,1,.35,true);return;}if(art.props)return drawProp('ore',x,y+2,46);rect(x-16,y-26,32,26,'#3b332c');rect(x-14,y-28,26,4,'#4b4239');rect(x-16,y-26,2,26,'#5a5048');for(const [dx,dy,c] of [[-9,-20,'#e0802c'],[-2,-14,'#ffb36b'],[5,-22,'#c4621e'],[8,-9,'#e0802c'],[-11,-8,'#ffb36b'],[1,-6,'#c4621e']])rect(x+dx,y+dy,4,3,c);});
- M.crates.forEach((c,i)=>{const open=state.mine.crates[i];art.props?drawProp('crate',c.x,M.floors[c.f].y+1,36,false,1,open?.7:1,open):open||drawObject(2,c.x,M.floors[c.f].y,46);});
+ M.ore.forEach((o,i)=>{const y=M.floors[o.f].y,wob=nodeShake['ore-'+i]>0?Math.round(Math.sin(now*80)*1.5):0,x=o.x+wob;if(state.mine.ore[i]){if(art.props)drawProp('oreSpent',x,y+2,46);return;}if(art.props)return drawProp('ore',x,y+2,46);rect(x-16,y-26,32,26,'#3b332c');rect(x-14,y-28,26,4,'#4b4239');rect(x-16,y-26,2,26,'#5a5048');for(const [dx,dy,c] of [[-9,-20,'#e0802c'],[-2,-14,'#ffb36b'],[5,-22,'#c4621e'],[8,-9,'#e0802c'],[-11,-8,'#ffb36b'],[1,-6,'#c4621e']])rect(x+dx,y+dy,4,3,c);});
+ M.crates.forEach((c,i)=>{const open=state.mine.crates[i];art.props?drawProp(open?'crateOpen':'crate',c.x,M.floors[c.f].y+1,36):open||drawObject(2,c.x,M.floors[c.f].y,46);});
  drawProp('lift',M.lift.x-6,M.floors[M.lift.f].y+2,88);
  {const p=M.panel,y=M.floors[p.f].y,on=state.mine.panel;rect(p.x-12,y-62,24,34,'#46535a');rect(p.x-10,y-60,20,30,'#2c363b');rect(p.x-12,y-62,24,2,'#6f7f86');rect(p.x-6,y-56,4,4,on?'#6ad04a':'#e2483c');rect(p.x+2,y-56,4,4,on?'#6ad04a':'#5a2a24');rect(p.x-1,y-28,2,28,'#2c2c2c');if(!on&&Math.floor(now*7)%5===0){rect(p.x+8+Math.random()*6,y-40+Math.random()*10,2,2,'#ffe27a');}if(!on)for(let i=0;i<3;i++)rect(p.x-6+i*5,y-46,3,10,'#1a1f22');}
  for(const [x,f] of M.lamps){const y=M.floors[f].y-104;rect(x-2,y+3,4,5,state.mine.panel?'#ffe9a0':'#5a4a2a');}
@@ -602,21 +644,24 @@ function paint(){ctx.setTransform(scale,0,0,scale,0,0);if(inVault()){ctx.imageSm
   if(rendered.forestPlate){const P=rendered.forestPlate;blit(P.canvas,P.x,P.y,P.w,P.h);}ctx.imageSmoothingEnabled=false;}
  ctx.save();ctx.translate(-camera.x,-camera.y);
  if(!state.completed&&camera.x+VW>1510){rect(1545,GROUND-55,5,55,'#8e7d68');if(rendered.gate){ctx.imageSmoothingEnabled=true;ctx.drawImage(rendered.gate,1495,GROUND-54,100,18);ctx.imageSmoothingEnabled=false;}}
- for(let i=0;i<3;i++){const x=forestPatches[i];if(x<camera.x-90||x>camera.x+VW+90)continue;const clean=state.forest[i];rect(x-47,GROUND-5,94,7,clean?'#779968':'#785983');for(let j=0;j<8;j++){const xx=x-39+j*11,h=12+j%3*7;rect(xx,GROUND-h,3,h,clean?'#98bc7a':'#9774aa');rect(xx-3,GROUND-h,9,4,clean?'#c5df98':'#b090c6');}if(clean){art.props?drawProp('fox',x+24,GROUND+1,29,Math.sin(now*.7+i)<0):drawObject(6,x+24,GROUND,32);for(let j=0;j<3;j++){const bx=x-20+Math.sin(now*.9+j*2+i)*26,by=GROUND-30+Math.sin(now*1.7+j)*9;rect(bx-2,by,2,2,'#f7d36a');rect(bx,by,2,2,'#9fe0ff');}}
+ for(let i=0;i<3;i++){const x=forestPatches[i];if(x<camera.x-90||x>camera.x+VW+90)continue;const clean=state.forest[i];rect(x-47,GROUND-5,94,7,clean?'#779968':'#785983');if(clean&&art.props){drawProp('soilClean',x-22,GROUND+2,50);drawProp('soilClean',x+14,GROUND+2,44,true);}else for(let j=0;j<8;j++){const xx=x-39+j*11,h=12+j%3*7;rect(xx,GROUND-h,3,h,clean?'#98bc7a':'#9774aa');rect(xx-3,GROUND-h,9,4,clean?'#c5df98':'#b090c6');}if(clean){art.props?drawProp('fox',x+24,GROUND+1,29,Math.sin(now*.7+i)<0):drawObject(6,x+24,GROUND,32);for(let j=0;j<3;j++){const bx=x-20+Math.sin(now*.9+j*2+i)*26,by=GROUND-30+Math.sin(now*1.7+j)*9;rect(bx-2,by,2,2,'#f7d36a');rect(bx,by,2,2,'#9fe0ff');}}
   else if(interaction.key==='clean-'+i)drawProp('purifier',x-34,GROUND+2,52);}
  rect(camera.x,GROUND,Math.min(VW,WORLD-camera.x),2,'#8b9668');
  // The last greenhouse stands behind the three beds; equipment appears at the shelter as it is built.
  // Sizes follow the hero (68 units ≈ 1.75 m): doorways and cages are taller than a person, a workbench is waist-high.
  drawProp('greenhouse',GREENHOUSE_X,GROUND+3,300);drawProp('metro',METRO,GROUND+4,124);
  for(const n of nodes){if(n.x<camera.x-70||n.x>camera.x+VW+70)continue;const done=state.harvested[n.id],nx=n.x+(nodeShake[n.id]>0?Math.sin(now*80)*1.6:0);
-  if(art.props&&n.type==='wood')done?drawProp('stump',nx,GROUND+3,50,false,1,.42,true):drawProp('stump',nx,GROUND+3,50);
-  else if(art.props&&n.type==='scrap')done?drawProp('crate',nx,GROUND+2,36,false,1,.7,true):drawProp('crate',nx,GROUND+2,36);
+  // What remains after the job: a cut stump, an opened crate, a pile of rubble.
+  if(art.props&&n.type==='wood')done?drawProp('stumpCut',nx,GROUND+3,44):drawProp('stump',nx,GROUND+3,50);
+  else if(art.props&&n.type==='scrap')drawProp(done?'crateOpen':'crate',nx,GROUND+2,36);
+  else if(art.props)done?drawProp('rubble',nx,GROUND+2,38):drawProp('boulder',nx,GROUND+2,44);
   else if(!done)drawObject(n.art,nx,GROUND,n.type==='stone'?44:56);else{rect(nx-12,GROUND-4,9,4,'#5d5850');rect(nx+2,GROUND-3,7,3,'#4a463f');rect(nx-3,GROUND-6,6,6,'#6b665d');}}
  if(art.props){if(state.built.purifier&&!interaction.key.startsWith('clean'))drawProp('purifier',196,GROUND+2,52);if(state.built.bench)drawProp('workbench',262,GROUND+2,66);
   if(state.built.generator){drawProp('generator',326,GROUND+2,46);if(Math.floor(now*4)%2){rect(318,GROUND-26,3,2,'#ffd35a');}}if(state.built.filter){drawProp('filter',FILTER_X,GROUND+2,46);if(interaction.key==='purify')for(let i=0;i<3;i++)rect(FILTER_X+14,GROUND-22+((now*40+i*7)%16),1,2,'#9fd6e0');}}
  else{if(state.built.bench)drawObject(5,265,GROUND,72);if(state.built.filter)drawObject(4,345,GROUND,48);if(state.built.generator){rect(300,GROUND-24,16,23,'#495d58');rect(303,GROUND-20,10,5,'#d9bc74');rect(307,GROUND-12,2,7,'#d5e9a7');}}
- if(!state.vault){drawObject(3,1270,GROUND,54);rect(1247,GROUND-51,46,2,state.built.generator?'#c3e5a1':'#b99a76');}else{ctx.globalAlpha=.55;drawObject(3,1270,GROUND,54);ctx.globalAlpha=1;rect(1257,GROUND-40,26,40,'#0b0d10');}
- drawObject(0,1072,GROUND,47);
+ if(art.props){drawProp('vaultDoor',1270,GROUND+2,60);rect(1247,GROUND-53,46,2,state.vault?'#3a3f36':state.built.generator?'#c3e5a1':'#b99a76');if(state.vault)rect(1255,GROUND-41,32,40,'#0b0d10');}
+ else if(!state.vault){drawObject(3,1270,GROUND,54);rect(1247,GROUND-51,46,2,state.built.generator?'#c3e5a1':'#b99a76');}else{ctx.globalAlpha=.55;drawObject(3,1270,GROUND,54);ctx.globalAlpha=1;rect(1257,GROUND-40,26,40,'#0b0d10');}
+ art.props?drawProp('beam',1072,GROUND+2,42):drawObject(0,1072,GROUND,47);
  const grow=state.beds.filter(Boolean).length;
  for(let i=0;i<3;i++){const x=beds[i];rect(x-15,GROUND-4,30,5,'#856443');rect(x-12,GROUND-5,24,2,'#493d2d');if(state.beds[i]){for(let j=0;j<4;j++){const xx=x-10+j*7,height=15+(j%2)*9;rect(xx,GROUND-height,2,height-4,'#93b36e');rect(xx-4,GROUND-height+3,5,3,'#b2ce82');rect(xx+2,GROUND-height-1,5,3,'#c6dda1');rect(xx+1,GROUND-height-4,3,3,j%2?'#dcc17f':'#bccea1');}}}
  for(const m of mobs)drawMob(m);
@@ -649,7 +694,7 @@ async function boot(){
  sceneArt.mine=loadImage('assets/mine-wall.webp').then(img=>{art.mineWall=img;if(assetsReady)bakeMine();warmImage(img);dirtyFrame=true;});
  sceneArt.vault=loadImage('assets/vault-world.webp').then(img=>{art.vault=img;bakeVault();warmImage(img);});
  sceneArt.mine.catch(()=>{});sceneArt.vault.catch(()=>{});
- try{const loaded=await Promise.all([loadImage('assets/expedition-world.webp'),loadImage('assets/einstein-mobile.webp'),loadImage('assets/objects-mobile.webp'),loadImage('assets/props.webp').catch(()=>null)]);[art.environment,art.hero,art.objects,art.props]=loaded;atlases.hero=atlasLayout.hero;atlases.objects=atlasLayout.objects;atlases.heroMaxHeight=Math.max(...atlases.hero.map(a=>a.h));bakeBackground();
+ try{const loaded=await Promise.all([loadImage('assets/expedition-world.webp'),loadImage(`assets/hero-${heroId(state.hero)}.webp`),loadImage('assets/objects-mobile.webp'),loadImage('assets/props.webp').catch(()=>null),loadImage('assets/mobs.webp').catch(()=>null),loadImage('assets/held.webp').catch(()=>null)]);[art.environment,,art.objects,art.props,art.mobs,art.held]=loaded;useHero(heroId(state.hero),loaded[1]);atlases.objects=atlasLayout.objects;bakeBackground();
   try{rendered.shellback=bakeShellback();const sb=rendered.shellback;rendered.shellRed=tinted(sb.canvas,0,0,sb.w,sb.h,'#ff5a3c');rendered.stoneback=bakeShellback(document,'stone');rendered.stoneRed=tinted(rendered.stoneback.canvas,0,0,sb.w,sb.h,'#ff5a3c');const a=atlases.objects[7];rendered.mobWhite=tinted(art.objects,a.x,a.y,a.w,a.h,'#fff6e2');rendered.mobRed=tinted(art.objects,a.x,a.y,a.w,a.h,'#ff5a3c');}catch{}
   bakeMine();bakeWeapons();await loadHeroArt(state.hero);if(state.scene==='mine'&&sceneArt.mine)await sceneArt.mine.catch(()=>{});if(state.scene==='vault'&&sceneArt.vault)await sceneArt.vault.catch(()=>{});prewarm(state.scene==='surface'?toneAt(player.x):state.scene);if(state.scene==='surface'&&player.x<1560)prewarm(toneAt(300));assetsReady=true;ui['start-btn'].disabled=false;setText(ui['start-btn'],t(continuing?'menu.continue':'menu.start'));dirtyFrame=true;
   // Repaint the gate sign once the pixel font arrives, and fetch the forest after start-up.

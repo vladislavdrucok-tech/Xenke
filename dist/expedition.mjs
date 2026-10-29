@@ -42,7 +42,7 @@ export function quest(s){
   const m=s.mine,v=s.seedvault;
   if(m.panel){
    if(v.door)return Q(20,20,1370,{},null,'vault');
-   if(s.scene!=='vault')return Q(16,16,1336,{},null,'mine');
+   if(s.scene!=='vault')return Q(16,16,1170,{},null,'mine');
    const n=v.caps.filter(Boolean).length;
    if(n<3)return Q(17,17,[650,900,1140][v.caps.findIndex(c=>!c)],{n},null,'vault');
    if(!v.boss)return Q(18,18,1180,{},null,'vault');
@@ -51,7 +51,7 @@ export function quest(s){
   if(!s.built.torch)return Q(11,11,260,{},{wood:2,cloth:1});
   if(oreTotal<4&&m.ore.some(v=>!v))return s.scene==='mine'?Q(13,13,[300,820,1180][m.ore.findIndex(v=>!v)],{},{ore:4},'mine'):Q(12,12,1420);
   if(s.inv.wire<2)return Q(14,14,260,{},{ore:4,scrap:2,wire:2});
-  return Q(15,15,1240,{},{wire:2},'mine');
+  return Q(15,15,1260,{},{wire:2},'mine');
  }
  if(s.completed){
   if(!s.built.purifier)return Q(7,7,s.inv.scrap<6?1680:s.inv.water<2?(s.inv.dirty>=2?260:690):260,{},{scrap:6,cloth:1,water:2});

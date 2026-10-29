@@ -102,12 +102,14 @@ console.log('PASS: second mission, forest cache, purifier crafting, three cleans
  clearMobs(1080,300,40);moveTo(820);hold(2.8);moveTo(1180);hold(2.8);assert.equal(snap().state.inv.ore,6);
  moveTo(930);climb();assert.equal(snap().player.floor,0);moveTo(74);hold(.5);assert.equal(snap().state.scene,'surface');
  moveTo(260);make('wire');make('wire');assert.equal(snap().state.inv.wire,2);
- moveTo(1420);hold(.5);moveTo(930);climb();moveTo(1330);climb();assert.equal(snap().player.floor,2);clearMobs(1100,400,40);
- moveTo(1240);hold(3);assert.equal(snap().state.mine.panel,true,'Panel repaired with two wires');assert.equal(snap().state.inv.wire,0);assert.equal(quest(snap().state).step,16);
+ moveTo(1420);hold(.5);moveTo(930);climb();moveTo(1330);climb();assert.equal(snap().player.floor,2);
+ // The bottom ladder works both ways (it used to sit under the lift, which took the action button).
+ climb();assert.equal(snap().player.floor,1,'Ladder up from the bottom floor');climb();assert.equal(snap().player.floor,2);clearMobs(1100,400,40);
+ moveTo(1260);hold(3);assert.equal(snap().state.mine.panel,true,'Panel repaired with two wires');assert.equal(snap().state.inv.wire,0);assert.equal(quest(snap().state).step,16);
  run(1.5);assert.equal(el('win-dialog').open,true,'Third mission shows its win dialog');el('continue-btn').onclick();
  console.log('PASS: mission 3 — torch, metro door, mine ladders, ore, stone armadillo, wire crafting, panel repair, win dialog.');}
 // Mission 4: freight lift, cold without a torch, seed capsules, the crystal deer, the main vault door.
-{moveTo(1336);hold(.5);assert.equal(snap().state.scene,'vault','Lift leads to the seed vault');
+{moveTo(1170);hold(.5);assert.equal(snap().state.scene,'vault','Lift leads to the seed vault');
  window.afterfall.useHot('torch');const hpCold=snap().state.stats.hp;run(3);assert.ok(snap().state.stats.hp<hpCold-1,'Cold drains health without a torch');window.afterfall.useHot('torch');
  moveTo(650);hold(1.7);moveTo(900);hold(1.7);assert.deepEqual(snap().state.seedvault.caps,[true,true,false]);
  moveTo(1370);hold(2.6);assert.equal(snap().state.seedvault.door,false,'Door stays shut while the deer guards it');
@@ -116,7 +118,7 @@ console.log('PASS: second mission, forest cache, purifier crafting, three cleans
  assert.equal(el('win-dialog').open,true,'Fourth mission shows its win dialog');el('continue-btn').onclick();
  moveTo(90);hold(.5);assert.equal(snap().state.scene,'mine','Lift returns to the mine');assert.equal(snap().player.floor,2);
  // Defeat: freezing without a torch knocks the hero out, then they wake at the shelter with health restored.
- moveTo(1336);hold(.5);window.afterfall.useHot('torch');let wasDown=false;for(let i=0;i<200*60&&snap().state.scene!=='surface';i++){run(1/60);wasDown=wasDown||snap().player.down;}
+ moveTo(1170);hold(.5);window.afterfall.useHot('torch');let wasDown=false;for(let i=0;i<200*60&&snap().state.scene!=='surface';i++){run(1/60);wasDown=wasDown||snap().player.down;}
  assert.ok(wasDown,'Hero falls down at 0 health');assert.equal(snap().state.scene,'surface');assert.equal(snap().state.stats.hp>=79,true);window.afterfall.useHot('torch');
  console.log('PASS: mission 4 — lift to the vault, cold without torch, capsules, crystal deer boss, main door, lift back.');}
 globalThis.location={reload(){}};el('reset-yes').onclick();listeners.pagehide();assert.equal(JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']).completed,false);assert.equal(JSON.parse(localStorage.data['afterfall-last-greenhouse-v3']).time,0);console.log('PASS: resetting cannot be overwritten by pagehide autosave.');

@@ -1,4 +1,4 @@
-import {SAVE_KEY,LEGACY_KEY,ITEMS,RECIPES,HEROES,freshState,parseSave,canCraft,craft,plant,quest,exportCode,importCode} from './expedition.mjs?v=8';
+import {SAVE_KEY,LEGACY_KEY,ITEMS,RECIPES,HEROES,freshState,parseSave,canCraft,craft,plant,quest,exportCode,importCode} from './expedition.mjs?v=9';
 import atlasLayout from './assets/atlas-layout.mjs';
 import itemLayout from './assets/items-layout.mjs';
 import extraHeroes from './assets/heroes.mjs';
@@ -33,9 +33,10 @@ async function loadHeroArt(id){id=heroId(id);if(heroLoaded===id||typeof Image===
 const PERK={einstein:{work:1.2},curie:{clean:2,armor:.85},tesla:{light:1.5,repair:true},darwin:{aggro:.65}};
 const perk=(k,d)=>PERK[state.hero]?.[k]??d;
 // The mine under the metro: three levels joined by ladders. Coordinates are the mine's own.
+// Things you can use on one floor stay apart (ladder 1330, panel 1260, lift 1170), so the action button never offers the wrong one.
 const MINEMAP={w:1400,h:900,floors:[{y:300,x1:46,x2:960},{y:560,x1:380,x2:1362},{y:820,x1:700,x2:1362}],
  ladders:[{x:930,a:0,b:1},{x:1330,a:1,b:2}],exit:{x:74,f:0},ore:[{x:300,f:0},{x:820,f:1},{x:1180,f:1}],
- crates:[{x:560,f:0,loot:{can:2,cloth:1}},{x:770,f:2,loot:{medkit:1,scrap:1,ammo:5}}],panel:{x:1240,f:2},lift:{x:1336,f:2},
+ crates:[{x:560,f:0,loot:{can:2,cloth:1}},{x:770,f:2,loot:{medkit:1,scrap:1,ammo:5}}],panel:{x:1260,f:2},lift:{x:1170,f:2},
  lamps:[[150,0],[420,0],[700,0],[520,1],[1000,1],[1240,1],[860,2],[1100,2]]};
 const player={x:state.player.x,y:state.player.y,w:15,h:36,vx:0,vy:0,face:1,ground:false,walk:0,hurt:0,kb:0,floor:0,climb:null,hitT:0,getup:0,land:0};
 // The seed vault under the institute (mission 4): one hall, capsules on shelves, the crystal deer by the main door.
@@ -139,7 +140,7 @@ function prewarm(tone){if(!art.props||typeof document==='undefined'||!document.c
  if(art.hero){graded(art.hero,0,0,art.hero.width,art.hero.height,'hero-'+heroLoaded,tone);heroRed();}}
 function prewarmLater(tones){const run=()=>{const t0=tones.shift();if(!t0)return;prewarm(t0);if(tones.length)(window.requestIdleCallback||setTimeout)(run,{timeout:2000});};(window.requestIdleCallback||setTimeout)(run,{timeout:2000});}
 function enterScene(scene){const prev=state.scene;sceneMobs[prev]=mobs;state.scene=scene;shots.length=0;effects.length=0;player.kb=0;player.vy=0;player.climb=null;player.floor=0;
- if(scene==='mine'){if(prev==='vault'){player.floor=2;player.x=MINEMAP.lift.x-36;}else player.x=110;player.y=MINEMAP.floors[player.floor].y-player.h;mobs=spawnMineMobs();
+ if(scene==='mine'){if(prev==='vault'){player.floor=2;player.x=MINEMAP.lift.x+40;}else player.x=110;player.y=MINEMAP.floors[player.floor].y-player.h;mobs=spawnMineMobs();
   if(prev!=='vault'){toast(t('toast.enterMine'));if(!state.built.torch||!torchOn){darkHint=true;setTimeout(()=>toast(t('toast.dark')),1600);}}}
  else if(scene==='vault'){player.x=VAULT.exit+40;player.y=GROUND-player.h;mobs=spawnVaultMobs();coldHint=false;toast(t('toast.enterVault'));if(mobs.length)setTimeout(()=>toast(t('toast.deer')),2200);}
  else{player.x=METRO+30;player.y=GROUND-player.h;mobs=sceneMobs.surface;toast(t('toast.surface'));}

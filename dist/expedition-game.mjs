@@ -1,4 +1,4 @@
-import {SAVE_KEY,LEGACY_KEY,ITEMS,RECIPES,HEROES,freshState,parseSave,canCraft,craft,plant,quest,exportCode,importCode} from './expedition.mjs?v=9';
+import {SAVE_KEY,LEGACY_KEY,ITEMS,RECIPES,HEROES,freshState,newGame,inPrologue,STORY,BUNKER,STATION,CHESTS,parseSave,canCraft,craft,plant,quest,exportCode,importCode} from './expedition.mjs?v=10';
 import atlasLayout from './assets/atlas-layout.mjs';
 import itemLayout from './assets/items-layout.mjs';
 import extraHeroes from './assets/heroes.mjs';
@@ -17,10 +17,10 @@ const attr=(el,k,v)=>el?.setAttribute?.(k,v);
 $$('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
 // Item art comes from items.webp (cut from the owner's concepts); a few items fall back to pixel SVG icons.
 const ITEM_ART={wood:'wood',stone:'stone',scrap:'scrap',cloth:'cloth',seed:'seed',dirty:'canteen',water:'bottle',planter:'planter',ore:'ore',wire:'rope',medkit:'medkit',can:'can',ammo:'stone',torch:'torch',
- bench:'workbench',filter:'filter',generator:'generator',purifier:'purifier',crate:'crate',pick:'pickaxe',bag:'bag',capsule:'capsule',flashlight:'flashlight'};
+ bench:'workbench',filter:'filter',generator:'generator',purifier:'purifier',crate:'crate',pick:'pickaxe',bag:'bag',capsule:'capsule',flashlight:'flashlight',repair:'gear'};
 function itemIcon(id,cls=''){const k=ITEM_ART[id],i=itemLayout.index[k];if(i===undefined)return `<span class="ico svg ${cls}">${icon(id==='meal'?'berry':id)}</span>`;const c=itemLayout.cols,r=itemLayout.rows;return `<span class="ico ${cls}" style="background-position:${(i%c)*100/(c-1)}% ${Math.floor(i/c)*100/(r-1)}%"></span>`;}
 let state;try{state=parseSave(localStorage.getItem(SAVE_KEY)||localStorage.getItem(LEGACY_KEY));}catch{}
-const continuing=!!state;state=state||freshState();
+const continuing=!!state;state=state||newGame();
 const GROUND=320,WORLD=2400,BASE=260,STEP=1/60,METRO=1420;
 // Hero perks. Only heroes with finished art are selectable; the rest wait for their sprite sheets.
 const HERO_ART={einstein:true,...Object.fromEntries(Object.keys(extraHeroes).map(k=>[k,true]))};
@@ -107,6 +107,8 @@ const nodes=[
  {id:'logs-b',type:'wood',x:800,time:2.4,art:0,reward:{wood:10}},
  {id:'supplies',type:'scrap',x:915,time:3.2,art:2,reward:{scrap:8,cloth:3,fuse:1}},
  {id:'forest-cache',type:'scrap',x:1680,time:2.8,art:2,reward:{scrap:8,cloth:2,stone:3}},
+ // Chests on the road from the metro (prologue): opened once, then they stay open.
+ ...CHESTS.map(c=>({id:c.id,type:'scrap',x:c.x,time:.9,art:2,reward:c.loot,chest:true})),
 ];
 const forestPatches=[1810,2040,2260];
 const beds=[410,450,490],obstacle={x:1056,y:306,w:32,h:14};
@@ -120,7 +122,8 @@ const KIND={
 // Each scene keeps its own mutants; gy is the floor a mutant stands on.
 let mobs=[],mobSeq=0,forestGuard=false,bittenHint=false;const sceneMobs={surface:mobs,mine:[]};
 function makeMob(kind,x,opt={}){return {id:++mobSeq,kind,x,home:x,gy:opt.gy??GROUND,dir:-1,face:-1,hp:opt.hp||3,max:opt.hp||3,role:opt.role||'guard',min:opt.min??0,max_x:opt.max??WORLD,goal:opt.goal,st:'patrol',t:0,poise:0,flash:0,walk:0,dying:0,kb:0,bite:0,hitPlayer:false};}
-mobs.push(makeMob('crawler',1140,{hp:3,min:1100,max:1300}));
+// The road is quiet during the prologue; the mutant appears once it is over.
+if(!inPrologue(state))mobs.push(makeMob('crawler',1140,{hp:3,min:1100,max:1300}));
 function spawnMineMobs(){const F=MINEMAP.floors;return [makeMob('stoneback',1080,{hp:8,gy:F[1].y,min:960,max:1290}),makeMob('crawler',980,{hp:4,gy:F[2].y,min:820,max:1150})];}
 // Doors swap the whole scene: player position, mutants, music and lighting.
 function spawnVaultMobs(){return state.seedvault.boss?[]:[makeMob('deer',VAULT.deer,{hp:18,min:960,max:1520})];}
@@ -130,19 +133,23 @@ function spawnVaultMobs(){return state.seedvault.boss?[]:[makeMob('deer',VAULT.d
 const sceneArt={};let sceneBusy=false;
 function goScene(scene){if(sceneBusy)return;const p=sceneArt[scene];if(!p){enterScene(scene);return;}sceneBusy=true;toast(t('toast.loading'));
  p.then(()=>{prewarm(scene==='mine'?'mine':scene==='vault'?'vault':toneAt(METRO));}).catch(()=>{}).finally(()=>{sceneBusy=false;enterScene(scene);});}
-const PREWARM={city:['greenhouse','metro','stump','workbench','filter','generator','purifier','crate','fox'],garden:['greenhouse','metro','stump','workbench','filter','generator','purifier','crate','fox'],forest:['fox','crate','stump','purifier','stumpCut','crateOpen','soilClean'],mine:['ore','oreSpent','crate','crateOpen','lift'],vault:['lift']};
+const PREWARM={bunker:['crate'],city:['greenhouse','metro','stump','workbench','filter','generator','purifier','crate','fox'],garden:['greenhouse','metro','stump','workbench','filter','generator','purifier','crate','fox'],forest:['fox','crate','stump','purifier','stumpCut','crateOpen','soilClean'],mine:['ore','oreSpent','crate','crateOpen','lift'],vault:['lift']};
 for(const k of ['city','garden'])PREWARM[k].push('stumpCut','crateOpen','boulder','rubble','vaultDoor','beam');
 // Mutants seen under each light, so their frames are tinted before the first encounter.
 const MOBS_AT={city:['crawler'],garden:['crawler'],forest:['salamander','crawler'],mine:['armadillo','crawler'],vault:['deer']};
 const SPENT={};
 function prewarm(tone){if(!art.props||typeof document==='undefined'||!document.createElement)return;for(const n of PREWARM[tone]||[]){const b=propLayout[n];if(!b)continue;graded(art.props,b.x,b.y,b.w,b.h,n,tone,FAR[n]||0);}
  for(const n of MOBS_AT[tone]||[])if(art.mobs&&mobLayout[n]){mobArt(n,tone);mobTint(n,'#fff6e2');mobTint(n,'#ff5a3c');}
- if(art.hero){graded(art.hero,0,0,art.hero.width,art.hero.height,'hero-'+heroLoaded,tone);heroRed();}}
+ if(art.hero){graded(art.hero,0,0,art.hero.width,art.hero.height,'hero-'+heroLoaded,tone);heroRed();}
+ if(art.mira&&state.story)graded(art.mira,0,0,art.mira.width,art.mira.height,'mira',tone);}
 function prewarmLater(tones){const run=()=>{const t0=tones.shift();if(!t0)return;prewarm(t0);if(tones.length)(window.requestIdleCallback||setTimeout)(run,{timeout:2000});};(window.requestIdleCallback||setTimeout)(run,{timeout:2000});}
-function enterScene(scene){const prev=state.scene;sceneMobs[prev]=mobs;state.scene=scene;shots.length=0;effects.length=0;player.kb=0;player.vy=0;player.climb=null;player.floor=0;
+function enterScene(scene){const prev=state.scene;sceneMobs[prev]=mobs;state.scene=scene;shots.length=0;effects.length=0;player.kb=0;player.vy=0;player.climb=null;player.floor=0;if(state.story)flushTalk();
  if(scene==='mine'){if(prev==='vault'){player.floor=2;player.x=MINEMAP.lift.x+40;}else player.x=110;player.y=MINEMAP.floors[player.floor].y-player.h;mobs=spawnMineMobs();
   if(prev!=='vault'){toast(t('toast.enterMine'));if(!state.built.torch||!torchOn){darkHint=true;setTimeout(()=>toast(t('toast.dark')),1600);}}}
  else if(scene==='vault'){player.x=VAULT.exit+40;player.y=GROUND-player.h;mobs=spawnVaultMobs();coldHint=false;toast(t('toast.enterVault'));if(mobs.length)setTimeout(()=>toast(t('toast.deer')),2200);}
+ else if(scene==='bunker'){player.x=BUNKER.capsule;player.y=GROUND-player.h;mobs=[];}
+ // Out of the bunker's hatch and up through the metro: the road to the Station starts at the metro entrance.
+ else if(prev==='bunker'){player.x=METRO-28;player.face=-1;player.y=GROUND-player.h;mobs=sceneMobs.surface;state.story.out=true;mira.x=METRO+16;sceneTitle(2);say('road');}
  else{player.x=METRO+30;player.y=GROUND-player.h;mobs=sceneMobs.surface;toast(t('toast.surface'));}
  prevX=renderX=player.x;prevY=renderY=player.y;sfx('land');save();refreshHud();dirtyFrame=true;}
 if(state.scene==='vault')mobs=spawnVaultMobs();
@@ -174,18 +181,20 @@ $('#copy-code').onclick=()=>{const area=$('#export-code'),manual=()=>{area.focus
 $('#import-btn').onclick=()=>{pendingImport=importCode($('#import-code').value);if(!pendingImport){$('#import-confirm').hidden=true;transferNote('transfer.bad');return;}const q=quest(pendingImport);setText($('#import-summary'),t('transfer.found',{quest:t(q.title,q.params),time:clock(pendingImport.time)}));$('#import-confirm').hidden=false;transferNote('');};
 $('#import-no').onclick=()=>{pendingImport=null;$('#import-confirm').hidden=true;};
 $('#import-yes').onclick=()=>{if(!pendingImport)return;started=false;state=pendingImport;try{localStorage.setItem(SAVE_KEY,JSON.stringify(pendingImport));}catch{transferNote('transfer.fail');return;}location.reload();};
-function wipe(){started=false;state=freshState();try{localStorage.setItem(SAVE_KEY,JSON.stringify(freshState()));}catch{}location.reload();}
+function wipe(){started=false;state=newGame();try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch{}location.reload();}
 $('#reset-btn').onclick=()=>$('#reset-confirm').hidden=false;$('#reset-no').onclick=()=>$('#reset-confirm').hidden=true;$('#reset-yes').onclick=wipe;
 $('#new-btn').onclick=()=>$('#new-confirm').hidden=false;$('#new-no').onclick=()=>$('#new-confirm').hidden=true;$('#new-yes').onclick=wipe;
 $('#new-btn').hidden=!continuing;
-function beginGame(){started=true;ui.welcome.hidden=true;$('#hero-select').hidden=true;$('#portrait').src=`assets/portrait-${HERO_ART[state.hero]?state.hero:'einstein'}.webp`;resetInput();sfx('craft');toast(t(continuing?'toast.back':'toast.welcome'));refreshHud();dirtyFrame=true;}
-ui['start-btn'].onclick=()=>{if(!assetsReady)return;initAudio();if(continuing)return beginGame();renderHeroes();ui.welcome.hidden=true;$('#hero-select').hidden=false;};
+function beginGame(){started=true;syncCalm();ui.welcome.hidden=true;$('#hero-select').hidden=true;$('#portrait').src=`assets/portrait-${HERO_ART[state.hero]?state.hero:'einstein'}.webp`;resetInput();sfx('craft');if(inPrologue(state))startPrologue();else toast(t(continuing?'toast.back':'toast.welcome'));refreshHud();dirtyFrame=true;}
+ui['start-btn'].onclick=()=>{if(!assetsReady)return;initAudio();if(continuing||inPrologue(state))return beginGame();renderHeroes();ui.welcome.hidden=true;$('#hero-select').hidden=false;};
 $('#hero-go').onclick=()=>{state.hero=pickedHero;if(typeof Image!=='undefined'&&heroLoaded!==heroId(state.hero))loadHeroArt(state.hero).then(()=>prewarm(toneAt(player.x))).finally(beginGame);else beginGame();};
 const clock=s=>{s=Math.floor(s);return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;};
 // ---------- workbench ----------
 let craftCat='build',craftPick=null;
 function renderCraft(){const near=nearBase();setText(ui['station-note'],t(near?'craft.near':'craft.far'));
- const list=RECIPES.filter(r=>r.cat===craftCat);if(!list.some(r=>r.id===craftPick))craftPick=(list.find(r=>!canCraft(state,r,near))||list.find(r=>canCraft(state,r,near)!=='reason.done')||list[0]).id;
+ // During the prologue the workbench offers only the repair unit; afterwards story recipes stay hidden.
+ const pro=inPrologue(state);if(pro)craftCat='build';for(const b of $$('#craft-tabs [data-cat]'))b.hidden=pro&&b.dataset.cat!=='build';
+ const list=RECIPES.filter(r=>r.cat===craftCat&&(pro?r.story:!r.story||state.built[r.id]));if(!list.some(r=>r.id===craftPick))craftPick=(list.find(r=>!canCraft(state,r,near))||list.find(r=>canCraft(state,r,near)!=='reason.done')||list[0]).id;
  for(const b of $$('#craft-tabs [data-cat]'))attr(b,'aria-selected',String(b.dataset.cat===craftCat));
  $('#craft-badge').innerHTML=itemIcon('bench','big');
  ui.recipes.innerHTML=list.map(r=>{const reason=canCraft(state,r,near);return `<button class="recipe-row ${r.id===craftPick?'sel':''} ${reason==='reason.done'?'done':''} ${reason?'':'ready'}" data-pick="${r.id}">${itemIcon(r.id)}<span>${t('recipe.'+r.id)}</span>${reason==='reason.done'?'<i class="tick">✓</i>':''}</button>`;}).join('');
@@ -193,7 +202,7 @@ function renderCraft(){const near=nearBase();setText(ui['station-note'],t(near?'
  $('#recipe-detail').innerHTML=`<h3>${t('recipe.'+r.id)}</h3><div class="detail-main"><div class="detail-art">${itemIcon(r.id,'huge')}</div><div class="needs">${Object.entries(r.cost).map(([k,v])=>`<div class="need ${state.inv[k]>=v?'ok':''}">${itemIcon(k)}<span>${t(ITEMS[k])}</span><b>${state.inv[k]}/${v}</b><i>${state.inv[k]>=v?'✓':'✕'}</i></div>`).join('')}</div></div><p>${t('recipe.'+r.id+'.d')}</p><button class="px-btn gold big craft-action" data-craft="${r.id}" ${reason?'disabled':''}>${t(reason||'craft.make')}</button>`;
  $('#craft-inv').innerHTML=['wood','stone','scrap','cloth','seed','ore','wire','water'].map(k=>`<span class="slot" title="${t(ITEMS[k])}">${itemIcon(k)}<em>${state.inv[k]}</em></span>`).join('');
  $$('[data-pick]').forEach(b=>b.onclick=()=>{craftPick=b.dataset.pick;craftCat=RECIPES.find(r=>r.id===craftPick).cat;sfx('click');renderCraft();});
- $$('[data-craft]').forEach(b=>b.onclick=()=>{const id=b.dataset.craft;if(!craft(state,id,nearBase()))return;sfx('craft');buzz(10);refreshHud();renderCraft();dirtyFrame=true;toast(t('craft.done.'+id));});}
+ $$('[data-craft]').forEach(b=>b.onclick=()=>{const id=b.dataset.craft;if(!craft(state,id,nearBase()))return;sfx('craft');buzz(10);refreshHud();renderCraft();dirtyFrame=true;toast(t('craft.done.'+id));if(id==='repair'){save();say('made');}});}
 for(const b of $$('#craft-tabs [data-cat]'))b.onclick=()=>{craftCat=b.dataset.cat;craftPick=null;sfx('click');renderCraft();};
 // ---------- hotbar ----------
 const HOT=[{id:'torch',art:'torch',label:'hot.torch'},{id:'water',art:'water',label:'hot.water'},{id:'food',art:'can',label:'hot.food'},{id:'medkit',art:'medkit',label:'hot.medkit'},{id:'sling',art:'ammo',label:'hot.sling'}];
@@ -214,7 +223,7 @@ function renderHeroes(){const box=$('#hero-cards');if(!box)return;box.innerHTML=
 function renderInventory(){ui.inventory.innerHTML='<div class="inventory-grid">'+Object.entries(ITEMS).map(([k,key])=>`<div class="inv-item ${state.inv[k]?'':'zero'}">${itemIcon(k,'big')}<b>${state.inv[k]}</b><span>${t(key)}</span></div>`).join('')+'</div>';ui['drink-btn'].disabled=state.inv.water<1;ui['eat-btn'].disabled=state.inv.berry<2;}
 ui['drink-btn'].onclick=()=>{if(state.inv.water<1)return;state.inv.water--;state.stats.thirst=Math.min(100,state.stats.thirst+45);sfx('water');renderInventory();refreshHud();toast(t('toast.drink'));};
 ui['eat-btn'].onclick=()=>{if(craft(state,'meal')){sfx('gain');renderInventory();refreshHud();toast(t('toast.meal'));}};
-function fillWin(stage){winStage=stage;const k='win'+stage;setText($('#win-eyebrow'),t(k+'.eyebrow'));setText($('#win-title'),t(k+'.title'));setText($('#win-text'),t(k+'.text'));setText($('#win-label'),t(k+'.stat'));setText($('#win-note'),t(k+'.note'));setText($('#win-value'),stage===1?clock(state.time):stage===3?String(state.mine.ore.filter(Boolean).length*2):'3 / 3');}
+function fillWin(stage){winStage=stage;const k='win'+stage;setText($('#win-eyebrow'),t(k+'.eyebrow'));setText($('#win-title'),t(k+'.title'));setText($('#win-text'),t(k+'.text'));setText($('#win-label'),t(k+'.stat'));setText($('#win-note'),t(k+'.note'));setText($('#win-value'),stage===1||stage===5?clock(state.time):stage===3?String(state.mine.ore.filter(Boolean).length*2):'3 / 3');}
 function showWin(stage){fillWin(stage);sfx('win');openSheet('win-dialog');}
 
 // ---------- HUD ----------
@@ -230,7 +239,8 @@ function refreshHud(){
  // A new quest step opens the ribbon for a few seconds, then it folds back to one line.
  if(q.title!==lastQuestKey){lastQuestKey=q.title;ui.quest.classList.remove('collapsed');attr($('#quest-toggle'),'aria-expanded','true');questOpenUntil=now+8;}
  else if(questOpenUntil&&now>questOpenUntil&&started){questOpenUntil=0;ui.quest.classList.add('collapsed');attr($('#quest-toggle'),'aria-expanded','false');}
- setText(ui.restored,state.completed?t('hud.forest',{n:state.forest.filter(Boolean).length}):t('hud.greenhouse',{n:state.beds.filter(Boolean).length}));
+// In the prologue the corner shows which scene you are in instead of the greenhouse counter.
+ setText(ui.restored,inPrologue(state)?t('scene.'+(inBunker()?1:state.story.station?3:2)).split(' · ')[0]:state.completed?t('hud.forest',{n:state.forest.filter(Boolean).length}):t('hud.greenhouse',{n:state.beds.filter(Boolean).length}));
  setText(ui.day,'⏱ '+clock(state.time));const dx=q.x-player.x;setText(ui.waypoint,Math.abs(dx)<60?'◆ '+t('hud.near'):`${dx>0?'→':'←'} ${t('hud.dist',{n:Math.round(Math.abs(dx)/10)})}`);
  canvas.dataset.stage=q.step;}
 function resize(){const r=canvas.getBoundingClientRect();VW=Math.max(320,Math.min(960,r.width/1.65));VH=VW*r.height/r.width;const Q=QUALITY[prefs.quality],dpr=typeof devicePixelRatio==='number'?devicePixelRatio:1;const maxArea=Q.area*adaptiveScale;const ratio=Math.min(r.width/VW*Math.min(dpr,Q.density),Math.sqrt(maxArea/(VW*VH)));canvas.width=Math.round(VW*ratio);canvas.height=Math.round(VH*ratio);scale=canvas.width/VW;ctx.imageSmoothingEnabled=false;dirtyFrame=true;}
@@ -239,8 +249,10 @@ let resizePending=false;window.addEventListener('resize',()=>{if(resizePending)r
 // ---------- input ----------
 for(const name of ['jump','action','attack','shoot']){const e=$('#'+name);e.addEventListener('pointerdown',ev=>{ev.preventDefault();if(buttonPointers[name]!=null)return;buttonPointers[name]=ev.pointerId;if(e.setPointerCapture)e.setPointerCapture(ev.pointerId);held[name]=true;e.classList.add('pressed');
   if(name==='jump')jumpBuffer=.16;else if(name==='attack')attack();else if(name==='shoot')shoot();
-  else if(active()){if(threat()){autoAction=false;attack();return;}if(prefs.actionMode==='tap')autoAction=!autoAction;if(!findTarget()){autoAction=false;if(nearestMob(90))toast(t('toast.useAttack'));else if(nearBase()&&!(state.beds.every(Boolean)&&!state.completed))openSheet('craft-dialog');else toast(t('toast.goCloser'));}}});
+  else actionPress();});
  const release=ev=>{if(ev.pointerId!==undefined&&ev.pointerId!==buttonPointers[name])return;delete buttonPointers[name];if(ev.type==='pointercancel'&&name==='action')autoAction=false;if(name==='action')actionLatch=false;held[name]=false;e.classList.remove('pressed');};for(const type of ['pointerup','pointercancel','lostpointercapture'])e.addEventListener(type,release);}
+// The Use button and the E key behave the same: one tap starts the job (tap mode), a hostile mutant in reach is struck instead.
+function actionPress(){if(!active())return;if(threat()){autoAction=false;attack();return;}if(prefs.actionMode==='tap')autoAction=!autoAction;if(!findTarget()){autoAction=false;if(nearestMob(90))toast(t('toast.useAttack'));else if(nearBase()&&!inPrologue(state)&&!(state.beds.every(Boolean)&&!state.completed))openSheet('craft-dialog');else toast(t('toast.goCloser'));}}
 // Floating stick: touch anywhere in the movement zone; the base follows the thumb so reversing is instant.
 const pad=$('#move-pad'),stick=$('#stick'),thumb=$('#pad-thumb');
 let zoneRect={left:0,top:0,width:390,height:380},stickRest={x:90,y:280},stickOrigin={x:0,y:0},swipeJumped=false,stickRun=false;
@@ -262,13 +274,14 @@ $('#game').addEventListener('contextmenu',ev=>ev.preventDefault());
 window.addEventListener('pointerdown',()=>initAudio(),{once:true});
 const KEYMAP={KeyJ:'attack',KeyF:'attack',KeyK:'shoot',KeyL:'shoot'};
 window.addEventListener('keydown',e=>{if(/^(TEXTAREA|INPUT)$/.test(e.target?.tagName||''))return;initAudio();if(['Space','ArrowUp','ArrowLeft','ArrowRight','KeyE','KeyC','KeyI','KeyJ','KeyK'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='Escape'){modal?closeSheets():openSheet('pause-dialog');return;}if(!started)return;if(e.code==='KeyC'||e.code==='KeyI'){if(modal)closeSheets();else openSheet(e.code==='KeyC'?'craft-dialog':'bag-dialog');return;}
- if(/^Digit[1-5]$/.test(e.code)){useHot(HOT[+e.code.slice(5)-1].id);return;}if(e.code==='KeyE'&&threat()){attack();return;}if(KEYMAP[e.code]){held[KEYMAP[e.code]]=true;KEYMAP[e.code]==='attack'?attack():shoot();return;}keys[e.code]=true;if(['Space','KeyW','ArrowUp'].includes(e.code))jumpBuffer=.16;});
+ if(/^Digit[1-5]$/.test(e.code)){useHot(HOT[+e.code.slice(5)-1].id);return;}if(e.code==='KeyE'){actionPress();keys.KeyE=true;return;}if(KEYMAP[e.code]){held[KEYMAP[e.code]]=true;KEYMAP[e.code]==='attack'?attack():shoot();return;}keys[e.code]=true;if(['Space','KeyW','ArrowUp'].includes(e.code))jumpBuffer=.16;});
 window.addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyE')actionLatch=false;if(KEYMAP[e.code])held[KEYMAP[e.code]]=false;});
 window.addEventListener('blur',()=>{resetInput();save();});
 document.addEventListener('visibilitychange',()=>{visible=!document.hidden;setAudioActive(visible);resetInput();if(!visible)save();last=0;accum=0;dirtyFrame=true;});window.addEventListener('pagehide',()=>save());
 
 // ---------- interactions (Use button) ----------
 function findTarget(){if(player.climb)return null;const foot=player.y+player.h;if(Math.abs(foot-groundY())>36)return null;let best=null,bestD=50;const near=(x,r)=>Math.abs(player.x-x)<r;
+ if(inBunker())return bunkerTarget();
  if(inMine()){const M=MINEMAP,f=player.floor,mine=state.mine;
   if(f===M.exit.f&&near(M.exit.x,36))best={kind:'door',to:'surface',key:'exit',time:.3,x:M.exit.x,name:'target.exit',verb:'verb.enter'};
   for(const l of M.ladders){if(l.a===f&&near(l.x,24))best={kind:'ladder',to:l.b,key:'ladder-'+l.x,time:.15,x:l.x,name:'target.ladderDown',verb:'verb.climb'};if(l.b===f&&near(l.x,24))best={kind:'ladder',to:l.a,key:'ladder-'+l.x,time:.15,x:l.x,name:'target.ladderUp',verb:'verb.climb'};}
@@ -282,8 +295,9 @@ function findTarget(){if(player.climb)return null;const foot=player.y+player.h;i
   VAULT.caps.forEach((x,i)=>{if(!v.caps[i]&&near(x,28))best={kind:'capsule',index:i,key:'cap-'+i,time:1.4,x,name:'target.capsule',verb:'verb.take'};});
   if(!v.door&&near(VAULT.door,40))best={kind:'vaultdoor',key:'vaultdoor',time:2.4,x:VAULT.door,name:v.boss&&v.caps.every(Boolean)?'target.vaultDoor':'target.vaultDoorLocked',verb:'verb.open'};
   return best;}
- for(const n of nodes){if(state.harvested[n.id]||(n.x>1600&&!state.completed))continue;const d=Math.abs(n.x-player.x);if(d<bestD){bestD=d;best={kind:'node',node:n,key:n.id,time:n.time,x:n.x,name:'node.'+n.id,verb:n.type==='wood'?'verb.chop':'verb.collect'};}}
+ for(const n of nodes){if(state.harvested[n.id]||(n.x>1600&&!state.completed))continue;const d=Math.abs(n.x-player.x);if(d<bestD){bestD=d;best={kind:'node',node:n,key:n.id,time:n.time,x:n.x,name:'node.'+n.id,verb:n.type==='wood'?'verb.chop':n.type==='scrap'?'verb.open2':'verb.collect',w:n.type==='wood'?50:40,h:n.type==='wood'?42:30};}}
  if(near(690,34))best={kind:'river',key:'river',time:.8,x:690,name:'target.river',verb:'verb.fill'};
+ if(inPrologue(state))return stationTargets(best);
  if(state.built.filter&&near(FILTER_X,26))best={kind:'purify',key:'purify',time:1.2,x:FILTER_X,name:state.inv.dirty?'target.filter':'target.filterEmpty',verb:'verb.purify'};
  if(near(1270,42)&&!state.vault)best={kind:'vault',key:'vault',time:3.2,x:1270,name:state.built.generator?'target.vaultOn':'target.vaultOff',verb:'verb.open'};
  if(near(METRO,30))best=state.forest.every(Boolean)?{kind:'door',to:'mine',key:'metro',time:.3,x:METRO,name:'target.metro',verb:'verb.enter'}:{kind:'locked',key:'metro',time:.3,x:METRO,name:'target.metroLocked',verb:'verb.act'};
@@ -292,6 +306,7 @@ function findTarget(){if(player.climb)return null;const foot=player.y+player.h;i
  return best;}
 const gain=(loot)=>Object.entries(loot).map(([k,v])=>t('toast.gain',{n:v,item:t(ITEMS[k]).toLowerCase()}));
 function finishAction(tg){const gy=groundY();
+ if(state.story&&prologueFinish(tg))return;
  if(tg.kind==='node'){const n=tg.node;state.harvested[n.id]=1;for(const[k,v]of Object.entries(n.reward))state.inv[k]+=v;const g=gain(n.reward);toast(g.join(' · '));floatText(tg.x,gy-34,g[0]);burst(tg.x,gy-18,'#e4c38e');sfx('gain');}
  else if(tg.kind==='river'){state.inv.dirty++;toast(t('toast.river',{n:state.inv.dirty}));floatText(tg.x,gy-40,t('toast.gain',{n:1,item:t(ITEMS.dirty).toLowerCase()}));sfx('water');}
  else if(tg.kind==='purify'){if(!state.inv.dirty){toast(t('toast.filterEmpty'));autoAction=false;return;}state.inv.dirty--;state.inv.water++;floatText(tg.x,gy-56,t('toast.gain',{n:1,item:t(ITEMS.water).toLowerCase()}));burst(tg.x+8,gy-12,'#9fd6e0',6);sfx('water');}
@@ -307,7 +322,8 @@ function finishAction(tg){const gy=groundY();
  else if(tg.kind==='lift'){held.action=false;autoAction=false;actionLatch=true;if(!state.mine.panel){toast(t('toast.liftLocked'));return;}goScene('vault');return;}
  else if(tg.kind==='capsule'){state.seedvault.caps[tg.index]=true;state.inv.seed+=2;const n=state.seedvault.caps.filter(Boolean).length;burst(tg.x,gy-30,'#9fe0ff',12);sfx('plant');toast(t('toast.capsule',{n}));floatText(tg.x,gy-44,t('toast.gain',{n:2,item:t(ITEMS.seed).toLowerCase()}));save();}
  else if(tg.kind==='vaultdoor'){const v=state.seedvault;if(!v.boss||!v.caps.every(Boolean)){toast(t('toast.doorLocked'));held.action=false;autoAction=false;return;}v.door=true;state.inv.seed+=10;burst(tg.x,gy-50,'#c8f0ff',18);sfx('win');save();showWin(4);}
- autoAction=false;buzz(12);refreshHud();dirtyFrame=true;}
+ // Saved right away: a reload can never grant the same loot twice or lose it.
+ autoAction=false;buzz(12);save();refreshHud();dirtyFrame=true;}
 let lockedTarget=null;
 function stillValid(tg){if(Math.abs(player.x-tg.x)>60||player.climb)return false;const m=state.mine;switch(tg.kind){case 'node':return !state.harvested[tg.node.id];case 'ore':return !m.ore[tg.index];case 'crate':return !m.crates[tg.index];case 'bed':return !state.beds[tg.index];case 'clean':return !state.forest[tg.index];case 'capsule':return !state.seedvault.caps[tg.index];default:return true;}}
 function swingKind(tg){return tg.kind==='ore'||tg.kind==='node'&&tg.node.type!=='scrap';}
@@ -359,9 +375,10 @@ function updateShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i];s.v
 function respawn(){state.stats.hp=80;if(inMine()||inVault())enterScene('surface');player.x=BASE;player.y=GROUND-player.h;player.kb=0;player.vy=0;prevX=renderX=player.x;for(const m of mobs)if(m.st!=='dead'&&m.role==='guard'){m.st='patrol';m.x=m.home;}player.hurt=1.5;player.getup=.5;player.hitT=0;toast(t('toast.respawn'));}
 function simulate(dt){if(!active())return;if(hitstop>0){hitstop-=dt;return;}
  if(downTime>0){downTime-=dt;effects.forEach(e=>{e.life-=dt;});if(downTime<=0){downTime=0;respawn();}return;}shake=Math.max(0,shake-dt);for(const k in nodeShake)nodeShake[k]=Math.max(0,nodeShake[k]-dt);for(let i=floats.length-1;i>=0;i--){floats[i].life-=dt;floats[i].y-=dt*16;if(floats[i].life<=0)floats.splice(i,1);}if(!state.forest.every(Boolean))state.time+=dt;player.hurt=Math.max(0,player.hurt-dt);player.hitT=Math.max(0,player.hitT-dt);player.getup=Math.max(0,player.getup-dt);player.land=Math.max(0,player.land-dt);
- const right=moveAxis>0||keys.KeyD||keys.ArrowRight,left=moveAxis<0||keys.KeyA||keys.ArrowLeft,up=held.jump||keys.Space||keys.KeyW||keys.ArrowUp;
+ // While the capsule opens the hero is not yet in control; he steps out on his own.
+ const walkOut=!!intro&&intro.t>1.9&&player.x<BUNKER.capsule+34,right=intro?walkOut:moveAxis>0||keys.KeyD||keys.ArrowRight,left=!intro&&(moveAxis<0||keys.KeyA||keys.ArrowLeft),up=!intro&&(held.jump||keys.Space||keys.KeyW||keys.ArrowUp);
  // Ladders: climbing is automatic once started, so it needs no vertical stick on a phone.
- if(player.climb){const c=player.climb,dir=Math.sign(c.to-player.y);player.y+=dir*120*dt;player.walk+=dt*6;if((c.to-player.y)*dir<=0){player.y=c.to;player.floor=c.floor;player.climb=null;player.vy=0;player.ground=true;}targetNow=null;interaction={key:'',value:0};updateMobs(dt);updateShots(dt);uiClock+=dt;if(uiClock>=.25){refreshHud();refreshContext();uiClock=0;}return;}
+ if(player.climb){const c=player.climb,dir=Math.sign(c.to-player.y);player.y+=dir*120*dt;player.walk+=dt*6;if((c.to-player.y)*dir<=0){player.y=c.to;player.floor=c.floor;player.climb=null;player.vy=0;player.ground=true;if(c.exit){player.y=GROUND-player.h;goScene('surface');}}targetNow=null;interaction={key:'',value:0};updateMobs(dt);updateShots(dt);uiClock+=dt;if(uiClock>=.25){refreshHud();refreshContext();uiClock=0;}return;}
  player.running=(stickRun&&moveAxis!==0)||(keys.ShiftLeft||keys.ShiftRight)&&(left||right);
  player.vx=((right?1:0)-(left?1:0))*(player.running?150:85);if(atk.anim>0&&player.ground)player.vx*=.35;
  // Cadence: one 4-frame cycle covers two steps, so feet keep pace with the ground instead of sliding.
@@ -371,6 +388,7 @@ function simulate(dt){if(!active())return;if(hitstop>0){hitstop-=dt;return;}
  if((jumpBuffer>0||up&&!jumpLatch)&&coyote>0){jumpBuffer=0;coyote=0;player.vy=-230;player.ground=false;squash=-.1;sfx('jump');}jumpLatch=!!up;player.vy=Math.min(300,player.vy+620*dt);
  player.kb=Math.abs(player.kb)<4?0:player.kb*(1-7*dt);const dx=(player.vx+player.kb)*dt;const wasGround=player.ground,gy=groundY();
  if(inMine()){const F=MINEMAP.floors[player.floor];player.x=Math.max(F.x1,Math.min(F.x2,player.x+dx));player.ground=false;player.y+=player.vy*dt;if(player.y+player.h>=gy){player.y=gy-player.h;player.vy=0;player.ground=true;}}
+ else if(inBunker()){player.x=Math.max(40,Math.min(BUNKER.w-48,player.x+dx));player.ground=false;player.y+=player.vy*dt;if(player.y+player.h>=GROUND){player.y=GROUND-player.h;player.vy=0;player.ground=true;}}
  else if(inVault()){player.x=Math.max(40,Math.min(VAULT.w-40,player.x+dx));player.ground=false;player.y+=player.vy*dt;if(player.y+player.h>=GROUND){player.y=GROUND-player.h;player.vy=0;player.ground=true;}}
  else{if(!overlaps(player.x+dx,player.y))player.x+=dx;player.x=Math.max(24,Math.min(state.completed?WORLD-24:1550,player.x));
  player.ground=false;const nextY=player.y+player.vy*dt;if(player.vy>0&&overlaps(player.x,nextY)&&player.y+player.h<=obstacle.y+2){player.y=obstacle.y-player.h;player.vy=0;player.ground=true;}else player.y=nextY;
@@ -386,6 +404,8 @@ function simulate(dt){if(!active())return;if(hitstop>0){hitstop-=dt;return;}
  const pushing=held.action||keys.KeyE,pressing=(pushing&&!actionLatch)||autoAction,danger=threat();
  // Holding Use next to a hostile mutant strikes it (rate-limited by the strike cooldown) instead of gathering.
  if(pushing&&danger&&!actionLatch){autoAction=false;interaction={key:'',value:0};swing=0;if(atk.cool<=0)attack();}
+ // Something stands in the way (a missing tool or part): say why, once per press, and start no progress.
+ else if(pressing&&targetNow?.block){toast(t(targetNow.block));actionLatch=true;autoAction=false;interaction={key:'',value:0};sfx('click');}
  else if(pressing&&targetNow){if(interaction.key!==targetNow.key){interaction={key:targetNow.key,value:0};swing=0;hits=0;}
   // Step to the side of the object and face it, so the tool lands on it and the hero does not hide it.
   if(swingKind(targetNow)||targetNow.kind==='clean'){const side=player.x<targetNow.x-1?-1:player.x>targetNow.x+1?1:(player.face>0?-1:1),spot=targetNow.x+side*(targetNow.kind==='clean'?14:24),d=spot-player.x;player.face=-side;if(Math.abs(d)>1){const nx=player.x+Math.sign(d)*Math.min(Math.abs(d),70*dt);if(inMine()){const F=MINEMAP.floors[player.floor];player.x=Math.max(F.x1,Math.min(F.x2,nx));}else if(!overlaps(nx,player.y))player.x=nx;player.walk+=dt*5;}}
@@ -398,7 +418,7 @@ function simulate(dt){if(!active())return;if(hitstop>0){hitstop-=dt;return;}
  else {interaction={key:'',value:0};swing=0;hits=0;if(!targetNow)autoAction=false;}
  if(state.scene==='surface'&&state.completed&&player.x>1600&&!forestGuard){forestGuard=true;mobs.push(makeMob('shellback',2150,{hp:10,min:1960,max:2380}));toast(t('toast.guard'));}
  if(inMine()&&!mobs.caveHint&&mobs.some(m=>m.kind==='stoneback'&&m.st==='chase')){mobs.caveHint=true;toast(t('toast.cave'));}
- updateMobs(dt);updateShots(dt);
+ updateMobs(dt);updateShots(dt);updateMira(dt);updateStory(dt);
  if(state.beds.every(Boolean)&&!state.completed){state.defense.time=Math.min(90,state.defense.time+dt);const wave=Math.floor(state.defense.time/15)+1;
   if(wave>state.defense.wave&&wave<=6){state.defense.wave=wave;for(let i=0;i<(wave>3?2:1);i++){const fromLeft=i===1;mobs.push(makeMob('crawler',fromLeft?185:790,{hp:wave===6?5:3,role:'raider',goal:fromLeft?405:490,min:150,max:830}));}toast(wave===1?t('toast.wave1'):t('toast.wave',{n:wave}));}
   if(state.defense.hp<=0){state.defense={time:0,hp:100,wave:0};mobs=mobs.filter(m=>m.role!=='raider');player.x=450;toast(t('toast.defenseFail'));}
@@ -408,19 +428,197 @@ function simulate(dt){if(!active())return;if(hitstop>0){hitstop-=dt;return;}
  if(state.stats.hp<=0&&!downTime){downTime=1.6;autoAction=false;interaction={key:'',value:0};sfx('hurt');toast(t('toast.down'));}
  state.stats.food=Math.max(0,state.stats.food-dt*.018);state.stats.thirst=Math.max(0,state.stats.thirst-dt*.025);if(state.scene==='surface'&&nearBase())state.stats.hp=Math.min(100,state.stats.hp+dt*.5);
  for(let i=effects.length-1;i>=0;i--){const e=effects[i];e.x+=e.vx*dt;e.y+=e.vy*dt;e.vy+=85*dt;e.life-=dt;if(e.life<=0)effects.splice(i,1);}
- uiClock+=dt;saveClock+=dt;if(uiClock>=.25){refreshHud();refreshContext();setMood(inMine()||inVault()?'mine':state.beds.every(Boolean)&&!state.completed?'defense':player.x>1600?'forest':'city');uiClock=0;}if(saveClock>15&&!saveQueued){saveClock=0;saveQueued=true;const flush=()=>{saveQueued=false;save();};if(window.requestIdleCallback)window.requestIdleCallback(flush,{timeout:3000});else setTimeout(flush,0);}
+ uiClock+=dt;saveClock+=dt;if(uiClock>=.25){refreshHud();refreshContext();setMood(inMine()||inVault()||inBunker()?'mine':state.beds.every(Boolean)&&!state.completed?'defense':player.x>1600?'forest':'city');uiClock=0;}if(saveClock>15&&!saveQueued){saveClock=0;saveQueued=true;const flush=()=>{saveQueued=false;save();};if(window.requestIdleCallback)window.requestIdleCallback(flush,{timeout:3000});else setTimeout(flush,0);}
 }
-function refreshContext(){let label=targetNow?t(targetNow.name):'',verb=targetNow?.verb||'verb.act';
- if(!targetNow){if(state.beds.every(Boolean)&&!state.completed)label=t('target.defend');else if(nearestMob(110))label=t('target.enemy');else if(nearBase()){label=t('target.base');verb='verb.craft';}else if(state.scene==='surface'&&player.x>1000&&player.x<1100)label=t('target.beam');}
+function refreshContext(){let label=targetNow?(kbHints?'E · ':'')+t(targetNow.name):'',verb=targetNow?.verb||'verb.act';
+ if(!targetNow&&!inPrologue(state)){if(state.beds.every(Boolean)&&!state.completed)label=t('target.defend');else if(nearestMob(110))label=t('target.enemy');else if(nearBase()){label=t('target.base');verb='verb.craft';}else if(state.scene==='surface'&&player.x>1000&&player.x<1100)label=t('target.beam');}
  setText(ui['target-label'],label);setText(ui['action-text'],t(autoAction?'verb.stop':verb));$('#action')?.classList.toggle('auto-working',autoAction);}
+
+// ---------- prologue: the bunker, the road, the Station ----------
+// The story state lives in state.story (saved). Lines already heard are kept in story.said, so a reload never replays them.
+const inBunker=()=>state.scene==='bunker';
+const story=()=>state.story||{};
+const kbHints=typeof matchMedia==='function'&&matchMedia('(hover:hover) and (pointer:fine)').matches;
+const mira={x:BUNKER.mira,y:0,face:1,walk:0,hop:0,moving:false,joy:0};
+const DIALOG={
+ wake:[['mira','dlg.wake1'],['einstein','dlg.wake2'],['mira','dlg.wake3'],['einstein','dlg.wake4'],['mira','dlg.wake5']],
+ tool:[['mira','dlg.tool']],hatch:[['mira','dlg.hatch']],road:[['mira','dlg.road1'],['mira','dlg.road2']],mats:[['mira','dlg.mats']],
+ station:[['mira','dlg.station1'],['mira','dlg.station2'],['mira','dlg.station3']],made:[['mira','dlg.made']],fixed:[['mira','dlg.fixed']],
+ water:[['mira','dlg.water1'],['einstein','dlg.water2'],['mira','dlg.water3']],
+ radio:[['radio','dlg.radio1'],['radio','dlg.radio2'],['mira','dlg.radio3'],['einstein','dlg.radio4']]};
+// What Mira repeats when you talk to her: the line that explains the current step.
+const NUDGE={101:'dlg.wake5',102:'dlg.tool',103:'dlg.hatch',104:'dlg.road2',105:'dlg.mats',106:'dlg.station3',107:'dlg.made',108:'dlg.fixed',109:'dlg.water3'};
+let talk={lines:[],i:0,t:0,then:null,shown:''},intro=null,waterFill=.12;
+// A new story beat replaces chatter that is still queued (its follow-ups still run), so lines never lag behind events.
+function flushTalk(){const rest=talk.lines.slice(talk.i+1);talk={lines:[],i:0,t:0,then:null,shown:''};for(const l of rest)if(l[0]==='@')l[1]();const box=$('#dialog');if(box){box.hidden=true;$('#game').classList.remove('talking');}}
+function say(id,then=null,force=false){const st=story();if(!force&&st.said?.includes(id)){then?.();return;}if(st.said&&!st.said.includes(id))st.said.push(id);
+ flushTalk();talk.lines.push(...DIALOG[id].map(l=>l.slice()));if(then)talk.lines.push(['@',then]);if(!talk.lines.length)return;showLine();}
+function sayLine(who,key){flushTalk();talk.lines.push([who,key]);showLine();}
+function showLine(){const l=talk.lines[talk.i];const box=$('#dialog');if(!box)return;
+ while(l&&l[0]==='@'){talk.i++;l[1]();return showLine();}
+ if(!l){talk={lines:[],i:0,t:0,then:null,shown:''};box.hidden=true;$('#game').classList.remove('talking');return;}
+ const text=t(l[1],STORY.repairCost),key=l[0]+l[1];if(talk.shown===key&&!box.hidden)return;talk.shown=key;talk.t=Math.min(5.5,Math.max(2.4,1.4+text.length*.035));
+ box.hidden=false;$('#game').classList.add('talking');box.classList.toggle('radio',l[0]==='radio');setText($('#dlg-who'),t('who.'+l[0]));setText($('#dlg-text'),text);
+ const face=$('#dlg-face');if(face){const src=l[0]==='radio'?'':`assets/portrait-${l[0]}.webp`;face.hidden=!src;if(src&&face.getAttribute('src')!==src)face.src=src;}
+ if(l[0]==='mira')mira.face=Math.sign(player.x-mira.x)||mira.face;sfx('click');}
+function nextLine(){if(!talk.lines.length)return;talk.i++;talk.shown='';showLine();}
+$('#dialog')?.addEventListener('pointerdown',ev=>{ev.preventDefault?.();ev.stopPropagation?.();nextLine();});
+function sceneTitle(n){const el=$('#scene-title');if(!el)return;setText(el,t('scene.'+n));el.hidden=false;el.style&&(el.style.animation='none');void el.offsetWidth;if(el.style)el.style.animation='';clearTimeout(sceneTitle.tm);sceneTitle.tm=setTimeout(()=>{el.hidden=true;},3300);}
+// One-off teaching hints, shown at the moment the action is needed.
+function hint(id){const st=story();if(!st.said||st.said.includes('h-'+id))return;st.said.push('h-'+id);const k=kbHints&&t('hint.'+id+'Keys')!=='hint.'+id+'Keys'?'hint.'+id+'Keys':'hint.'+id;toast(t(k));}
+function syncCalm(){$('#game').classList.toggle('calm',inPrologue(state));$('#game').classList.toggle('kb',kbHints);}
+// Starting or resuming the prologue: title card, the capsule cut-scene on a fresh start, the right lines on a reload.
+function startPrologue(){if(!inPrologue(state))return;const st=story();syncCalm();
+ if(inBunker()){sceneTitle(1);if(!st.woke){intro={t:0};player.x=BUNKER.capsule;player.face=1;}}
+ else{sceneTitle(st.station?3:2);mira.x=st.station?STATION.mira:player.x+40;}
+ if(!kbHints&&typeof matchMedia==='function'&&matchMedia('(orientation:portrait)').matches&&!st.said.includes('h-rotate')){st.said.push('h-rotate');const r=$('#rotate-hint');if(r)r.hidden=false;}}
+$('#rotate-ok')&&($('#rotate-ok').onclick=()=>{$('#rotate-hint').hidden=true;});
+// Things the hero can use in the bunker. block: why it cannot be done yet (no progress bar, just the reason).
+function bunkerTarget(){const st=story(),near=(x,r)=>Math.abs(player.x-x)<r;let best=null;
+ if(intro)return null;
+ if(!st.tool&&near(BUNKER.tool,30))best={kind:'wrench',key:'wrench',time:.35,x:BUNKER.tool,name:'target.wrench',verb:'verb.get',w:34,h:30};
+ if(!st.hatch&&near(BUNKER.valve,28))best={kind:'valve',key:'valve',time:1.6,x:BUNKER.valve,name:st.tool?'target.valve':'target.valveNoTool',verb:'verb.use',block:st.tool?null:'toast.noTool',w:24,h:60,lift:22};
+ if(near(BUNKER.ladder,22))best=st.hatch?{kind:'exitLadder',key:'exit-ladder',time:.15,x:BUNKER.ladder,name:'target.ladderOut',verb:'verb.climb',w:24,h:90}:{kind:'shut',key:'exit-ladder',time:.1,x:BUNKER.ladder,name:'target.ladderShut',verb:'verb.climb',block:'toast.hatchShut',w:24,h:90};
+ if(!best&&near(mira.x,24))best={kind:'mira',key:'mira',time:.1,x:mira.x,name:'target.mira',verb:'verb.talk',w:24,h:64};
+ return best;}
+// The Station's own targets, added on top of the road's chests and logs while the prologue runs.
+function stationTargets(best){const st=story(),near=(x,r)=>Math.abs(player.x-x)<r;
+ if(near(262,30))best={kind:'bench',key:'bench',time:.1,x:262,name:'target.bench',verb:'verb.open2',w:66,h:40};
+ if(!st.fixed&&near(FILTER_X,28))best={kind:'fixFilter',key:'fix',time:1.8,x:FILTER_X,name:state.inv.repair?'target.filterBroken':'target.filterNoPart',verb:'verb.repair2',block:state.inv.repair?null:'toast.needPart',w:46,h:56};
+ else if(st.fixed&&!st.water&&near(FILTER_X,28))best={kind:'startWater',key:'tap',time:.8,x:FILTER_X,name:'target.filterStart',verb:'verb.use',w:46,h:56};
+ if(st.water&&!st.radio&&near(STATION.radio,24))best={kind:'radio',key:'radio',time:.2,x:STATION.radio,name:'target.radio',verb:'verb.listen',w:20,h:34};
+ if(!best&&st.out&&near(mira.x,22))best={kind:'mira',key:'mira',time:.1,x:mira.x,name:'target.mira',verb:'verb.talk',w:24,h:64};
+ return best;}
+// Prologue actions. Returns true when it handled the target.
+function prologueFinish(tg){const st=story(),gy=groundY();
+ switch(tg.kind){
+  case 'wrench':st.tool=true;state.inv.wrench=1;floatText(tg.x,gy-40,'+1 '+t(ITEMS.wrench).toLowerCase());toast(t('toast.wrench'));burst(tg.x,gy-26,'#f2c14e',8);sfx('gain');say('tool');break;
+  case 'valve':st.hatch=true;shake=prefs.effects?.18:0;burst(BUNKER.ladder,gy-176,'#c9c2b0',14);sfx('craft');toast(t('toast.hatchOpen'));say('hatch',()=>hint('climb'));break;
+  case 'exitLadder':player.climb={x:tg.x,from:player.y,to:BUNKER.top,floor:0,exit:true};player.x=tg.x;held.action=false;autoAction=false;sfx('click');return true;
+  case 'mira':{const q=quest(state);sayLine('mira',NUDGE[q.step]||'dlg.mats');held.action=false;autoAction=false;actionLatch=true;return true;}
+  case 'bench':held.action=false;autoAction=false;actionLatch=true;craftCat='build';openSheet('craft-dialog');return true;
+  case 'fixFilter':state.inv.repair--;st.fixed=true;burst(tg.x,gy-30,'#f2c14e',12);sfx('craft');toast(t('toast.fixed'));say('fixed');break;
+  case 'startWater':st.water=true;state.built.filter=true;burst(tg.x+14,gy-20,'#9fd6e0',16);sfx('water');toast(t('toast.water'));mira.joy=1.2;save();say('water');break;
+  case 'radio':held.action=false;autoAction=false;actionLatch=true;say('radio',finishPrologue,true);return true;
+  default:return false;}
+ autoAction=false;held.action=false;buzz(12);save();refreshHud();dirtyFrame=true;return true;}
+// The end of the first chapter: the campaign takes over (filter and workbench already stand), mutants return to the city.
+function finishPrologue(){const st=story();if(st.done)return;st.radio=true;st.done=true;syncCalm();if(!mobs.length&&state.scene==='surface')mobs.push(makeMob('crawler',1140,{hp:3,min:1100,max:1300}));save();refreshHud();showWin(5);}
+// Story beats that happen by walking: leaving the metro, reaching the Station, having enough for the repair unit.
+function updateStory(dt){const st=story();if(!state.story||st.done)return;
+ if(intro){intro.t+=dt;if(intro.t>.9&&!intro.talk){intro.talk=true;say('wake',()=>hint('move'));}
+  if(intro.t>1.9&&player.x<BUNKER.capsule+34){player.x+=40*dt;player.face=1;player.walk+=dt*5;}
+  if(intro.t>2.6){intro=null;st.woke=true;save();}}
+ if(talk.lines.length){talk.t-=dt;if(talk.t<=0)nextLine();}
+ if(state.scene==='surface'){
+  if(!st.station&&player.x<STATION.edge){st.station=true;sceneTitle(3);say('station');save();}
+  const cost=STORY.repairCost;if(!st.station&&!st.road&&Object.entries(cost).every(([k,n])=>state.inv[k]>=n)){st.road=true;say('mats');}}
+ if(targetNow&&!st.said.includes('h-act'))hint('act');}
+function updateMira(dt){const st=story();if(!state.story)return;let tx;
+ if(inBunker())tx=BUNKER.mira;else if(state.scene!=='surface')return;else if(st.station||st.done)tx=STATION.mira;else tx=player.x-player.face*46;
+ const dx=tx-mira.x;mira.moving=Math.abs(dx)>4;if(mira.moving){const v=Math.min(135,Math.abs(dx)*3+30);mira.x+=Math.sign(dx)*Math.min(Math.abs(dx),v*dt);mira.face=Math.sign(dx);mira.walk+=dt*v*4/56;}
+ else{mira.walk=0;mira.face=inBunker()&&!talk.lines.length?1:Math.sign(player.x-mira.x)||mira.face;}
+ // She hops over the fallen beam instead of walking through it.
+ const b0=obstacle.x-10,b1=obstacle.x+obstacle.w+10;mira.hop=state.scene==='surface'&&mira.x>b0&&mira.x<b1?Math.sin((mira.x-b0)/(b1-b0)*Math.PI)*18:0;
+ mira.joy=Math.max(0,mira.joy-dt);}
+function miraFrame(){if(mira.joy>0)return mira.joy>.6?21:15;if(mira.hop>1)return 21;if(mira.moving)return Math.floor(mira.walk)%4;return 12;}
+function drawMira(){if(!art.mira||!state.story||!miraData())return;if(state.scene==='surface'&&!story().out)return;const d=miraData(),f=d.frames[miraFrame()];if(!f)return;
+ const k=64/d.unit,x=Math.round(mira.x),y=GROUND+Math.round(-mira.hop-(mira.joy>0?Math.sin(mira.joy/1.2*Math.PI)*14:0));if(x<camera.x-60||x>camera.x+VW+60)return;
+ drawShadow(x,GROUND+1,26,.7);const img=graded(art.mira,0,0,art.mira.width,art.mira.height,'mira',toneAt(x));ctx.save();ctx.translate(x,y);ctx.scale(mira.face,1);ctx.imageSmoothingEnabled=true;ctx.drawImage(img,f.x,f.y,f.w,f.h,-f.anchor*k,-(f.foot??f.h)*k,f.w*k,f.h*k);ctx.restore();ctx.imageSmoothingEnabled=false;}
+const miraData=()=>extraHeroes.curie&&!Array.isArray(extraHeroes.curie)?extraHeroes.curie:null;
+// Faint markers over things that can be used nearby, so they read apart from the decoration; the current target gets brackets.
+function interactables(){const st=story(),out=[];if(!inPrologue(state))return out;
+ if(inBunker()){if(!st.tool)out.push([BUNKER.tool,GROUND-34]);if(!st.hatch)out.push([BUNKER.valve,GROUND-66]);out.push([BUNKER.ladder,GROUND-96]);return out;}
+ for(const c of CHESTS)if(!state.harvested[c.id])out.push([c.x,GROUND-34]);
+ if(st.station){out.push([262,GROUND-46]);if(!st.water)out.push([FILTER_X,GROUND-62]);else if(!st.radio)out.push([STATION.radio,GROUND-40]);}
+ return out;}
+function drawHints(){for(const [x,y] of interactables()){if(Math.abs(x-player.x)>170||targetNow&&Math.abs(targetNow.x-x)<4)continue;const b=Math.round(Math.sin(now*3+x)*1.5);ctx.globalAlpha=.75;rect(x-2,y-6+b,4,4,'#f2c14e');rect(x-1,y-7+b,2,6,'#f2c14e');ctx.globalAlpha=1;}}
+// ---------- prologue art (drawn in code until the painted sprites arrive; see ASSETS_NEEDED.md) ----------
+function bakeBunker(){if(typeof document==='undefined'||!document.createElement)return;const K=2,W=BUNKER.w,Y0=-160,H=600,c=document.createElement('canvas');c.width=W*K;c.height=H*K;const g=c.getContext('2d');g.scale(K,K);g.translate(0,-Y0);
+ const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);},G=GROUND,top=G-176,E=BUNKER.ladder+28,cap=BUNKER.capsule,win=BUNKER.console+84;
+ R(0,Y0,W,H,'#0d1012');
+ // Rock above the ceiling and on the right, with roots.
+ for(let y=Y0;y<top;y+=10)for(let x=-(Math.floor(y/10)%2)*10;x<W;x+=20){const v=hash(x,y);R(x+1,y+1,18,8,['#1d1a17','#22201c','#1a1715','#26231e'][Math.floor(v*4)]);R(x+1,y+1,18,1,'#2f2b25');}
+ R(0,top-6,W,8,'#2b3034');R(0,top-6,W,1,'#4a5258');
+ // Back wall: riveted steel panels with colour variation and grime.
+ for(let x=0;x<E;x+=40)for(let y=top+2;y<G;y+=29){const v=hash(x,y);R(x,y,40,29,['#252b2f','#283035','#22282c','#2c3337'][Math.floor(v*4)]);R(x,y,40,1,'#3a4248');R(x,y,1,29,'#1a1f22');for(const [rx,ry] of [[3,3],[35,3],[3,24],[35,24]])R(x+rx,y+ry,2,2,'#4f585e');if(v>.7)R(x+6,y+12,28*v,10,'rgba(40,30,20,.35)');}
+ // Pipes and cables under the ceiling.
+ R(0,top+8,E,8,'#5a3e2c');R(0,top+8,E,2,'#8a6040');R(0,top+15,E,1,'#2b1d14');R(0,top+22,E,4,'#4c565c');R(0,top+22,E,1,'#76828a');for(let x=30;x<E;x+=90){R(x,top+5,6,24,'#2b3034');}
+ R(250,top,7,G-top,'#3b4449');R(250,top,2,G-top,'#5d676d');R(BUNKER.valve-4,top,8,G-top,'#4c3a2c');R(BUNKER.valve-4,top,2,G-top,'#7a5a40');
+ g.strokeStyle='#15191b';g.lineWidth=2;for(const [a,b,s] of [[10,130,18],[60,240,26],[270,420,14],[520,700,20],[690,820,16]]){g.beginPath();g.moveTo(a,top+30);g.quadraticCurveTo((a+b)/2,top+30+s*2,b,top+30);g.stroke();}
+ // Cracked observation windows with a faint seal on the middle one.
+ for(let i=0;i<3;i++){const x=win+i*62,y=top+44;R(x,y,58,68,'#353d42');const gr=g.createLinearGradient(0,y,0,y+68);gr.addColorStop(0,'#173e45');gr.addColorStop(1,'#0c2226');g.fillStyle=gr;g.fillRect(x+3,y+3,52,62);g.strokeStyle='rgba(120,200,205,.45)';g.lineWidth=1;g.beginPath();g.moveTo(x+10+i*9,y+4);g.lineTo(x+24,y+30);g.lineTo(x+16,y+64);g.moveTo(x+24,y+30);g.lineTo(x+52,y+22);g.stroke();
+  if(i===1){g.strokeStyle='rgba(200,170,90,.35)';g.beginPath();g.arc(x+29,y+33,14,0,Math.PI*2);g.moveTo(x+29,y+19);g.lineTo(x+16,y+42);g.lineTo(x+42,y+42);g.closePath();g.stroke();}}
+ // Shelves with jars and a faded microscope poster on the left.
+ R(8,top+30,46,40,'#bfb08a');R(10,top+32,42,36,'#d8caa0');g.strokeStyle='#5a4a30';g.beginPath();g.moveTo(22,top+60);g.lineTo(40,top+60);g.moveTo(31,top+60);g.lineTo(31,top+42);g.lineTo(36,top+38);g.stroke();
+ for(let s=0;s<3;s++){const y=top+92+s*26;R(6,y,58,3,'#4a3a2c');for(let j=0;j<5;j++){const v=hash(j,s);R(9+j*11,y-10-v*6,7,10+v*6,['#7a9a6a','#a85a3a','#6a8aa0','#c9a050'][Math.floor(v*4)]);}}
+ // Hazard-striped walkway, the understructure and the flooded channel below.
+ R(0,G,W,6,'#4a5258');R(0,G,W,1,'#76828a');for(let x=0;x<W;x+=6)R(x,G+2,3,3,'#353c41');for(let x=cap-32;x<cap+36;x+=8){R(x,G-6,4,6,'#e0b030');R(x+4,G-6,4,6,'#1a1a1a');}
+ R(0,G+6,W,134,'#0b0e10');for(let x=20;x<W;x+=64){R(x,G+6,8,90,'#262c30');R(x,G+6,2,90,'#3b4449');}R(0,G+34,W,6,'#3a2a20');R(0,G+50,W,4,'#2c3236');
+ const wg=g.createLinearGradient(0,G+86,0,G+130);wg.addColorStop(0,'#123c42');wg.addColorStop(1,'#071a1d');g.fillStyle=wg;g.fillRect(0,G+86,W,44);
+ // Hanging vines and dripping water.
+ for(let x=8;x<E;x+=23){const v=hash(x,3);if(v<.45)continue;const L=10+v*40;for(let i=0;i<L;i+=3)R(x+Math.sin(i*.4)*2,top+i,3,3,i%6?'#3d5a2a':'#55753a');}
+ // The rock face on the right and the ladder shaft up to the hatch.
+ for(let y=top-6;y<G;y+=10)for(let x=E;x<W;x+=14){const v=hash(x,y+7);R(x,y,13,9,['#2a2622','#322d27','#26221e'][Math.floor(v*3)]);}
+ const L=BUNKER.ladder;R(L-16,Y0,32,top-Y0,'#08090a');g.fillStyle='#5b3b22';g.fillRect(L-11,Y0,3,G-Y0);g.fillRect(L+8,Y0,3,G-Y0);for(let y=Y0+4;y<G;y+=9){R(L-10,y,19,2,'#8c6136');}
+ // Warm lamps.
+ for(const lx of [60,win+96,BUNKER.valve+30]){const lg=g.createRadialGradient(lx,top+34,0,lx,top+34,70);lg.addColorStop(0,'rgba(255,190,110,.35)');lg.addColorStop(1,'rgba(255,190,110,0)');g.fillStyle=lg;g.fillRect(lx-70,top+34-70,140,140);R(lx-5,top+26,10,6,'#3a3a3a');R(lx-3,top+32,6,4,'#ffd08a');}
+ rendered.bunker={canvas:c,K,Y0,H};
+ // Daylight falling through the opened hatch.
+ const s=document.createElement('canvas');s.width=32;s.height=128;const sg=s.getContext('2d'),sl=sg.createLinearGradient(0,0,0,128);sl.addColorStop(0,'rgba(220,235,220,.55)');sl.addColorStop(1,'rgba(220,235,220,0)');sg.fillStyle=sl;sg.fillRect(0,0,32,128);rendered.shaft=s;}
+function drawCapsule(front){const x=BUNKER.capsule,G=GROUND,open=intro?Math.min(1,Math.max(0,(intro.t-.5)/1.1)):story().woke?1:0;
+ if(!front){rect(x-26,G-6,52,6,'#3b4449');rect(x-28,G-96,8,92,'#7c878d');rect(x+20,G-96,8,92,'#5d676d');rect(x-28,G-96,1,92,'#a9b4ba');rect(x-30,G-108,60,14,'#8b969c');rect(x-30,G-108,60,2,'#c3ccd0');rect(x-16,G-104,32,6,'#2b3236');
+  ctx.globalAlpha=.55+.15*Math.sin(now*2);rect(x-20,G-94,40,88,'#2fa7b8');ctx.globalAlpha=1;rect(x-20,G-94,40,4,'#9fe8f0');for(let i=0;i<4;i++)rect(x-18+i*11,G-12,6,3,'#173e45');return;}
+ // Glass door slides up into the cap; mist spills out while it opens.
+ const lift=Math.round(open*84),h=88-lift;if(h>0){ctx.globalAlpha=.32;rect(x-20,G-94,40,h,'#8fe6ee');ctx.globalAlpha=.6;rect(x-16,G-90,3,Math.max(0,h-8),'#e6fbff');ctx.globalAlpha=1;}
+ if(open>0&&open<1)for(let i=0;i<6;i++){ctx.globalAlpha=.35*(1-open);rect(x-26+((i*13+now*30)%52),G-8-((i*7+now*12)%14),6,3,'#cfeff2');}ctx.globalAlpha=1;}
+function drawBunkerProps(){const st=story(),G=GROUND,B=BUNKER;
+ // Console with a battery wired into it; its screen flickers while it drains.
+ rect(B.console-14,G-50,30,50,'#3b4449');rect(B.console-14,G-50,30,2,'#6f7a80');rect(B.console-10,G-44,22,16,'#0f3a2c');for(let i=0;i<3;i++)rect(B.console-8,G-41+i*5,Math.floor(8+((now*3+i*5)%12)),2,'#6ad08a');rect(B.console-8,G-22,6,6,'#d9a441');rect(B.console+2,G-22,8,3,'#e2483c');
+ ctx.strokeStyle='#8a2a1f';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(B.battery,G-14);ctx.quadraticCurveTo(B.battery-8,G+2,B.console+14,G-18);ctx.stroke();
+ rect(B.battery-9,G-14,18,14,'#d9a441');rect(B.battery-9,G-14,18,2,'#ffe08a');rect(B.battery-6,G-17,4,3,'#2c2c2c');rect(B.battery+2,G-17,4,3,'#2c2c2c');rect(B.battery-2,G-10,4,6,'#1a1a1a');
+ // Tool box with the wrench on top (gone once taken).
+ drawProp('crate',B.tool,G+1,34);if(!st.tool&&art.held&&heldLayout.wrench){const L=heldLayout.wrench,sc=22/L.h;ctx.save();ctx.translate(B.tool,G-26+Math.round(Math.sin(now*3)));ctx.rotate(-Math.PI/2);ctx.imageSmoothingEnabled=true;ctx.drawImage(art.held,L.x,L.y,L.w,L.h,-L.w*sc/2,-L.h*sc/2,L.w*sc,L.h*sc);ctx.restore();ctx.imageSmoothingEnabled=false;}
+ // Emergency valve: turns while the hero works it; its lamp goes green when the hatch is open.
+ const vx=B.valve,vy=G-44,turning=interaction.key==='valve',ang=(turning?interaction.value*4:0)+(st.hatch?2:0);rect(vx-3,vy-16,6,6,st.hatch?'#6ad04a':Math.floor(now*3)%2?'#e2483c':'#5a2a24');
+ ctx.save();ctx.translate(vx,vy);ctx.rotate(ang);ctx.strokeStyle='#b03a2e';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,8,0,Math.PI*2);ctx.stroke();for(let i=0;i<4;i++){ctx.rotate(Math.PI/2);rect(-1,0,2,8,'#8a2a1f');}ctx.restore();rect(vx-2,vy-2,4,4,'#d9a441');
+ // The hatch at the top of the ladder: shut with a red lamp, or open with daylight pouring in.
+ const L=B.ladder,top=G-176;if(st.hatch){rect(L-16,top-8,32,10,'#050607');if(rendered.shaft){ctx.globalAlpha=.8+.1*Math.sin(now*2);ctx.imageSmoothingEnabled=true;ctx.drawImage(rendered.shaft,L-16,top-4,32,150);ctx.imageSmoothingEnabled=false;ctx.globalAlpha=1;}}
+ else{rect(L-17,top-8,34,10,'#4a5258');for(let i=0;i<4;i++)rect(L-15+i*8,top-6,4,6,i%2?'#e0b030':'#1a1a1a');rect(L+14,top+4,4,4,Math.floor(now*2)%2?'#ff5a3c':'#6a2a20');}
+ // Red alarm lamp in the ceiling until the exit is open.
+ if(!st.hatch){const ax=B.valve-110,on=Math.floor(now*1.5)%2;rect(ax,top+30,10,8,on?'#ff4a3a':'#5a2020');if(on){ctx.globalAlpha=.1;rect(ax-22,top+38,54,44,'#ff3a2a');ctx.globalAlpha=.05;rect(ax-44,top+82,98,60,'#ff3a2a');ctx.globalAlpha=1;}}
+ // Water glints in the channel under the floor.
+ for(let i=0;i<5;i++)rect((i*137+now*18)%BUNKER.w,G+92+(i%3)*8,6,1,'#4fa3ac');}
+function paintBunker(){const B=BUNKER,bw=B.w;const cx=bw<=VW?(bw-VW)/2:Math.max(0,Math.min(bw-VW,renderX-VW*.42));camera.x=Math.round(cx*scale)/scale;camera.y=Math.round((GROUND-VH*(VW>VH?.72:.66))*scale)/scale;if(shake>0){const m=shake*14;camera.x+=Math.round((Math.random()-.5)*m*scale)/scale;camera.y+=Math.round((Math.random()-.5)*m*scale)/scale;}
+ const bb=rendered.bunker;if(bb){const sx=Math.max(0,camera.x),sy=Math.max(bb.Y0,camera.y),ex=Math.min(bw,camera.x+VW),ey=Math.min(bb.Y0+bb.H,camera.y+VH);if(ex>sx&&ey>sy){ctx.imageSmoothingEnabled=false;ctx.drawImage(bb.canvas,sx*bb.K,(sy-bb.Y0)*bb.K,(ex-sx)*bb.K,(ey-sy)*bb.K,sx-camera.x,sy-camera.y,ex-sx,ey-sy);}}
+ ctx.save();ctx.translate(-camera.x,-camera.y);drawCapsule(false);drawBunkerProps();drawMira();drawHero();drawCapsule(true);
+ for(const e of effects)rect(e.x,e.y,2,2,e.color);
+ if(Math.floor(now*4)%2===0)for(let i=0;i<6;i++){rect(camera.x+((i*137+now*9)%VW),camera.y+((i*71+now*5)%VH),1,1,'#c8d4d8');}
+ drawHints();drawFloats();drawTargetMarker();ctx.restore();dirtyFrame=false;}
+// The Station while the prologue runs: the broken filter with its alarm, the empty tanks, the radio, dry beds, a sign on the road.
+function bakeSign(){const c=document.createElement('canvas');c.width=160;c.height=44;const g=c.getContext('2d');g.fillStyle='#2b3a33';g.fillRect(0,0,160,44);g.fillStyle='#3d5246';g.fillRect(3,3,154,38);g.fillStyle='#e8efe4';g.font='600 22px "Pixelify Sans", system-ui';g.textAlign='center';g.fillText('← '+t('sign.station'),80,30);rendered.sign=c;}
+function drawStation(){const st=story(),G=GROUND,F=FILTER_X;
+ // Tanks next to the filter: their water level rises once the filter runs.
+ waterFill=st.water?Math.min(1,waterFill+.004):.12;const fill=waterFill;for(const [x,col] of [[412,'#5c6a72'],[426,'#5c6a72'],[442,'#3c6a9a']]){rect(x-6,G-20,12,20,col);rect(x-6,G-20,12,2,'#9aa8b0');rect(x-4,G-4-Math.round(14*fill),8,Math.round(14*fill),'#4fb3d0');}
+ // Water line from the filter into the tanks when running; a slow drip from the cracked pipe while broken.
+ if(st.water){for(let i=0;i<4;i++)rect(F+18+i*5,G-30+((now*30+i*6)%8),2,2,'#9fe0f0');}else for(let i=0;i<2;i++)rect(F+16,G-24+((now*20+i*12)%22),1,2,'#7fb8c4');
+ // Status lamp on the filter: red alarm, amber once the unit is fitted, green when running.
+ const lamp=st.water?'#6ad04a':st.fixed?'#f2c14e':Math.floor(now*3)%2?'#ff4a3a':'#5a2020';rect(F-3,G-58,6,5,lamp);if(!st.fixed){ctx.globalAlpha=.25+.15*Math.sin(now*6);rect(F-8,G-62,16,12,'#ff4a3a');ctx.globalAlpha=1;}
+ if(st.fixed){rect(F-20,G-26,8,8,'#c9a050');rect(F-19,G-25,6,2,'#ffe08a');}
+ // Radio on a crate by the workbench; it blinks once the power is back.
+ const rx=STATION.radio;drawProp('crate',rx,G+1,24);rect(rx-8,G-24,16,10,'#3b4449');rect(rx-6,G-22,6,6,'#1a1f22');rect(rx+2,G-22,4,2,st.water?'#6ad04a':'#5a2a24');rect(rx+5,G-36,1,12,'#8a949a');
+ if(st.water&&!st.radio){const p=(now*1.5)%1;ctx.globalAlpha=1-p;ctx.strokeStyle='#9fe0c8';ctx.lineWidth=1;ctx.beginPath();ctx.arc(rx+5,G-36,4+p*10,-2.4,-.7);ctx.stroke();ctx.globalAlpha=1;}
+ // Road sign towards the Station.
+ if(!rendered.sign)bakeSign();const sx=1330;rect(sx-1,G-40,3,40,'#5b4a3a');ctx.imageSmoothingEnabled=true;ctx.drawImage(rendered.sign,sx-26,G-52,52,15);ctx.imageSmoothingEnabled=false;}
+function drawBrokenFilter(){const G=GROUND,F=FILTER_X,fixed=story().fixed;drawProp('filter',F,G+2,46,false,1,1,!fixed);if(!fixed){rect(F-6,G-40,2,10,'#0a0a0a');rect(F-4,G-34,2,6,'#0a0a0a');rect(F-2,G-30,3,2,'#0a0a0a');}}
 
 // ---------- rendering ----------
 function loadImage(src){return new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>{if(i.decode)i.decode().catch(()=>{}).then(()=>resolve(i));else resolve(i);};i.onerror=()=>reject(new Error(src));i.src=src;});}
 function drawObject(index,x,ground,width=55,flip=false){const a=atlases.objects?.[index];if(!a||x<camera.x-width||x>camera.x+VW+width)return;const h=a.h/a.w*width;ctx.save();ctx.translate(Math.round(x),Math.round(ground));if(flip)ctx.scale(-1,1);ctx.drawImage(art.objects,a.x,a.y,a.w,a.h,-width/2,-h,width,h);ctx.restore();}
 // Scene light: every sprite gets the colour cast of its scene, darker feet and a soft contact shadow,
 // so generated props sit in the painted backgrounds instead of looking pasted on top.
-const TONES={city:{tint:'#6a3f86',a:.16,ao:.42},garden:{tint:'#ff8a3a',a:.1,ao:.36},forest:{tint:'#3b4a9a',a:.2,ao:.42},mine:{tint:'#3a1e0c',a:.3,ao:.5},vault:{tint:'#3fa6cc',a:.2,ao:.4}};
-function toneAt(x){return inVault()?'vault':inMine()?'mine':x>1560?'forest':state.completed&&art.garden?'garden':'city';}
+const TONES={bunker:{tint:'#2f6f7a',a:.12,ao:.45},city:{tint:'#6a3f86',a:.16,ao:.42},garden:{tint:'#ff8a3a',a:.1,ao:.36},forest:{tint:'#3b4a9a',a:.2,ao:.42},mine:{tint:'#3a1e0c',a:.3,ao:.5},vault:{tint:'#3fa6cc',a:.2,ao:.4}};
+function toneAt(x){return inVault()?'vault':inMine()?'mine':inBunker()?'bunker':x>1560?'forest':state.completed&&art.garden?'garden':'city';}
 // Buildings stand a little further back: a touch of haze matches the background's depth.
 const FAR={greenhouse:.14,metro:.1,lift:.06};
 function graded(src,sx,sy,w,h,key,tone,haze=0,spent=false){const k=key+'|'+tone;if(rendered[k])return rendered[k];const T=TONES[tone],c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(src,sx,sy,w,h,0,0,w,h);g.globalCompositeOperation='source-atop';
@@ -471,7 +669,7 @@ function drawMob(m){const P=KIND[m.kind];if(m.x<camera.x-P.width||m.x>camera.x+V
 function stepLength(){const a=atlases.hero;if(!a)return 34;const k=72/atlases.heroMaxHeight,s=Math.max(...a.slice(0,4).map(f=>f.stride||0));return s?Math.max(22,s*.75*k):34;}
 // Which tool a job needs: pickaxe poses are drawn into the sheet, an axe goes in the empty hand, low jobs are done kneeling.
 function toolFor(tg){if(swingKind(tg))return tg.kind==='node'&&tg.node.type==='wood'?'axe':'pick';
- if(tg.kind==='bed'||tg.kind==='river'||tg.kind==='crate'||tg.kind==='node')return 'kneel';return tg.kind==='panel'||tg.kind==='purify'||tg.kind==='clean'?'wrench':'';}
+ if(tg.kind==='bed'||tg.kind==='river'||tg.kind==='crate'||tg.kind==='node')return 'kneel';return ['panel','purify','clean','valve','fixFilter','startWater'].includes(tg.kind)?'wrench':'';}
 function heldItem(working){if(player.climb)return null;if(working){const tl=toolFor(targetNow);return atlases.hero?.length>=27&&(tl==='axe'||tl==='wrench')?tl:null;}if(sling.anim>0)return 'sling';if(atk.anim>0||nearestMob(120))return 'sword';if((inMine()||inVault())&&state.built.torch&&torchOn)return 'torch';return null;}
 function bakeWeapons(){if(rendered.sword||typeof document==='undefined'||!document.createElement)return;
  // Sword at 4 px per world unit, blade pointing up, grip centre at (14,104).
@@ -614,7 +812,9 @@ function paintMine(){const M=MINEMAP;
  drawFloats();drawTargetMarker();
  ctx.restore();if(rendered.mine)drawDarkness();dirtyFrame=false;}
 function drawFloats(){if(!floats.length)return;ctx.font='600 8px "Pixelify Sans", system-ui';ctx.textAlign='center';for(const f of floats){ctx.globalAlpha=Math.min(1,f.life*2);ctx.fillStyle='#14100c';ctx.fillText(f.text,f.x+.6,f.y+.6);ctx.fillStyle='#f3e3b4';ctx.fillText(f.text,f.x,f.y);}ctx.globalAlpha=1;ctx.textAlign='start';}
-function drawTargetMarker(){if(!targetNow)return;const gy=groundY(),tx=targetNow.x,ty=gy-74;rect(tx-4,ty+Math.sin(now*2)*2,8,2,'#f2c14e');if(interaction.value>0){rect(tx-24,gy-66,48,4,'#14100c');rect(tx-24,gy-66,48*Math.min(1,interaction.value/targetNow.time),3,'#f2c14e');}}
+function drawTargetMarker(){if(!targetNow)return;const gy=groundY(),tx=targetNow.x,ty=gy-74;rect(tx-4,ty+Math.sin(now*2)*2,8,2,'#f2c14e');
+ // Gold corner brackets around the object the action button will use.
+ if(targetNow.w){const w=targetNow.w/2+3,b=gy-(targetNow.lift||0),tp=b-targetNow.h-3,c='#f2c14e',p=Math.round(Math.sin(now*4));for(const [x,y,sx,sy] of [[tx-w-p,tp-p,1,1],[tx+w+p,tp-p,-1,1],[tx-w-p,b+2+p,1,-1],[tx+w+p,b+2+p,-1,-1]]){rect(Math.min(x,x+sx*6),y-(sy<0?1:0),6,1,c);rect(x-(sx<0?1:0),Math.min(y,y+sy*6),1,6,c);}}if(interaction.value>0){rect(tx-24,gy-66,48,4,'#14100c');rect(tx-24,gy-66,48*Math.min(1,interaction.value/targetNow.time),3,'#f2c14e');}}
 function bakeVault(){if(!art.vault)return;rendered.vaultSky=topColor(art.vault);rendered.vault=true;dirtyFrame=true;}
 // Backgrounds are drawn straight from the source image each frame (only the visible slice), so they keep full detail.
 function blit(img,wx,wy,ww,wh){ctx.imageSmoothingEnabled=smoothFor(img.width/ww);const x0=Math.max(wx,camera.x),x1=Math.min(wx+ww,camera.x+VW),y0=Math.max(wy,camera.y),y1=Math.min(wy+wh,camera.y+VH);if(x1<=x0||y1<=y0)return;const kx=img.width/ww,ky=img.height/wh;ctx.drawImage(img,(x0-wx)*kx,(y0-wy)*ky,(x1-x0)*kx,(y1-y0)*ky,x0-camera.x,y0-camera.y,x1-x0,y1-y0);}
@@ -635,7 +835,7 @@ function paintVault(){const v=state.seedvault,targetX=Math.max(0,Math.min(VAULT.
  if(Math.floor(now*4)%2===0)for(let i=0;i<6;i++){const fx=(camera.x+((i*137+now*14)%VW)),fy=camera.y+((i*71+now*22)%VH);rect(fx,fy,1,1,'#e6f6ff');}
  drawFloats();drawTargetMarker();ctx.restore();dirtyFrame=false;}
 function drawItem(id,x,ground,size){if(!art.items)return;const i=itemLayout.index[id];if(i===undefined)return;const c=itemLayout.cell;ctx.imageSmoothingEnabled=true;ctx.drawImage(art.items,(i%itemLayout.cols)*c,Math.floor(i/itemLayout.cols)*c,c,c,Math.round(x-size/2),Math.round(ground-size),size,size);ctx.imageSmoothingEnabled=false;}
-function paint(){ctx.setTransform(scale,0,0,scale,0,0);if(inVault()){ctx.imageSmoothingEnabled=false;ctx.fillStyle='#0d1620';ctx.fillRect(0,0,VW,VH);paintVault();return;}if(inMine()){ctx.imageSmoothingEnabled=false;ctx.fillStyle='#0b0907';ctx.fillRect(0,0,VW,VH);paintMine();return;}ctx.imageSmoothingEnabled=false;ctx.fillStyle='#223945';ctx.fillRect(0,0,VW,VH);
+function paint(){ctx.setTransform(scale,0,0,scale,0,0);if(inBunker()){ctx.imageSmoothingEnabled=false;ctx.fillStyle='#0d1012';ctx.fillRect(0,0,VW,VH);paintBunker();return;}if(inVault()){ctx.imageSmoothingEnabled=false;ctx.fillStyle='#0d1620';ctx.fillRect(0,0,VW,VH);paintVault();return;}if(inMine()){ctx.imageSmoothingEnabled=false;ctx.fillStyle='#0b0907';ctx.fillRect(0,0,VW,VH);paintMine();return;}ctx.imageSmoothingEnabled=false;ctx.fillStyle='#223945';ctx.fillRect(0,0,VW,VH);
  // Camera snaps to device pixels, not world units, so scrolling stays even at any canvas scale.
  const targetX=Math.max(0,Math.min(WORLD-VW,renderX-VW*.42));camera.x=Math.round(targetX*scale)/scale;camera.y=Math.round((GROUND-VH*(VW>VH?.76:.73))*scale)/scale;if(shake>0){const m=shake*14;camera.x+=Math.round((Math.random()-.5)*m*scale)/scale;camera.y+=Math.round((Math.random()-.5)*m*scale)/scale;}
  if(rendered.cityArt){const img=rendered.cityArt,gf=img===art.garden?GARDEN_GROUND:CITY_GROUND,h=1600/img.width*img.height,top=GROUND-h*gf;
@@ -650,7 +850,7 @@ function paint(){ctx.setTransform(scale,0,0,scale,0,0);if(inVault()){ctx.imageSm
  rect(camera.x,GROUND,Math.min(VW,WORLD-camera.x),2,'#8b9668');
  // The last greenhouse stands behind the three beds; equipment appears at the shelter as it is built.
  // Sizes follow the hero (68 units ≈ 1.75 m): doorways and cages are taller than a person, a workbench is waist-high.
- drawProp('greenhouse',GREENHOUSE_X,GROUND+3,300);drawProp('metro',METRO,GROUND+4,124);
+ drawProp('greenhouse',GREENHOUSE_X,GROUND+3,300,false,1,1,inPrologue(state));drawProp('metro',METRO,GROUND+4,124);
  for(const n of nodes){if(n.x<camera.x-70||n.x>camera.x+VW+70)continue;const done=state.harvested[n.id],nx=n.x+(nodeShake[n.id]>0?Math.sin(now*80)*1.6:0);
   // What remains after the job: a cut stump, an opened crate, a pile of rubble.
   if(art.props&&n.type==='wood')done?drawProp('stumpCut',nx,GROUND+3,44):drawProp('stump',nx,GROUND+3,50);
@@ -658,20 +858,20 @@ function paint(){ctx.setTransform(scale,0,0,scale,0,0);if(inVault()){ctx.imageSm
   else if(art.props)done?drawProp('rubble',nx,GROUND+2,38):drawProp('boulder',nx,GROUND+2,44);
   else if(!done)drawObject(n.art,nx,GROUND,n.type==='stone'?44:56);else{rect(nx-12,GROUND-4,9,4,'#5d5850');rect(nx+2,GROUND-3,7,3,'#4a463f');rect(nx-3,GROUND-6,6,6,'#6b665d');}}
  if(art.props){if(state.built.purifier&&!interaction.key.startsWith('clean'))drawProp('purifier',196,GROUND+2,52);if(state.built.bench)drawProp('workbench',262,GROUND+2,66);
-  if(state.built.generator){drawProp('generator',326,GROUND+2,46);if(Math.floor(now*4)%2){rect(318,GROUND-26,3,2,'#ffd35a');}}if(state.built.filter){drawProp('filter',FILTER_X,GROUND+2,46);if(interaction.key==='purify')for(let i=0;i<3;i++)rect(FILTER_X+14,GROUND-22+((now*40+i*7)%16),1,2,'#9fd6e0');}}
+  if(state.built.generator){drawProp('generator',326,GROUND+2,46);if(Math.floor(now*4)%2){rect(318,GROUND-26,3,2,'#ffd35a');}}if(state.built.filter){drawProp('filter',FILTER_X,GROUND+2,46);if(interaction.key==='purify')for(let i=0;i<3;i++)rect(FILTER_X+14,GROUND-22+((now*40+i*7)%16),1,2,'#9fd6e0');}else if(state.story)drawBrokenFilter();if(state.story)drawStation();}
  else{if(state.built.bench)drawObject(5,265,GROUND,72);if(state.built.filter)drawObject(4,345,GROUND,48);if(state.built.generator){rect(300,GROUND-24,16,23,'#495d58');rect(303,GROUND-20,10,5,'#d9bc74');rect(307,GROUND-12,2,7,'#d5e9a7');}}
  if(art.props){drawProp('vaultDoor',1270,GROUND+2,60);rect(1247,GROUND-53,46,2,state.vault?'#3a3f36':state.built.generator?'#c3e5a1':'#b99a76');if(state.vault)rect(1255,GROUND-41,32,40,'#0b0d10');}
  else if(!state.vault){drawObject(3,1270,GROUND,54);rect(1247,GROUND-51,46,2,state.built.generator?'#c3e5a1':'#b99a76');}else{ctx.globalAlpha=.55;drawObject(3,1270,GROUND,54);ctx.globalAlpha=1;rect(1257,GROUND-40,26,40,'#0b0d10');}
  art.props?drawProp('beam',1072,GROUND+2,42):drawObject(0,1072,GROUND,47);
  const grow=state.beds.filter(Boolean).length;
- for(let i=0;i<3;i++){const x=beds[i];rect(x-15,GROUND-4,30,5,'#856443');rect(x-12,GROUND-5,24,2,'#493d2d');if(state.beds[i]){for(let j=0;j<4;j++){const xx=x-10+j*7,height=15+(j%2)*9;rect(xx,GROUND-height,2,height-4,'#93b36e');rect(xx-4,GROUND-height+3,5,3,'#b2ce82');rect(xx+2,GROUND-height-1,5,3,'#c6dda1');rect(xx+1,GROUND-height-4,3,3,j%2?'#dcc17f':'#bccea1');}}}
- for(const m of mobs)drawMob(m);
+ for(let i=0;i<3;i++){const x=beds[i];rect(x-15,GROUND-4,30,5,'#856443');rect(x-12,GROUND-5,24,2,'#493d2d');if(!state.beds[i]&&state.story&&!state.completed)for(let j=0;j<4;j++)rect(x-10+j*6,GROUND-8-j%2*3,1,4+j%2*3,'#7a6040');if(state.beds[i]){for(let j=0;j<4;j++){const xx=x-10+j*7,height=15+(j%2)*9;rect(xx,GROUND-height,2,height-4,'#93b36e');rect(xx-4,GROUND-height+3,5,3,'#b2ce82');rect(xx+2,GROUND-height-1,5,3,'#c6dda1');rect(xx+1,GROUND-height-4,3,3,j%2?'#dcc17f':'#bccea1');}}}
+ for(const m of mobs)drawMob(m);drawMira();
  if(state.vault){const fx=545+Math.sin(now*.5)*14,left=Math.cos(now*.5)<0;art.props?drawProp('fox',fx,GROUND+1,29,left):drawObject(6,fx,GROUND,38,Math.sin(now*.5)<0);}
  if(grow>0)for(let i=0;i<grow*2;i++){const x=440+Math.sin(now*.65+i*2)*65,y=GROUND-35+Math.sin(now*1.3+i)*12;rect(x-1,y,2,3,'#e4dcaa');rect(x-5,y-2,4,3,'#a9d9c7');rect(x+1,y-2,4,3,'#c5df9c');}
  drawHero();drawSlash();
  for(const s of shots){rect(s.x-1,s.y-1,3,3,'#d8d2c0');rect(s.x-Math.sign(s.vx)*4,s.y,2,1,'#d8d2c066');}
  for(const e of effects)rect(e.x,e.y,2,2,e.color);
- drawFloats();drawTargetMarker();
+ drawHints();drawFloats();drawTargetMarker();
  ctx.restore();dirtyFrame=false;}
 function loop(timestamp){const t0=performance.now();const raw=last?timestamp-last:1000/60;const elapsed=last?Math.min(.1,raw/1000):STEP;if(last&&raw>4&&raw<40)rafDelta+=(raw-rafDelta)*.05;last=timestamp;now+=elapsed;
  if(active()){if(raw>worstMs)worstMs=raw;if(raw>50)hitches++;accum+=elapsed;let n=0;while(accum>=STEP&&n<6){prevX=player.x;prevY=player.y;simulate(STEP);accum-=STEP;n++;}if(accum>STEP)accum=STEP;}else accum=0;
@@ -695,9 +895,9 @@ async function boot(){
  sceneArt.mine=loadImage('assets/mine-wall.webp').then(img=>{art.mineWall=img;if(assetsReady)bakeMine();warmImage(img);dirtyFrame=true;});
  sceneArt.vault=loadImage('assets/vault-world.webp').then(img=>{art.vault=img;bakeVault();warmImage(img);});
  sceneArt.mine.catch(()=>{});sceneArt.vault.catch(()=>{});
- try{const loaded=await Promise.all([loadImage('assets/expedition-world.webp'),loadImage(`assets/hero-${heroId(state.hero)}.webp`),loadImage('assets/objects-mobile.webp'),loadImage('assets/props.webp').catch(()=>null),loadImage('assets/mobs.webp').catch(()=>null),loadImage('assets/held.webp').catch(()=>null)]);[art.environment,,art.objects,art.props,art.mobs,art.held]=loaded;useHero(heroId(state.hero),loaded[1]);atlases.objects=atlasLayout.objects;bakeBackground();
+ try{const loaded=await Promise.all([loadImage('assets/expedition-world.webp'),loadImage(`assets/hero-${heroId(state.hero)}.webp`),loadImage('assets/objects-mobile.webp'),loadImage('assets/props.webp').catch(()=>null),loadImage('assets/mobs.webp').catch(()=>null),loadImage('assets/held.webp').catch(()=>null),state.story?loadImage('assets/hero-mira.webp').catch(()=>null):null]);[art.environment,,art.objects,art.props,art.mobs,art.held,art.mira]=loaded;bakeBunker();useHero(heroId(state.hero),loaded[1]);atlases.objects=atlasLayout.objects;bakeBackground();
   try{rendered.shellback=bakeShellback();const sb=rendered.shellback;rendered.shellRed=tinted(sb.canvas,0,0,sb.w,sb.h,'#ff5a3c');rendered.stoneback=bakeShellback(document,'stone');rendered.stoneRed=tinted(rendered.stoneback.canvas,0,0,sb.w,sb.h,'#ff5a3c');const a=atlases.objects[7];rendered.mobWhite=tinted(art.objects,a.x,a.y,a.w,a.h,'#fff6e2');rendered.mobRed=tinted(art.objects,a.x,a.y,a.w,a.h,'#ff5a3c');}catch{}
-  bakeMine();bakeWeapons();await loadHeroArt(state.hero);if(state.scene==='mine'&&sceneArt.mine)await sceneArt.mine.catch(()=>{});if(state.scene==='vault'&&sceneArt.vault)await sceneArt.vault.catch(()=>{});prewarm(state.scene==='surface'?toneAt(player.x):state.scene);if(state.scene==='surface'&&player.x<1560)prewarm(toneAt(300));assetsReady=true;ui['start-btn'].disabled=false;setText(ui['start-btn'],t(continuing?'menu.continue':'menu.start'));dirtyFrame=true;
+  bakeMine();bakeWeapons();await loadHeroArt(state.hero);if(state.scene==='mine'&&sceneArt.mine)await sceneArt.mine.catch(()=>{});if(state.scene==='vault'&&sceneArt.vault)await sceneArt.vault.catch(()=>{});prewarm(state.scene==='surface'?toneAt(player.x):state.scene);if(inBunker())prewarm('city');if(state.scene==='surface'&&player.x<1560)prewarm(toneAt(300));assetsReady=true;ui['start-btn'].disabled=false;setText(ui['start-btn'],t(continuing?'menu.continue':'menu.start'));dirtyFrame=true;
   // Repaint the gate sign once the pixel font arrives, and fetch the forest after start-up.
   document.fonts?.ready?.then(()=>bakeGate());loadImage('assets/forest-world.webp').then(img=>{art.forest=img;bakeForest();}).catch(()=>{});
   // Backgrounds for later scenes load after start-up so the first screen appears quickly.
@@ -706,4 +906,4 @@ async function boot(){
   const tones=[state.completed?'forest':null,state.forest.every(Boolean)?'mine':null,state.mine.panel?'vault':null].filter(Boolean);prewarmLater(tones);}
  catch{setText(ui['start-btn'],t('menu.loadFail'));setText($('.title-hint'),t('menu.loadFailNote'));}}
 buildSettings();applyLanguage();syncSettings();measureControls();requestAnimationFrame(loop);if(typeof Image!=='undefined')boot();else{assetsReady=true;ui['start-btn'].disabled=false;}
-window.afterfall={useHot,pick:id=>{craftPick=id;craftCat=RECIPES.find(r=>r.id===id).cat;renderCraft();},snapshot:()=>structuredClone({state,player:{x:player.x,y:player.y,ground:player.ground,face:player.face,floor:player.floor,climbing:!!player.climb,down:downTime>0},work:{hits,key:interaction.key,progress:targetNow?interaction.value/targetNow.time:0},danger:!!threat(),torchOn,mobs:mobs.map(m=>({kind:m.kind,role:m.role,x:m.x,hp:m.hp,st:m.st,same:sameFloor(m)})),paused:!active(),nearBase:nearBase(),lang:getLang()}),set:setSetting};
+window.afterfall={useHot,pick:id=>{craftPick=id;craftCat=RECIPES.find(r=>r.id===id).cat;renderCraft();},snapshot:()=>structuredClone({story:state.story,mira:{x:mira.x},talk:typeof talk.lines[talk.i]?.[1]==='string'?talk.lines[talk.i][1]:null,intro:!!intro,target:targetNow?{kind:targetNow.kind,name:targetNow.name,block:targetNow.block||null}:null,state,player:{x:player.x,y:player.y,ground:player.ground,face:player.face,floor:player.floor,climbing:!!player.climb,down:downTime>0},work:{hits,key:interaction.key,progress:targetNow?interaction.value/targetNow.time:0},danger:!!threat(),torchOn,mobs:mobs.map(m=>({kind:m.kind,role:m.role,x:m.x,hp:m.hp,st:m.st,same:sameFloor(m)})),paused:!active(),nearBase:nearBase(),lang:getLang()}),set:setSetting};

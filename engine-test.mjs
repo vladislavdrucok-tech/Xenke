@@ -23,6 +23,8 @@ for(const id of ['craft-dialog','bag-dialog','pause-dialog','settings-dialog','w
 globalThis.document={hidden:false,querySelector(s){if(s==='dialog[open]')return [...elements.values()].find(e=>e.id.endsWith('-dialog')&&e.open)||null;return el(s.slice(1));},querySelectorAll(s){if(s==='dialog[open]')return [...elements.values()].filter(e=>e.id.endsWith('-dialog')&&e.open);if(s==='dialog')return [...elements.values()].filter(e=>e.id.endsWith('-dialog'));if(s==='[data-craft]')return [...elements.values()].filter(e=>e.dataset.craft);if(s==='[data-pick]')return [...elements.values()].filter(e=>e.dataset.pick);return [];},addEventListener(){}};
 globalThis.window={requestIdleCallback:f=>f(),addEventListener(n,f){listeners[n]=f;}};
 globalThis.localStorage={data:{},getItem(k){return this.data[k]||null;},setItem(k,v){this.data[k]=v;},removeItem(k){delete this.data[k];}};
+// These tests drive the campaign (missions 1-4); the prologue has its own test (prologue-test.mjs). Start from a campaign save.
+{const {freshState}=await import('./dist/expedition.mjs');localStorage.data['afterfall-last-greenhouse-v3']=JSON.stringify(freshState());}
 let raf;globalThis.requestAnimationFrame=f=>raf=f;
 globalThis.setTimeout=()=>1;globalThis.clearTimeout=()=>{};
 await import('./dist/expedition-game.mjs');

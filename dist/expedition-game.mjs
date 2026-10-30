@@ -1,4 +1,4 @@
-import {SAVE_KEY,LEGACY_KEY,ITEMS,RECIPES,HEROES,freshState,newGame,inPrologue,STORY,BUNKER,STATION,CHESTS,parseSave,canCraft,craft,plant,quest,exportCode,importCode} from './expedition.mjs?v=10';
+import {SAVE_KEY,LEGACY_KEY,ITEMS,RECIPES,HEROES,freshState,newGame,inPrologue,STORY,BUNKER,STATION,CHESTS,parseSave,canCraft,craft,plant,quest,exportCode,importCode} from './expedition.mjs?v=11';
 import atlasLayout from './assets/atlas-layout.mjs';
 import itemLayout from './assets/items-layout.mjs';
 import extraHeroes from './assets/heroes.mjs';
@@ -7,6 +7,7 @@ import mobLayout from './assets/mobs-layout.mjs';
 import heldLayout from './assets/held-layout.mjs';
 import {icon} from './icons.mjs';
 import {bakeShellback} from './creatures.mjs';
+import {bakeStationArt,MACHINE,P as SP} from './station-art.mjs?v=11';
 import {LANGS,t,setLang,getLang,detectLang} from './i18n.mjs';
 import {initAudio,sfx,setVolume,setMood,setActive as setAudioActive} from './audio.mjs';
 const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
@@ -158,7 +159,8 @@ const shots=[];const atk={cool:0,combo:0,comboT:0,anim:0,hitDone:true,heavy:fals
 
 function active(){return started&&!modal&&visible;}
 function nearBase(){return state.scene==='surface'&&Math.abs(player.x-BASE)<245;}
-function toast(text){setText(ui.toast,text);ui.toast.classList.add('show');toastUntil=now+3;}
+// One hint at a time, in the strip under the hero: a fresh message briefly replaces the target's name.
+function toast(text,title=false){setText(ui.toast,text);ui.toast.classList.add('show');ui.toast.classList.toggle('title',title);$('#game')?.classList.add('toasting');toastUntil=now+(title?2.6:2.4);}
 function save(){if(!started)return;state.player={x:player.x,y:player.y};try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch{}}
 function burst(x,y,color,count=10){for(let i=0;i<count&&effects.length<16;i++)effects.push({x,y,vx:(Math.random()-.5)*42,vy:-20-Math.random()*38,life:.7+Math.random()*.3,color});}
 const buttonPointers={};
@@ -193,7 +195,7 @@ const clock=s=>{s=Math.floor(s);return `${Math.floor(s/60)}:${String(s%60).padSt
 let craftCat='build',craftPick=null;
 function renderCraft(){const near=nearBase();setText(ui['station-note'],t(near?'craft.near':'craft.far'));
  // During the prologue the workbench offers only the repair unit; afterwards story recipes stay hidden.
- const pro=inPrologue(state);if(pro)craftCat='build';for(const b of $$('#craft-tabs [data-cat]'))b.hidden=pro&&b.dataset.cat!=='build';
+ const pro=inPrologue(state);if(pro)craftCat='build';for(const b of $$('#craft-tabs [data-cat]'))b.hidden=pro&&b.dataset.cat!=='build';ui['craft-dialog'].classList?.toggle('single',pro);
  const list=RECIPES.filter(r=>r.cat===craftCat&&(pro?r.story:!r.story||state.built[r.id]));if(!list.some(r=>r.id===craftPick))craftPick=(list.find(r=>!canCraft(state,r,near))||list.find(r=>canCraft(state,r,near)!=='reason.done')||list[0]).id;
  for(const b of $$('#craft-tabs [data-cat]'))attr(b,'aria-selected',String(b.dataset.cat===craftCat));
  $('#craft-badge').innerHTML=itemIcon('bench','big');
@@ -243,7 +245,8 @@ function refreshHud(){
  setText(ui.restored,inPrologue(state)?t('scene.'+(inBunker()?1:state.story.station?3:2)).split(' · ')[0]:state.completed?t('hud.forest',{n:state.forest.filter(Boolean).length}):t('hud.greenhouse',{n:state.beds.filter(Boolean).length}));
  setText(ui.day,'⏱ '+clock(state.time));const dx=q.x-player.x;setText(ui.waypoint,Math.abs(dx)<60?'◆ '+t('hud.near'):`${dx>0?'→':'←'} ${t('hud.dist',{n:Math.round(Math.abs(dx)/10)})}`);
  canvas.dataset.stage=q.step;}
-function resize(){const r=canvas.getBoundingClientRect();VW=Math.max(320,Math.min(960,r.width/1.65));VH=VW*r.height/r.width;const Q=QUALITY[prefs.quality],dpr=typeof devicePixelRatio==='number'?devicePixelRatio:1;const maxArea=Q.area*adaptiveScale;const ratio=Math.min(r.width/VW*Math.min(dpr,Q.density),Math.sqrt(maxArea/(VW*VH)));canvas.width=Math.round(VW*ratio);canvas.height=Math.round(VH*ratio);scale=canvas.width/VW;ctx.imageSmoothingEnabled=false;dirtyFrame=true;}
+// Visible world width: on big screens it is capped so characters keep the concepts' scale (about a quarter of the screen height).
+function resize(){const r=canvas.getBoundingClientRect();VW=Math.max(320,Math.min(560,r.width/1.65));VH=VW*r.height/r.width;const Q=QUALITY[prefs.quality],dpr=typeof devicePixelRatio==='number'?devicePixelRatio:1;const maxArea=Q.area*adaptiveScale;const ratio=Math.min(r.width/VW*Math.min(dpr,Q.density),Math.sqrt(maxArea/(VW*VH)));canvas.width=Math.round(VW*ratio);canvas.height=Math.round(VH*ratio);scale=canvas.width/VW;ctx.imageSmoothingEnabled=false;dirtyFrame=true;}
 let resizePending=false;window.addEventListener('resize',()=>{if(resizePending)return;resizePending=true;requestAnimationFrame(()=>{resizePending=false;resize();measureControls();});});resize();
 
 // ---------- input ----------
@@ -407,6 +410,9 @@ function simulate(dt){if(!active())return;if(hitstop>0){hitstop-=dt;return;}
  // Something stands in the way (a missing tool or part): say why, once per press, and start no progress.
  else if(pressing&&targetNow?.block){toast(t(targetNow.block));actionLatch=true;autoAction=false;interaction={key:'',value:0};sfx('click');}
  else if(pressing&&targetNow){if(interaction.key!==targetNow.key){interaction={key:targetNow.key,value:0};swing=0;hits=0;}
+  // Jobs with a working spot: walk there first and face the object; nothing happens until the hero is in place.
+  let ready=true;if(targetNow.spot!=null){const d=targetNow.spot-player.x;if(Math.abs(d)>1.5){ready=false;player.x+=Math.sign(d)*Math.min(Math.abs(d),80*dt);player.walk+=dt*5;player.face=Math.sign(d);}else player.face=Math.sign(targetNow.x-player.x)||player.face;}
+  else if(!swingKind(targetNow)&&targetNow.kind!=='clean')player.face=Math.sign(targetNow.x-player.x)||player.face;
   // Step to the side of the object and face it, so the tool lands on it and the hero does not hide it.
   if(swingKind(targetNow)||targetNow.kind==='clean'){const side=player.x<targetNow.x-1?-1:player.x>targetNow.x+1?1:(player.face>0?-1:1),spot=targetNow.x+side*(targetNow.kind==='clean'?14:24),d=spot-player.x;player.face=-side;if(Math.abs(d)>1){const nx=player.x+Math.sign(d)*Math.min(Math.abs(d),70*dt);if(inMine()){const F=MINEMAP.floors[player.floor];player.x=Math.max(F.x1,Math.min(F.x2,nx));}else if(!overlaps(nx,player.y))player.x=nx;player.walk+=dt*5;}}
   if(swingKind(targetNow)){
@@ -414,7 +420,10 @@ function simulate(dt){if(!active())return;if(hitstop>0){hitstop-=dt;return;}
    // the resource is granted on the last contact, never by holding or by frame changes.
    const need=strikesFor(targetNow),prev=swing;swing+=dt/(SWING/perk('work',1));
    if(Math.floor(prev-CONTACT)!==Math.floor(swing-CONTACT)&&swing>=CONTACT){hits++;impact(targetNow);interaction.value=hits/need*targetNow.time;if(hits>=need){finishAction(targetNow);interaction={key:'',value:0};hits=0;actionLatch=true;}}}
-  else{swing+=dt/.8;interaction.value+=dt*perk('work',1);if(interaction.value>=targetNow.time){finishAction(targetNow);interaction={key:'',value:0};actionLatch=true;}}}
+  else if(ready){swing+=dt/.8;const prev=interaction.value;interaction.value+=dt*perk('work',1);
+   // Wrench work turns in pulses: each pulse is a push of the arm, a click and a turn of the wheel or bolt.
+   if(WRENCH_JOBS.has(targetNow.kind)&&Math.floor(prev/TURN)!==Math.floor(interaction.value/TURN))turnPulse(targetNow);
+   if(interaction.value>=targetNow.time){finishAction(targetNow);interaction={key:'',value:0};actionLatch=true;}}}
  else {interaction={key:'',value:0};swing=0;hits=0;if(!targetNow)autoAction=false;}
  if(state.scene==='surface'&&state.completed&&player.x>1600&&!forestGuard){forestGuard=true;mobs.push(makeMob('shellback',2150,{hp:10,min:1960,max:2380}));toast(t('toast.guard'));}
  if(inMine()&&!mobs.caveHint&&mobs.some(m=>m.kind==='stoneback'&&m.st==='chase')){mobs.caveHint=true;toast(t('toast.cave'));}
@@ -463,7 +472,7 @@ function showLine(){const l=talk.lines[talk.i];const box=$('#dialog');if(!box)re
  if(l[0]==='mira')mira.face=Math.sign(player.x-mira.x)||mira.face;sfx('click');}
 function nextLine(){if(!talk.lines.length)return;talk.i++;talk.shown='';showLine();}
 $('#dialog')?.addEventListener('pointerdown',ev=>{ev.preventDefault?.();ev.stopPropagation?.();nextLine();});
-function sceneTitle(n){const el=$('#scene-title');if(!el)return;setText(el,t('scene.'+n));el.hidden=false;el.style&&(el.style.animation='none');void el.offsetWidth;if(el.style)el.style.animation='';clearTimeout(sceneTitle.tm);sceneTitle.tm=setTimeout(()=>{el.hidden=true;},3300);}
+function sceneTitle(n){toast(t('scene.'+n),true);}
 // One-off teaching hints, shown at the moment the action is needed.
 function hint(id){const st=story();if(!st.said||st.said.includes('h-'+id))return;st.said.push('h-'+id);const k=kbHints&&t('hint.'+id+'Keys')!=='hint.'+id+'Keys'?'hint.'+id+'Keys':'hint.'+id;toast(t(k));}
 function syncCalm(){$('#game').classList.toggle('calm',inPrologue(state));$('#game').classList.toggle('kb',kbHints);}
@@ -476,17 +485,19 @@ $('#rotate-ok')&&($('#rotate-ok').onclick=()=>{$('#rotate-hint').hidden=true;});
 // Things the hero can use in the bunker. block: why it cannot be done yet (no progress bar, just the reason).
 function bunkerTarget(){const st=story(),near=(x,r)=>Math.abs(player.x-x)<r;let best=null;
  if(intro)return null;
- if(!st.tool&&near(BUNKER.tool,30))best={kind:'wrench',key:'wrench',time:.35,x:BUNKER.tool,name:'target.wrench',verb:'verb.get',w:34,h:30};
- if(!st.hatch&&near(BUNKER.valve,28))best={kind:'valve',key:'valve',time:1.6,x:BUNKER.valve,name:st.tool?'target.valve':'target.valveNoTool',verb:'verb.use',block:st.tool?null:'toast.noTool',w:24,h:60,lift:22};
+ if(!st.tool&&near(BUNKER.tool,30))best={kind:'wrench',key:'wrench',time:.35,x:BUNKER.tool,spot:BUNKER.tool-16,name:'target.wrench',verb:'verb.get',w:34,h:30};
+ if(!st.hatch&&near(BUNKER.valve,28))best={kind:'valve',key:'valve',time:TURN*4,x:BUNKER.valve,spot:BUNKER.valve-15,name:st.tool?'target.valve':'target.valveNoTool',verb:'verb.turnValve',block:st.tool?null:'toast.noTool',w:24,h:60,lift:22};
  if(near(BUNKER.ladder,22))best=st.hatch?{kind:'exitLadder',key:'exit-ladder',time:.15,x:BUNKER.ladder,name:'target.ladderOut',verb:'verb.climb',w:24,h:90}:{kind:'shut',key:'exit-ladder',time:.1,x:BUNKER.ladder,name:'target.ladderShut',verb:'verb.climb',block:'toast.hatchShut',w:24,h:90};
  if(!best&&near(mira.x,24))best={kind:'mira',key:'mira',time:.1,x:mira.x,name:'target.mira',verb:'verb.talk',w:24,h:64};
  return best;}
 // The Station's own targets, added on top of the road's chests and logs while the prologue runs.
 function stationTargets(best){const st=story(),near=(x,r)=>Math.abs(player.x-x)<r;
- if(near(262,30))best={kind:'bench',key:'bench',time:.1,x:262,name:'target.bench',verb:'verb.open2',w:66,h:40};
- if(!st.fixed&&near(FILTER_X,28))best={kind:'fixFilter',key:'fix',time:1.8,x:FILTER_X,name:state.inv.repair?'target.filterBroken':'target.filterNoPart',verb:'verb.repair2',block:state.inv.repair?null:'toast.needPart',w:46,h:56};
- else if(st.fixed&&!st.water&&near(FILTER_X,28))best={kind:'startWater',key:'tap',time:.8,x:FILTER_X,name:'target.filterStart',verb:'verb.use',w:46,h:56};
- if(st.water&&!st.radio&&near(STATION.radio,24))best={kind:'radio',key:'radio',time:.2,x:STATION.radio,name:'target.radio',verb:'verb.listen',w:20,h:34};
+ // Each object has its own stretch of ground; they do not overlap, so the button never hesitates between two.
+ if(near(262,28))best={kind:'bench',key:'bench',time:.01,x:262,name:'target.bench',verb:'verb.open2',w:66,h:40};
+ const mx=(x)=>machineAt(x,0)[0];
+ if(!st.fixed&&near(FILTER_X-20,36))best={kind:'fixFilter',key:'fix',time:TURN*5,x:mx(MACHINE.unit[0]+5),spot:STATION.spot,name:state.inv.repair?'target.filterBroken':'target.filterNoPart',verb:'verb.repair2',block:state.inv.repair?null:'toast.needPart',w:20,h:24,lift:26};
+ else if(st.fixed&&!st.water&&near(FILTER_X-20,36))best={kind:'startWater',key:'tap',time:TURN*3,x:mx(MACHINE.wheel[0]),spot:STATION.spot,name:'target.filterStart',verb:'verb.tap',w:16,h:16,lift:36};
+ if(st.water&&!st.radio&&near(STATION.radio,18))best={kind:'radio',key:'radio',time:.2,x:STATION.radio,name:'target.radio',verb:'verb.listen',w:24,h:30};
  if(!best&&st.out&&near(mira.x,22))best={kind:'mira',key:'mira',time:.1,x:mira.x,name:'target.mira',verb:'verb.talk',w:24,h:64};
  return best;}
 // Prologue actions. Returns true when it handled the target.
@@ -516,6 +527,9 @@ function updateStory(dt){const st=story();if(!state.story||st.done)return;
  if(targetNow&&!st.said.includes('h-act'))hint('act');}
 function updateMira(dt){const st=story();if(!state.story)return;let tx;
  if(inBunker())tx=BUNKER.mira;else if(state.scene!=='surface')return;else if(st.station||st.done)tx=STATION.mira;else tx=player.x-player.face*46;
+ // She keeps a comfortable distance: never on top of the object being used, never pressed against the hero.
+ if(targetNow&&Math.abs(tx-targetNow.x)<40){const side=Math.sign(mira.x-targetNow.x)||Math.sign(mira.x-player.x)||1;tx=targetNow.x+side*48;}
+ if(Math.abs(tx-player.x)<30&&!inBunker()){const side=Math.sign(tx-player.x)||1;tx=player.x+side*30;}
  const dx=tx-mira.x;mira.moving=Math.abs(dx)>4;if(mira.moving){const v=Math.min(135,Math.abs(dx)*3+30);mira.x+=Math.sign(dx)*Math.min(Math.abs(dx),v*dt);mira.face=Math.sign(dx);mira.walk+=dt*v*4/56;}
  else{mira.walk=0;mira.face=inBunker()&&!talk.lines.length?1:Math.sign(player.x-mira.x)||mira.face;}
  // She hops over the fallen beam instead of walking through it.
@@ -530,7 +544,7 @@ const miraData=()=>extraHeroes.curie&&!Array.isArray(extraHeroes.curie)?extraHer
 function interactables(){const st=story(),out=[];if(!inPrologue(state))return out;
  if(inBunker()){if(!st.tool)out.push([BUNKER.tool,GROUND-34]);if(!st.hatch)out.push([BUNKER.valve,GROUND-66]);out.push([BUNKER.ladder,GROUND-96]);return out;}
  for(const c of CHESTS)if(!state.harvested[c.id])out.push([c.x,GROUND-34]);
- if(st.station){out.push([262,GROUND-46]);if(!st.water)out.push([FILTER_X,GROUND-62]);else if(!st.radio)out.push([STATION.radio,GROUND-40]);}
+ if(st.station){out.push([262,GROUND-46]);if(!st.water)out.push([FILTER_X-28,GROUND-62]);else if(!st.radio)out.push([STATION.radio,GROUND-40]);}
  return out;}
 function drawHints(){for(const [x,y] of interactables()){if(Math.abs(x-player.x)>170||targetNow&&Math.abs(targetNow.x-x)<4)continue;const b=Math.round(Math.sin(now*3+x)*1.5);ctx.globalAlpha=.75;rect(x-2,y-6+b,4,4,'#f2c14e');rect(x-1,y-7+b,2,6,'#f2c14e');ctx.globalAlpha=1;}}
 // ---------- prologue art (drawn in code until the painted sprites arrive; see ASSETS_NEEDED.md) ----------
@@ -580,7 +594,7 @@ function drawBunkerProps(){const st=story(),G=GROUND,B=BUNKER;
  // Tool box with the wrench on top (gone once taken).
  drawProp('crate',B.tool,G+1,34);if(!st.tool&&art.held&&heldLayout.wrench){const L=heldLayout.wrench,sc=22/L.h;ctx.save();ctx.translate(B.tool,G-26+Math.round(Math.sin(now*3)));ctx.rotate(-Math.PI/2);ctx.imageSmoothingEnabled=true;ctx.drawImage(art.held,L.x,L.y,L.w,L.h,-L.w*sc/2,-L.h*sc/2,L.w*sc,L.h*sc);ctx.restore();ctx.imageSmoothingEnabled=false;}
  // Emergency valve: turns while the hero works it; its lamp goes green when the hatch is open.
- const vx=B.valve,vy=G-44,turning=interaction.key==='valve',ang=(turning?interaction.value*4:0)+(st.hatch?2:0);rect(vx-3,vy-16,6,6,st.hatch?'#6ad04a':Math.floor(now*3)%2?'#e2483c':'#5a2a24');
+ const vx=B.valve,vy=G-44,turning=interaction.key==='valve',ang=turning?wheelAngle():st.hatch?Math.PI*2:0;rect(vx-3,vy-16,6,6,st.hatch?'#6ad04a':Math.floor(now*3)%2?'#e2483c':'#5a2a24');
  ctx.save();ctx.translate(vx,vy);ctx.rotate(ang);ctx.strokeStyle='#b03a2e';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,8,0,Math.PI*2);ctx.stroke();for(let i=0;i<4;i++){ctx.rotate(Math.PI/2);rect(-1,0,2,8,'#8a2a1f');}ctx.restore();rect(vx-2,vy-2,4,4,'#d9a441');
  // The hatch at the top of the ladder: shut with a red lamp, or open with daylight pouring in.
  const L=B.ladder,top=G-176;if(st.hatch){rect(L-16,top-8,32,10,'#050607');if(rendered.shaft){ctx.globalAlpha=.8+.1*Math.sin(now*2);ctx.imageSmoothingEnabled=true;ctx.drawImage(rendered.shaft,L-16,top-4,32,150);ctx.imageSmoothingEnabled=false;ctx.globalAlpha=1;}}
@@ -597,19 +611,51 @@ function paintBunker(){const B=BUNKER,bw=B.w;const cx=bw<=VW?(bw-VW)/2:Math.max(
  drawHints();drawFloats();drawTargetMarker();ctx.restore();dirtyFrame=false;}
 // The Station while the prologue runs: the broken filter with its alarm, the empty tanks, the radio, dry beds, a sign on the road.
 function bakeSign(){const c=document.createElement('canvas');c.width=160;c.height=44;const g=c.getContext('2d');g.fillStyle='#2b3a33';g.fillRect(0,0,160,44);g.fillStyle='#3d5246';g.fillRect(3,3,154,38);g.fillStyle='#e8efe4';g.font='600 22px "Pixelify Sans", system-ui';g.textAlign='center';g.fillText('← '+t('sign.station'),80,30);rendered.sign=c;}
-function drawStation(){const st=story(),G=GROUND,F=FILTER_X;
- // Tanks next to the filter: their water level rises once the filter runs.
- waterFill=st.water?Math.min(1,waterFill+.004):.12;const fill=waterFill;for(const [x,col] of [[412,'#5c6a72'],[426,'#5c6a72'],[442,'#3c6a9a']]){rect(x-6,G-20,12,20,col);rect(x-6,G-20,12,2,'#9aa8b0');rect(x-4,G-4-Math.round(14*fill),8,Math.round(14*fill),'#4fb3d0');}
- // Water line from the filter into the tanks when running; a slow drip from the cracked pipe while broken.
- if(st.water){for(let i=0;i<4;i++)rect(F+18+i*5,G-30+((now*30+i*6)%8),2,2,'#9fe0f0');}else for(let i=0;i<2;i++)rect(F+16,G-24+((now*20+i*12)%22),1,2,'#7fb8c4');
- // Status lamp on the filter: red alarm, amber once the unit is fitted, green when running.
- const lamp=st.water?'#6ad04a':st.fixed?'#f2c14e':Math.floor(now*3)%2?'#ff4a3a':'#5a2020';rect(F-3,G-58,6,5,lamp);if(!st.fixed){ctx.globalAlpha=.25+.15*Math.sin(now*6);rect(F-8,G-62,16,12,'#ff4a3a');ctx.globalAlpha=1;}
- if(st.fixed){rect(F-20,G-26,8,8,'#c9a050');rect(F-19,G-25,6,2,'#ffe08a');}
- // Radio on a crate by the workbench; it blinks once the power is back.
- const rx=STATION.radio;drawProp('crate',rx,G+1,24);rect(rx-8,G-24,16,10,'#3b4449');rect(rx-6,G-22,6,6,'#1a1f22');rect(rx+2,G-22,4,2,st.water?'#6ad04a':'#5a2a24');rect(rx+5,G-36,1,12,'#8a949a');
- if(st.water&&!st.radio){const p=(now*1.5)%1;ctx.globalAlpha=1-p;ctx.strokeStyle='#9fe0c8';ctx.lineWidth=1;ctx.beginPath();ctx.arc(rx+5,G-36,4+p*10,-2.4,-.7);ctx.stroke();ctx.globalAlpha=1;}
+// Station workshop (see station-art.mjs): canopy and lamp behind the workbench, the filter machine with live parts,
+// water cans fed by the spout, the radio. Baked pieces are drawn at 1/SP scale; only the moving parts are drawn each frame.
+function blitArt(img,x,y,flip=false){const w=img.width/SP,h=img.height/SP;ctx.imageSmoothingEnabled=smoothFor(SP);if(flip){ctx.save();ctx.translate(x+w,y);ctx.scale(-1,1);ctx.drawImage(img,0,0,w,h);ctx.restore();}else ctx.drawImage(img,x,y,w,h);ctx.imageSmoothingEnabled=false;}
+function drawStationBack(){const A=rendered.station,G=GROUND;if(camera.x>340||camera.x+VW<200)return;blitArt(A.canopy,262-48,G-82);}
+const CANS=[{art:'bucket',x:438},{art:'canRed',x:454},{art:'canOlive',x:468},{art:'drum',x:486}];
+// The machine stands a little taller than the hero, like the concept: drawn at MS times its baked size, in its own local coordinates.
+const MS=1.2,machineLeft=()=>FILTER_X-MACHINE.w*MS/2,machineAt=(mx,my)=>[machineLeft()+mx*MS,GROUND+1-(MACHINE.h-my)*MS];
+function drawFilterMachine(){const A=rendered.station,M=MACHINE,st=story(),G=GROUND,running=st.water||!inPrologue(state)&&state.built.filter,fixed=st.fixed||running,left=machineLeft(),top=G+1-M.h*MS;
+ if(left>camera.x+VW||left+M.w*MS+70<camera.x)return;
+ drawShadow(FILTER_X,G+1,M.w*MS*1.05,.9);ctx.save();ctx.translate(left,top);ctx.scale(MS,MS);blitArt(A.machine,0,0);
+ // Inspection window: cracked and dark while broken, clean glass after the repair, clear water churning while it runs.
+ const [wx,wy,ww,wh]=M.window;blitArt(fixed?A.glassClean:A.glassBroken,wx,wy);
+ if(running){const lvl=wh*(.55+.08*Math.sin(now*1.3));ctx.globalAlpha=.75;rect(wx+1,wy+wh-lvl,ww-2,lvl-1,'#3fa9d6');ctx.globalAlpha=.9;rect(wx+1,wy+wh-lvl,ww-2,1,'#bfeaf6');ctx.globalAlpha=1;for(let i=0;i<4;i++){const by=wy+wh-2-((now*14+i*7)%(lvl-3));rect(wx+3+((i*5)%(ww-6)),by,1,1,'#e6fbff');}}
+ // Status lamp: red alarm, amber once the unit is in, green while running.
+ const [lx,ly]=M.lamp,col=running?'#6ad04a':fixed?'#f2c14e':Math.floor(now*3)%2?'#ff4a3a':'#5a2020';rect(lx-2,ly-2,4,4,col);rect(lx-2,ly-2,1,1,'#ffffff80');
+ // Gauge needle: dead low while broken, rising once fitted, steady with a tremor while running.
+ const [gx,gy,gr]=M.gauge,ang=Math.PI*(running?1.62+Math.sin(now*7)*.03:fixed?1.3:.86+Math.sin(now*2)*.02);ctx.strokeStyle='#b03a2e';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(gx,gy);ctx.lineTo(gx+Math.cos(ang)*(gr-1),gy+Math.sin(ang)*(gr-1));ctx.stroke();
+ // The repair unit sits on the supply pipe once fitted; while it is being fitted it slides into place with the pushes.
+ const [ux,uy]=M.unit,fitting=interaction.key==='fix';if(fixed||fitting){const off=fitting&&!fixed?Math.max(0,4-interaction.value/(TURN*5)*4):0;blitArt(A.unit,ux-off,uy);}
+ // Tap wheel on the supply pipe: a quarter turn per push of the wrench.
+ const [hx,hy,hr]=M.wheel,wa=interaction.key==='tap'?wheelAngle():running?Math.PI*1.5:0;ctx.save();ctx.translate(hx,hy);ctx.rotate(wa);ctx.strokeStyle='#141414';ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(0,0,hr,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#b03a2e';ctx.lineWidth=1.4;ctx.stroke();for(let i=0;i<4;i++){ctx.rotate(Math.PI/2);rect(-.5,0,1,hr,'#8a2a1f');}ctx.restore();rect(hx-1,hy-1,2,2,'#d9a441');
+ // Broken: a drip from the cracked joint.
+ const [dx,dy]=M.drip;if(!fixed)for(let i=0;i<2;i++)rect(dx,dy+((now*22+i*9)%16),1,2,'#7fb8c4');
+ ctx.restore();
+ // Running: a stream from the spout into the bucket, with a splash.
+ if(running){const [x0,y0]=machineAt(M.spout[0]-1.5,M.spout[1]+8),xb=CANS[0].x,yb=G-9;ctx.globalAlpha=.9;for(let y=y0;y<yb;y+=1){const t=(y-y0)/(yb-y0),x=x0+(xb-x0)*t*t;rect(x-1,y,3,1,'#4fb0d8');}ctx.globalAlpha=1;
+  for(let k=0;k<6;k++){const t=((now*1.6+k/6)%1),x=x0+(xb-x0)*t*t,y=y0+(yb-y0)*t;rect(x,y,1,2,'#e6fbff');}for(let i=0;i<4;i++){const t=(now*2.2+i/4)%1;rect(xb-4+i*2.5,yb-1-Math.sin(t*Math.PI)*5,1,1,'#bfeaf6');}}}
+let waterFillT=0;
+function drawStation(){const st=story(),G=GROUND,A=rendered.station;
+ if(A){const running=st.water||!inPrologue(state)&&state.built.filter;if(running)waterFillT=Math.min(1,waterFillT+.003);
+  // Water cans and a bucket under the spout; the bucket fills once the water runs.
+  for(const c of CANS){const im=A[c.art],w=im.width/SP;drawShadow(c.x,G+1,w*.9,.7);blitArt(im,c.x-w/2,G+1-im.height/SP);}
+  {const b=CANS[0],lvl=Math.round((running?.2+.6*waterFillT:.08)*8);rect(b.x-5,G-10+(8-lvl),10,1,'#7fd0ec');}
+  // Radio on a crate by the workbench: dial lights up and the antenna sends rings once the power is back.
+  const rx=STATION.radio;drawProp('crate',rx,G+1,24);blitArt(A.radio,rx-10,G-14-14);const on=st.water;if(on){ctx.globalAlpha=.6+.3*Math.sin(now*6);rect(rx+0.5,G-24,7,2,'#ffcf6a');ctx.globalAlpha=1;}
+  rect(rx+7,G-40,1,12,'#8a949a');rect(rx+7,G-41,2,1,'#c3ccd0');if(on&&!st.radio){const p=(now*1.3)%1;ctx.globalAlpha=1-p;ctx.strokeStyle='#9fe0c8';ctx.lineWidth=.8;ctx.beginPath();ctx.arc(rx+7.5,G-40,3+p*9,-2.4,-.7);ctx.stroke();ctx.globalAlpha=1;}}
  // Road sign towards the Station.
  if(!rendered.sign)bakeSign();const sx=1330;rect(sx-1,G-40,3,40,'#5b4a3a');ctx.imageSmoothingEnabled=true;ctx.drawImage(rendered.sign,sx-26,G-52,52,15);ctx.imageSmoothingEnabled=false;}
+// Lamp light, added on top: warm light under the canopy, the filter's status colour on the tank.
+function drawStationLight(){const A=rendered.station,G=GROUND,st=story();if(camera.x>520||camera.x+VW<180)return;ctx.save();ctx.globalCompositeOperation='lighter';ctx.imageSmoothingEnabled=true;
+ ctx.globalAlpha=.32+.03*Math.sin(now*5);ctx.drawImage(A.warm,262-55,G-112,110,110);
+ const running=st.water||!inPrologue(state)&&state.built.filter,fixed=st.fixed||running,lamp=running?A.green:fixed?A.warm:A.red,blink=running||fixed?1:Math.floor(now*3)%2;
+ if(blink){const [lx,ly]=machineAt(MACHINE.lamp[0],MACHINE.lamp[1]);ctx.globalAlpha=.35;ctx.drawImage(lamp,lx-24,ly-24,48,48);}
+ if(running){ctx.globalAlpha=.22;ctx.drawImage(A.cyan,CANS[0].x-18,G-30,36,30);}
+ ctx.restore();ctx.imageSmoothingEnabled=false;}
 function drawBrokenFilter(){const G=GROUND,F=FILTER_X,fixed=story().fixed;drawProp('filter',F,G+2,46,false,1,1,!fixed);if(!fixed){rect(F-6,G-40,2,10,'#0a0a0a');rect(F-4,G-34,2,6,'#0a0a0a');rect(F-2,G-30,3,2,'#0a0a0a');}}
 
 // ---------- rendering ----------
@@ -668,6 +714,12 @@ function drawMob(m){const P=KIND[m.kind];if(m.x<camera.x-P.width||m.x>camera.x+V
 // What the hero holds: a sword near enemies and while striking, the slingshot when shooting, a lit torch underground.
 function stepLength(){const a=atlases.hero;if(!a)return 34;const k=72/atlases.heroMaxHeight,s=Math.max(...a.slice(0,4).map(f=>f.stride||0));return s?Math.max(22,s*.75*k):34;}
 // Which tool a job needs: pickaxe poses are drawn into the sheet, an axe goes in the empty hand, low jobs are done kneeling.
+// A wheel turned by the wrench: a quarter turn per push, eased so it moves with the arm.
+function wheelAngle(){const n=Math.floor(interaction.value/TURN),f=Math.min(1,turnPhase()/.55);return (n+f*f*(3-2*f))*Math.PI/2;}
+// Wrench jobs and their rhythm: one push of the arm per TURN seconds.
+const TURN=.42,WRENCH_JOBS=new Set(['valve','fixFilter','startWater']);
+const turnPhase=()=>WRENCH_JOBS.has(targetNow?.kind)&&interaction.key===targetNow.key?(interaction.value%TURN)/TURN:0;
+function turnPulse(tg){const gy=groundY();sfx('pick');buzz(6);if(tg.kind==='fixFilter')burst(tg.x,gy-30,'#ffe08a',3);else if(tg.kind==='valve')burst(tg.x,gy-44,'#c9c2b0',2);else burst(tg.x,gy-36,'#9fd6e0',2);}
 function toolFor(tg){if(swingKind(tg))return tg.kind==='node'&&tg.node.type==='wood'?'axe':'pick';
  if(tg.kind==='bed'||tg.kind==='river'||tg.kind==='crate'||tg.kind==='node')return 'kneel';return ['panel','purify','clean','valve','fixFilter','startWater'].includes(tg.kind)?'wrench':'';}
 function heldItem(working){if(player.climb)return null;if(working){const tl=toolFor(targetNow);return atlases.hero?.length>=27&&(tl==='axe'||tl==='wrench')?tl:null;}if(sling.anim>0)return 'sling';if(atk.anim>0||nearestMob(120))return 'sword';if((inMine()||inVault())&&state.built.torch&&torchOn)return 'torch';return null;}
@@ -689,7 +741,7 @@ function heroRed(){const k='heroRed-'+heroLoaded;return rendered[k]||(rendered[k
 function axeAngle(){const p=swing%1;if(p<CONTACT)return .6-(p/CONTACT)*2.5;if(p<.82)return 2.1;return 2.1-(p-.82)/.18*.9;}
 function drawHeld(item,a,k){const hx=-a.anchor*k+a.hand[0]*k,hy=-(a.foot??a.h)*k+a.hand[1]*k;ctx.save();ctx.translate(hx,hy);ctx.imageSmoothingEnabled=true;
  const L=art.held&&heldLayout[item==='sling'?'sling':item];
- if(L){const sc=L.len/L.h,ang=item==='sword'?swordAngle():item==='sling'?1.15:item==='torch'?.25:item==='axe'?axeAngle():item==='wrench'?.9+Math.sin(now*9)*.25:0;
+ if(L){const sc=L.len/L.h,ang=item==='sword'?swordAngle():item==='sling'?1.15:item==='torch'?.25:item==='axe'?axeAngle():item==='wrench'?(WRENCH_JOBS.has(targetNow?.kind)?1.5-Math.sin(turnPhase()*Math.PI)*1.1:.9+Math.sin(now*9)*.25):0;
   ctx.rotate(ang);ctx.drawImage(art.held,L.x,L.y,L.w,L.h,-L.gx*sc,-L.gy*sc,L.w*sc,L.h*sc);
   if(item==='torch'){const fl=Math.floor(now*14)%3,top=-L.gy*sc;ctx.globalAlpha=.55;rect(-2,top-1-fl,4,3+fl,'#ffe27a');ctx.globalAlpha=1;}}
  else if(item==='sword'&&rendered.sword){ctx.rotate(swordAngle());ctx.drawImage(rendered.sword,-3.5,-26,7,30);}
@@ -703,7 +755,7 @@ function heroFrame(working){const step=Math.floor(player.walk),p=swing%1;
  if(downTime)return 1.6-downTime<.3?17:18;if(player.getup>0)return 19;if(player.hitT>0)return 16;
  if(player.climb)return 8+step%4;if(!player.ground)return player.vy<-90?21:player.vy>90?22:15;
  if(atk.anim>0)return atk.anim>.14?13:14;if(sling.anim>0)return 14;
- if(working){const tl=toolFor(targetNow);if(tl==='pick')return p<CONTACT?25:p<.82?26:24;if(tl==='axe')return p<CONTACT?13:p<.82?14:12;return tl==='kneel'?19:12;}
+ if(working){const tl=toolFor(targetNow);if(tl==='pick')return p<CONTACT?25:p<.82?26:24;if(tl==='axe')return p<CONTACT?13:p<.82?14:12;if(tl==='wrench'&&WRENCH_JOBS.has(targetNow.kind))return turnPhase()<.55?14:12;return tl==='kneel'?19:12;}
  if(player.land>0)return 23;if(player.vx)return (player.running?4:0)+step%4;return 12;}
 // Items stay in hand only in poses whose fist is where the item belongs (not while hit, fallen, kneeling or landing).
 const HOLDS=f=>f<=15||f===21;
@@ -857,8 +909,9 @@ function paint(){ctx.setTransform(scale,0,0,scale,0,0);if(inBunker()){ctx.imageS
   else if(art.props&&n.type==='scrap')drawProp(done?'crateOpen':'crate',nx,GROUND+2,36);
   else if(art.props)done?drawProp('rubble',nx,GROUND+2,38):drawProp('boulder',nx,GROUND+2,44);
   else if(!done)drawObject(n.art,nx,GROUND,n.type==='stone'?44:56);else{rect(nx-12,GROUND-4,9,4,'#5d5850');rect(nx+2,GROUND-3,7,3,'#4a463f');rect(nx-3,GROUND-6,6,6,'#6b665d');}}
+ if(state.story&&rendered.station)drawStationBack();
  if(art.props){if(state.built.purifier&&!interaction.key.startsWith('clean'))drawProp('purifier',196,GROUND+2,52);if(state.built.bench)drawProp('workbench',262,GROUND+2,66);
-  if(state.built.generator){drawProp('generator',326,GROUND+2,46);if(Math.floor(now*4)%2){rect(318,GROUND-26,3,2,'#ffd35a');}}if(state.built.filter){drawProp('filter',FILTER_X,GROUND+2,46);if(interaction.key==='purify')for(let i=0;i<3;i++)rect(FILTER_X+14,GROUND-22+((now*40+i*7)%16),1,2,'#9fd6e0');}else if(state.story)drawBrokenFilter();if(state.story)drawStation();}
+  if(state.built.generator){drawProp('generator',326,GROUND+2,46);if(Math.floor(now*4)%2){rect(318,GROUND-26,3,2,'#ffd35a');}}if(state.story&&rendered.station)drawFilterMachine();else if(state.built.filter){drawProp('filter',FILTER_X,GROUND+2,46);if(interaction.key==='purify')for(let i=0;i<3;i++)rect(FILTER_X+14,GROUND-22+((now*40+i*7)%16),1,2,'#9fd6e0');}else if(state.story)drawBrokenFilter();if(state.story)drawStation();}
  else{if(state.built.bench)drawObject(5,265,GROUND,72);if(state.built.filter)drawObject(4,345,GROUND,48);if(state.built.generator){rect(300,GROUND-24,16,23,'#495d58');rect(303,GROUND-20,10,5,'#d9bc74');rect(307,GROUND-12,2,7,'#d5e9a7');}}
  if(art.props){drawProp('vaultDoor',1270,GROUND+2,60);rect(1247,GROUND-53,46,2,state.vault?'#3a3f36':state.built.generator?'#c3e5a1':'#b99a76');if(state.vault)rect(1255,GROUND-41,32,40,'#0b0d10');}
  else if(!state.vault){drawObject(3,1270,GROUND,54);rect(1247,GROUND-51,46,2,state.built.generator?'#c3e5a1':'#b99a76');}else{ctx.globalAlpha=.55;drawObject(3,1270,GROUND,54);ctx.globalAlpha=1;rect(1257,GROUND-40,26,40,'#0b0d10');}
@@ -871,13 +924,13 @@ function paint(){ctx.setTransform(scale,0,0,scale,0,0);if(inBunker()){ctx.imageS
  drawHero();drawSlash();
  for(const s of shots){rect(s.x-1,s.y-1,3,3,'#d8d2c0');rect(s.x-Math.sign(s.vx)*4,s.y,2,1,'#d8d2c066');}
  for(const e of effects)rect(e.x,e.y,2,2,e.color);
- drawHints();drawFloats();drawTargetMarker();
+ drawHints();drawFloats();drawTargetMarker();if(state.story&&rendered.station&&state.scene==='surface')drawStationLight();
  ctx.restore();dirtyFrame=false;}
 function loop(timestamp){const t0=performance.now();const raw=last?timestamp-last:1000/60;const elapsed=last?Math.min(.1,raw/1000):STEP;if(last&&raw>4&&raw<40)rafDelta+=(raw-rafDelta)*.05;last=timestamp;now+=elapsed;
  if(active()){if(raw>worstMs)worstMs=raw;if(raw>50)hitches++;accum+=elapsed;let n=0;while(accum>=STEP&&n<6){prevX=player.x;prevY=player.y;simulate(STEP);accum-=STEP;n++;}if(accum>STEP)accum=STEP;}else accum=0;
  // Render between the last two physics steps so motion stays smooth when paint and physics rates differ.
  const alpha=Math.min(1,accum/STEP);renderX=prevX+(player.x-prevX)*alpha;renderY=prevY+(player.y-prevY)*alpha;if(Math.abs(player.x-prevX)>20){renderX=player.x;renderY=player.y;}
- if(toastUntil&&now>toastUntil){ui.toast.classList.remove('show');toastUntil=0;}
+ if(toastUntil&&now>toastUntil){ui.toast.classList.remove('show');$('#game')?.classList.remove('toasting');toastUntil=0;}
  // Paint on every n-th display refresh: 60 Hz→1, 120 Hz→2, so frame pacing stays even instead of alternating.
  const Q=QUALITY[prefs.quality],fps=ecoFallback?Q.fps/2:Q.fps,every=Math.max(1,Math.round(1000/fps/rafDelta));rafCount++;
  if(assetsReady&&visible&&(dirtyFrame||active()&&rafCount>=every)){rafCount=0;paint();frames++;frameMs+=performance.now()-t0;}
@@ -895,7 +948,7 @@ async function boot(){
  sceneArt.mine=loadImage('assets/mine-wall.webp').then(img=>{art.mineWall=img;if(assetsReady)bakeMine();warmImage(img);dirtyFrame=true;});
  sceneArt.vault=loadImage('assets/vault-world.webp').then(img=>{art.vault=img;bakeVault();warmImage(img);});
  sceneArt.mine.catch(()=>{});sceneArt.vault.catch(()=>{});
- try{const loaded=await Promise.all([loadImage('assets/expedition-world.webp'),loadImage(`assets/hero-${heroId(state.hero)}.webp`),loadImage('assets/objects-mobile.webp'),loadImage('assets/props.webp').catch(()=>null),loadImage('assets/mobs.webp').catch(()=>null),loadImage('assets/held.webp').catch(()=>null),state.story?loadImage('assets/hero-mira.webp').catch(()=>null):null]);[art.environment,,art.objects,art.props,art.mobs,art.held,art.mira]=loaded;bakeBunker();useHero(heroId(state.hero),loaded[1]);atlases.objects=atlasLayout.objects;bakeBackground();
+ try{const loaded=await Promise.all([loadImage('assets/expedition-world.webp'),loadImage(`assets/hero-${heroId(state.hero)}.webp`),loadImage('assets/objects-mobile.webp'),loadImage('assets/props.webp').catch(()=>null),loadImage('assets/mobs.webp').catch(()=>null),loadImage('assets/held.webp').catch(()=>null),state.story?loadImage('assets/hero-mira.webp').catch(()=>null):null]);[art.environment,,art.objects,art.props,art.mobs,art.held,art.mira]=loaded;bakeBunker();if(state.story)rendered.station=bakeStationArt(document);useHero(heroId(state.hero),loaded[1]);atlases.objects=atlasLayout.objects;bakeBackground();
   try{rendered.shellback=bakeShellback();const sb=rendered.shellback;rendered.shellRed=tinted(sb.canvas,0,0,sb.w,sb.h,'#ff5a3c');rendered.stoneback=bakeShellback(document,'stone');rendered.stoneRed=tinted(rendered.stoneback.canvas,0,0,sb.w,sb.h,'#ff5a3c');const a=atlases.objects[7];rendered.mobWhite=tinted(art.objects,a.x,a.y,a.w,a.h,'#fff6e2');rendered.mobRed=tinted(art.objects,a.x,a.y,a.w,a.h,'#ff5a3c');}catch{}
   bakeMine();bakeWeapons();await loadHeroArt(state.hero);if(state.scene==='mine'&&sceneArt.mine)await sceneArt.mine.catch(()=>{});if(state.scene==='vault'&&sceneArt.vault)await sceneArt.vault.catch(()=>{});prewarm(state.scene==='surface'?toneAt(player.x):state.scene);if(inBunker())prewarm('city');if(state.scene==='surface'&&player.x<1560)prewarm(toneAt(300));assetsReady=true;ui['start-btn'].disabled=false;setText(ui['start-btn'],t(continuing?'menu.continue':'menu.start'));dirtyFrame=true;
   // Repaint the gate sign once the pixel font arrives, and fetch the forest after start-up.

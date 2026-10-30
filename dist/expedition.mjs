@@ -8,7 +8,8 @@ export const SCENES=['surface','mine','vault','bunker'];
 export const STORY={repairCost:{wood:8,scrap:4,cloth:1}};
 // Prologue places. The bunker is its own small scene; the road and the Station are the west half of the surface.
 export const BUNKER={w:980,capsule:140,mira:330,console:366,battery:398,tool:520,valve:770,ladder:840,top:-150};
-export const STATION={edge:640,radio:322,mira:205};
+// The Station's workshop: radio left of the workbench, Mira by the shelter door, the hero works the filter from its left side.
+export const STATION={edge:640,radio:214,mira:166,spot:326};
 export const CHESTS=[{id:'chest-a',x:1180,loot:{scrap:3,cloth:1}},{id:'chest-b',x:985,loot:{scrap:2,wood:3}}];
 // cat groups recipes into the workbench tabs.
 export const RECIPES=[

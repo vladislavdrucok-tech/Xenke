@@ -35,7 +35,7 @@ function moveTo(x){const sign=Math.sign(x-snap().player.x),dir=sign>0?'right':'l
 function press(){down('action');run(.05);up('action');}
 function hold(s){down('action');run(s);up('action');}
 const saved=()=>parseSave(localStorage.data['afterfall-last-greenhouse-v3']);
-const {parseSave,quest,STORY,BUNKER}=await import('./dist/expedition.mjs?v=10');
+const {parseSave,quest,STORY,BUNKER}=await import('./dist/expedition.mjs?v=11');
 
 // Scene 1 — awakening. A new game starts in the bunker with Einstein in the capsule; no hero picker, no fighting buttons.
 el('start-btn').onclick();run(.3);
@@ -49,7 +49,9 @@ moveTo(BUNKER.valve);assert.equal(snap().target.kind,'valve');assert.equal(snap(
 moveTo(BUNKER.ladder);hold(1);assert.equal(st().out,false,'Hatch shut: the ladder leads nowhere');assert.equal(snap().player.climbing,false);
 moveTo(BUNKER.tool);assert.equal(snap().target.kind,'wrench');press();run(.6);assert.equal(st().tool,true);assert.equal(inv().wrench,1);
 hold(1);assert.equal(inv().wrench,1,'The wrench is taken once');
-moveTo(BUNKER.valve);hold(2.2);assert.equal(st().hatch,true,'Valve turned with the wrench opens the hatch');
+// From the far side of the valve the hero first walks to his working spot and turns to it; the hatch opens only on the last push.
+moveTo(BUNKER.valve+12);press();run(.45);assert.ok(Math.abs(snap().player.x-(BUNKER.valve-15))<2,'Walks to the working spot');assert.equal(snap().player.face,1,'Faces the valve');
+run(.9);assert.equal(st().hatch,false,'Not open before the wheel has turned');run(1.2);assert.equal(st().hatch,true,'Valve turned with the wrench opens the hatch');
 {const s=saved();assert.equal(s.scene,'bunker');assert.equal(s.story.hatch,true);assert.equal(quest(s).step,103,'Reload resumes at the ladder');}
 moveTo(BUNKER.ladder);press();run(.2);assert.equal(snap().player.climbing,true,'Climbs the ladder');run(4);
 console.log('PASS: scene 1 — capsule cut-scene, wrench pickup once, valve blocked without the tool, hatch, ladder out.');
@@ -72,11 +74,11 @@ window.afterfall.pick('repair');for(let i=0;i<3;i++)el('craft-repair').onclick?.
 moveTo(800);hold(4);assert.ok(inv().wood>=STORY.repairCost.wood,'Chopped the logs');
 moveTo(262);press();run(.1);window.afterfall.pick('repair');const before={...inv()};for(let i=0;i<5;i++)el('craft-repair').onclick();
 assert.equal(inv().repair,1,'Five taps make one unit');for(const [k,n] of Object.entries(STORY.repairCost))assert.equal(inv()[k],before[k]-n,`${k} spent once`);el('resume-btn').onclick();
-moveTo(FILTER());hold(2.4);assert.equal(st().fixed,true);assert.equal(inv().repair,0);
-assert.equal(snap().state.built.filter,false,'Fitted but not running yet');hold(1.2);assert.equal(st().water,true);assert.equal(snap().state.built.filter,true,'Water runs: the filter counts as built');
+moveTo(FILTER());press();run(1);assert.equal(st().fixed,false,'The unit goes in over several pushes');assert.ok(snap().player.x<FILTER()-40,'Works from the left of the machine, not in front of it');run(2.6);assert.equal(st().fixed,true);assert.equal(inv().repair,0);
+assert.equal(snap().state.built.filter,false,"Fitted but not running yet");hold(1.9);assert.equal(st().water,true);assert.equal(snap().state.built.filter,true,'Water runs: the filter counts as built');
 // Losing focus mid-press releases the button.
 down('action');listeners.blur();run(1);assert.equal(snap().work.key,'','Blur releases the action button');
-moveTo(322);assert.equal(snap().target.kind,'radio');press();run(40);
+moveTo(214);assert.equal(snap().target.kind,"radio");press();run(40);
 assert.equal(st().done,true,'Radio message ends the prologue');assert.equal(el('win-dialog').open,true,'End card shown');
 {const s=saved();assert.equal(s.story.done,true);assert.equal(s.inv.repair,0);assert.equal(s.harvested['chest-b'],1);assert.equal(s.built.filter,true);assert.equal(quest(s).step,2,'Campaign continues at the generator');}
 console.log('PASS: scene 3 — refusal without materials, one unit per five taps, fit + start water, radio, end card, saved and resumes in the campaign.');

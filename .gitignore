@@ -1,3 +1,4 @@
 # Build archives for sharing (made from dist/; not tracked)
 Afterfall_*.zip
 qa/out/
+Afterfall_*.apk

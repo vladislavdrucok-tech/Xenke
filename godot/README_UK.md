@@ -23,3 +23,10 @@
 
 ## Автоперевірка (без редактора)
 `godot --path godot --rendering-driver opengl3 -- --demo=<папка>` проходить сцену сам, зберігає скриншоти й друкує час кадрів; з `--perf` — лише заміри.
+
+## APK для Android
+Пресет «Android» у `export_presets.cfg` (без Gradle, лише arm64-v8a, альбомна орієнтація).
+Потрібні: шаблони експорту 4.3, Java 17+, Android SDK з `platform-tools/adb` та `build-tools/<версія>/apksigner`
+(шляхи — у налаштуваннях редактора: Export → Android). Ключ для релізу передається змінними середовища:
+`GODOT_ANDROID_KEYSTORE_RELEASE_PATH`, `GODOT_ANDROID_KEYSTORE_RELEASE_USER`, `GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD`, потім
+`godot --headless --path godot --export-release "Android" Afterfall.apk`.

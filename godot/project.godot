@@ -4,6 +4,7 @@ config_version=5
 [application]
 config/name="Afterfall — пробна сцена"
 run/main_scene="res://main.tscn"
+config/icon="res://icon.png"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 
 [autoload]
@@ -25,4 +26,5 @@ pointing/emulate_touch_from_mouse=true
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/canvas_textures/default_texture_filter=1
+textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.13, 0.22, 0.27, 1)

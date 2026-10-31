@@ -1,0 +1,22 @@
+// Water → seeds → kit → plant → water → sprout in the browser with touch input; screenshots of each state.
+const {chromium}=require('playwright');const OUT=__dirname+'/out/ep',W=+(process.argv[2]||844),H=+(process.argv[3]||390);require('fs').mkdirSync(OUT,{recursive:true});
+const story=o=>Object.assign({woke:true,tool:true,hatch:true,out:true,road:true,station:true,fixed:true,water:true,radio:false,seeds:false,watered:false,sprout:false,done:false,tank:2,said:['wake','tool','hatch','road','mats','station','made','fixed','water','h-move','h-act','h-climb','h-rotate']},o);
+const save=JSON.stringify({version:3,time:150,hero:'einstein',scene:'surface',inv:{wood:5,stone:0,scrap:1,cloth:0,fuse:0,seed:0,dirty:0,water:0,planter:0,berry:2,ammo:12,ore:0,wire:0,medkit:0,can:1,wrench:1,repair:0},built:{bench:true,filter:true,generator:false,purifier:false,torch:false,repair:true},beds:[false,false,false],vault:false,harvested:{'chest-a':1,'chest-b':1,'logs-b':1},player:{x:300,y:284},stats:{hp:100,food:90,thirst:90},defense:{time:0,hp:100,wave:0},completed:false,forest:[false,false,false],mine:{ore:[false,false,false],crates:[false,false],panel:false},seedvault:{caps:[false,false,false],boss:false,door:false},story:story({})});
+(async()=>{const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:W,height:H},hasTouch:true,isMobile:true,deviceScaleFactor:2,locale:'uk-UA'});
+await ctx.addInitScript(s=>{if(!sessionStorage.getItem('x')){sessionStorage.setItem('x','1');localStorage.setItem('afterfall-last-greenhouse-v3',s);}},save);
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.goto('http://localhost:8123/index.html');await p.waitForFunction(()=>!document.querySelector('#start-btn').disabled);await p.tap('#start-btn');await p.waitForTimeout(3200);
+const cdp=await ctx.newCDPSession(p);const T=(t,pts)=>cdp.send('Input.dispatchTouchEvent',{type:t,touchPoints:pts});const snap=()=>p.evaluate(()=>window.afterfall.snapshot());
+const box=async id=>{const r=await p.locator(id).boundingBox();return {x:r.x+r.width/2,y:r.y+r.height/2};};
+async function moveTo(x){const m=await box('#move-pad');const s0=await snap();const d=Math.sign(x-s0.player.x);if(!d)return;await T('touchStart',[{x:m.x,y:m.y,id:1}]);await T('touchMove',[{x:m.x+d*30,y:m.y,id:1}]);for(let i=0;i<500;i++){await p.waitForTimeout(16);const px=(await snap()).player.x;if((px-x)*d>=-2)break;}await T('touchEnd',[]);await p.waitForTimeout(250);}
+async function act(){const a=await box('#action');await T('touchStart',[{x:a.x,y:a.y,id:3}]);await p.waitForTimeout(80);await T('touchEnd',[]);}
+const shot=n=>p.screenshot({path:`${OUT}/${n}-${W}.png`});const log=async t=>{const s=await snap();console.log(t,JSON.stringify({q:s.state&&undefined,step:await p.evaluate(()=>document.querySelector('#world').dataset.stage),water:s.state.inv.water,seed:s.state.inv.seed,planter:s.state.inv.planter,tank:s.story.tank,bed:s.state.beds[0],w:s.story.watered,sp:s.story.sprout,done:s.story.done,mira:Math.round(s.mira.x),x:Math.round(s.player.x)}));};
+await moveTo(372);await shot('a-water-running');
+await moveTo(214);await act();await p.waitForTimeout(2500);for(let i=0;i<8;i++){await p.click('#dialog').catch(()=>{});await p.waitForTimeout(250);}await p.waitForTimeout(800);await log('radio heard');await shot('b-after-radio');
+await moveTo(190);await act();await p.waitForTimeout(900);await log('seeds');await shot('c-seeds');
+await moveTo(430);await act();await p.waitForTimeout(500);await shot('d-tank');await p.waitForTimeout(900);await act();await p.waitForTimeout(1300);await log('tank x2');
+await moveTo(262);await act();await p.waitForTimeout(600);await shot('e-kit-craft');await p.click('[data-craft="planter"]').catch(e=>console.log('no planter btn'));await p.waitForTimeout(300);await p.click('#craft-dialog .close');await p.waitForTimeout(300);await log('kit');
+await moveTo(495);await shot('f-bed-empty');await act();await p.waitForTimeout(700);await shot('g-sowing');await p.waitForTimeout(900);await log('sown');await shot('h-sown');
+await act();await p.waitForTimeout(700);await shot('i-watering');await p.waitForTimeout(900);await log('watered');await shot('j-watered');
+await p.waitForTimeout(3600);await shot('k-sprout');await log('sprout');await p.waitForTimeout(1500);await shot('l-sprout2');
+for(let i=0;i<6;i++){await p.click('#dialog').catch(()=>{});await p.waitForTimeout(300);}await p.waitForTimeout(800);await log('end');await shot('m-end');
+console.log('errors',JSON.stringify(errs));await b.close();})();

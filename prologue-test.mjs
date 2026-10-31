@@ -35,7 +35,7 @@ function moveTo(x){const sign=Math.sign(x-snap().player.x),dir=sign>0?'right':'l
 function press(){down('action');run(.05);up('action');}
 function hold(s){down('action');run(s);up('action');}
 const saved=()=>parseSave(localStorage.data['afterfall-last-greenhouse-v3']);
-const {parseSave,quest,STORY,BUNKER}=await import('./dist/expedition.mjs?v=11');
+const {parseSave,quest,STORY,BUNKER}=await import('./dist/expedition.mjs?v=12');
 
 // Scene 1 — awakening. A new game starts in the bunker with Einstein in the capsule; no hero picker, no fighting buttons.
 el('start-btn').onclick();run(.3);
@@ -78,8 +78,26 @@ moveTo(FILTER());press();run(1);assert.equal(st().fixed,false,'The unit goes in 
 assert.equal(snap().state.built.filter,false,"Fitted but not running yet");hold(1.9);assert.equal(st().water,true);assert.equal(snap().state.built.filter,true,'Water runs: the filter counts as built');
 // Losing focus mid-press releases the button.
 down('action');listeners.blur();run(1);assert.equal(snap().work.key,'','Blur releases the action button');
-moveTo(214);assert.equal(snap().target.kind,"radio");press();run(40);
-assert.equal(st().done,true,'Radio message ends the prologue');assert.equal(el('win-dialog').open,true,'End card shown');
-{const s=saved();assert.equal(s.story.done,true);assert.equal(s.inv.repair,0);assert.equal(s.harvested['chest-b'],1);assert.equal(s.built.filter,true);assert.equal(quest(s).step,2,'Campaign continues at the generator');}
-console.log('PASS: scene 3 — refusal without materials, one unit per five taps, fit + start water, radio, end card, saved and resumes in the campaign.');
+moveTo(214);assert.equal(snap().target.kind,"radio");press();run(25);
+assert.equal(st().radio,true,'Radio heard');assert.equal(st().done,false,'The episode goes on after the radio');assert.equal(quest(snap().state).step,110,'Next goal: Mira\'s seeds');
+console.log('PASS: scene 3 — refusal without materials, one unit per five taps, fit + start water, radio.');
+
+// Clean water: the running filter has its own tank; nothing at the filter asks for stream water any more.
+moveTo(FILTER());assert.notEqual(snap().target?.kind,'purify','No stream-water request at a running filter');
+moveTo(436);assert.equal(snap().target.kind,'tank');const t0=st().tank;assert.ok(t0>=2,'The tank has water once the filter runs (refilled to '+t0+')');
+const w0=inv().water;press();run(1.2);assert.equal(inv().water,w0+1);assert.equal(st().tank,t0-1);for(let k=1;k<t0;k++){press();run(1.2);}assert.equal(st().tank,0);
+press();run(1.2);assert.equal(inv().water,w0+t0,'Empty tank gives nothing');assert.equal(snap().target.block[0],'toast.tankEmpty');
+run(12.5);assert.equal(st().tank,1,'Tank refills while the filter runs');
+// Seeds from Mira, a kit at the workbench, then the first bed.
+moveTo(snap().mira.x+20);assert.equal(snap().target.kind,'seeds');press();run(.5);assert.equal(st().seeds,true);assert.equal(inv().seed,2);assert.equal(quest(snap().state).step,111);
+moveTo(500);assert.equal(snap().target.block,'toast.needKit2');hold(2);assert.equal(snap().state.beds[0],false,'No planting without a kit');
+moveTo(262);press();run(.1);window.afterfall.pick('planter');{const b={...inv()};for(let i=0;i<3;i++)el('craft-planter').onclick();assert.equal(inv().planter,1);assert.equal(inv().wood,b.wood-2);assert.equal(inv().seed,b.seed-1);assert.equal(inv().water,b.water-1);}el('resume-btn').onclick();
+assert.equal(quest(snap().state).step,112);
+moveTo(500);press();run(.5);{const s=snap();assert.equal(s.player.face,1,'Kneels facing the bed');const d=Math.abs(s.mira.x-s.player.x);assert.ok(d>=28&&d<=70,'Mira stops a few steps away: '+d);assert.ok(Math.abs(s.mira.x-500)>20,'Mira is not on the bed');}
+run(1.2);assert.equal(snap().state.beds[0],true,'Planted');assert.equal(inv().planter,0);assert.equal(quest(snap().state).step,113);
+press();run(1.6);assert.equal(st().watered,true,'Watered');assert.equal(quest(snap().state).step,114);
+run(1.5);assert.equal(st().sprout,false,'The sprout takes a moment');run(3);assert.equal(st().sprout,true,'First sprout');
+run(20);assert.equal(st().done,true,'Episode ends after the sprout');assert.equal(el('win-dialog').open,true,'End card shown');
+{const s=saved();assert.equal(s.story.done,true);assert.equal(s.story.sprout,true);assert.equal(s.beds[0],true);assert.equal(s.inv.repair,0);assert.equal(s.harvested['chest-b'],1);assert.equal(s.built.filter,true);assert.equal(quest(s).step,2,'Campaign continues at the generator');}
+console.log('PASS: water and first planting — tank stock and refill, Mira\'s seeds, no planting without a kit, kit, plant, water, sprout, end card, saved.');
 function FILTER(){return 382;}

@@ -1,4 +1,4 @@
-import {SAVE_KEY,LEGACY_KEY,ITEMS,RECIPES,HEROES,freshState,newGame,inPrologue,STORY,BUNKER,STATION,CHESTS,parseSave,canCraft,craft,plant,quest,exportCode,importCode} from './expedition.mjs?v=11';
+import {SAVE_KEY,LEGACY_KEY,ITEMS,RECIPES,HEROES,freshState,newGame,inPrologue,STORY,BUNKER,STATION,CHESTS,BEDS,TANK,parseSave,canCraft,craft,plant,quest,exportCode,importCode} from './expedition.mjs?v=12';
 import atlasLayout from './assets/atlas-layout.mjs';
 import itemLayout from './assets/items-layout.mjs';
 import extraHeroes from './assets/heroes.mjs';
@@ -7,7 +7,7 @@ import mobLayout from './assets/mobs-layout.mjs';
 import heldLayout from './assets/held-layout.mjs';
 import {icon} from './icons.mjs';
 import {bakeShellback} from './creatures.mjs';
-import {bakeStationArt,MACHINE,P as SP} from './station-art.mjs?v=11';
+import {bakeStationArt,MACHINE,P as SP} from './station-art.mjs?v=12';
 import {LANGS,t,setLang,getLang,detectLang} from './i18n.mjs';
 import {initAudio,sfx,setVolume,setMood,setActive as setAudioActive} from './audio.mjs';
 const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
@@ -60,16 +60,20 @@ let swing=0,hits=0,shake=0,hitstop=0,squash=0,floats=[],actionLatch=false,downTi
 
 // ---------- settings ----------
 // density: canvas pixels per CSS pixel (capped by the screen's own density); area caps the total for weak GPUs.
-const QUALITY={smooth:{fps:60,area:560000,density:1.6},eco:{fps:30,area:300000,density:1},detail:{fps:120,area:1300000,density:2.5}};
-const prefs={quality:'smooth',hand:'left',size:'m',actionMode:'tap',swipe:false,vibrate:true,effects:true,hints:true,fps:false,music:.5,sfx:.8,lang:''};
+const QUALITY={smooth:{area:560000,density:1.6},eco:{area:300000,density:1},detail:{area:1300000,density:2.5}};
+const FPS_CAPS=['30','60','120'];
+const prefs={fpsCap:'',quality:'smooth',hand:'left',size:'m',actionMode:'tap',swipe:false,vibrate:true,effects:true,hints:true,fps:false,music:.5,sfx:.8,lang:''};
 try{const p=JSON.parse(localStorage.getItem('afterfall-controls-v3')||'{}');
  // v0.4 stored a few of these under older names.
  if(p.leftHanded!==undefined&&p.hand===undefined)p.hand=p.leftHanded?'right':'left';if(p.tapAction!==undefined&&p.actionMode===undefined)p.actionMode=p.tapAction===false?'hold':'tap';if(p.swipeJump!==undefined&&p.swipe===undefined)p.swipe=p.swipeJump;
  for(const k of Object.keys(prefs))if(p[k]!==undefined&&typeof p[k]===typeof prefs[k])prefs[k]=p[k];if(!QUALITY[prefs.quality])prefs.quality='smooth';}catch{}
+// Before v0.13 the quality preset also set the frame rate (saver 30, detail 120); keep that for players who picked it.
+if(!FPS_CAPS.includes(prefs.fpsCap))prefs.fpsCap=prefs.quality==='eco'?'30':prefs.quality==='detail'?'120':'60';
 setLang(detectLang(prefs.lang));
 function savePrefs(){try{localStorage.setItem('afterfall-controls-v3',JSON.stringify({...prefs,lang:getLang()}));}catch{}}
 const SETTERS={
- quality:v=>{prefs.quality=v;adaptiveScale=1;slowWindows=0;ecoFallback=false;resize();},
+ quality:v=>{prefs.quality=v;adaptiveScale=1;slowWindows=0;resize();},
+ fpsCap:v=>{if(!FPS_CAPS.includes(v))return;prefs.fpsCap=v;ecoFallback=false;slowWindows=0;},
  hand:v=>{prefs.hand=v;measureControls();},size:v=>{prefs.size=v;measureControls();},actionMode:v=>{prefs.actionMode=v;},
  swipe:v=>{prefs.swipe=!!v;},vibrate:v=>{prefs.vibrate=!!v;if(v)buzz(20);},effects:v=>{prefs.effects=!!v;},hints:v=>{prefs.hints=!!v;},
  fps:v=>{prefs.fps=!!v;hitches=0;worstMs=0;},music:v=>{prefs.music=+v;setVolume('music',prefs.music);},sfx:v=>{prefs.sfx=+v;setVolume('sfx',prefs.sfx);sfx('click');},
@@ -103,8 +107,8 @@ function applyLanguage(){
 
 // ---------- world ----------
 const nodes=[
- {id:'logs-a',type:'wood',x:520,time:2.4,art:0,reward:{wood:12}},
- {id:'stone',type:'stone',x:590,time:2.2,art:1,reward:{stone:10}},
+ {id:'logs-a',type:'wood',x:640,time:2.4,art:0,reward:{wood:12}},
+ {id:'stone',type:'stone',x:760,time:2.2,art:1,reward:{stone:10}},
  {id:'logs-b',type:'wood',x:800,time:2.4,art:0,reward:{wood:10}},
  {id:'supplies',type:'scrap',x:915,time:3.2,art:2,reward:{scrap:8,cloth:3,fuse:1}},
  {id:'forest-cache',type:'scrap',x:1680,time:2.8,art:2,reward:{scrap:8,cloth:2,stone:3}},
@@ -112,7 +116,7 @@ const nodes=[
  ...CHESTS.map(c=>({id:c.id,type:'scrap',x:c.x,time:.9,art:2,reward:c.loot,chest:true})),
 ];
 const forestPatches=[1810,2040,2260];
-const beds=[410,450,490],obstacle={x:1056,y:306,w:32,h:14};
+const beds=BEDS,obstacle={x:1056,y:306,w:32,h:14};
 // Enemy archetypes. reach: distance at which they start a lunge; half: half body width for hits.
 const KIND={
  crawler:{armored:false,patrol:11,chase:30,lunge:150,reach:30,half:22,height:34,aggro:95,windup:.5,dmg:8,width:54},
@@ -195,8 +199,8 @@ const clock=s=>{s=Math.floor(s);return `${Math.floor(s/60)}:${String(s%60).padSt
 let craftCat='build',craftPick=null;
 function renderCraft(){const near=nearBase();setText(ui['station-note'],t(near?'craft.near':'craft.far'));
  // During the prologue the workbench offers only the repair unit; afterwards story recipes stay hidden.
- const pro=inPrologue(state);if(pro)craftCat='build';for(const b of $$('#craft-tabs [data-cat]'))b.hidden=pro&&b.dataset.cat!=='build';ui['craft-dialog'].classList?.toggle('single',pro);
- const list=RECIPES.filter(r=>r.cat===craftCat&&(pro?r.story:!r.story||state.built[r.id]));if(!list.some(r=>r.id===craftPick))craftPick=(list.find(r=>!canCraft(state,r,near))||list.find(r=>canCraft(state,r,near)!=='reason.done')||list[0]).id;
+ const pro=inPrologue(state);if(pro)craftCat='build';for(const b of $$('#craft-tabs [data-cat]'))b.hidden=pro;ui['craft-dialog'].classList?.toggle('single',pro&&!story().seeds);
+ const list=RECIPES.filter(r=>(pro||r.cat===craftCat)&&(pro?r.story||r.id==='planter'&&story().seeds:!r.story||state.built[r.id]));if(!list.some(r=>r.id===craftPick))craftPick=(list.find(r=>!canCraft(state,r,near))||list.find(r=>canCraft(state,r,near)!=='reason.done')||list[0]).id;
  for(const b of $$('#craft-tabs [data-cat]'))attr(b,'aria-selected',String(b.dataset.cat===craftCat));
  $('#craft-badge').innerHTML=itemIcon('bench','big');
  ui.recipes.innerHTML=list.map(r=>{const reason=canCraft(state,r,near);return `<button class="recipe-row ${r.id===craftPick?'sel':''} ${reason==='reason.done'?'done':''} ${reason?'':'ready'}" data-pick="${r.id}">${itemIcon(r.id)}<span>${t('recipe.'+r.id)}</span>${reason==='reason.done'?'<i class="tick">✓</i>':''}</button>`;}).join('');
@@ -204,7 +208,7 @@ function renderCraft(){const near=nearBase();setText(ui['station-note'],t(near?'
  $('#recipe-detail').innerHTML=`<h3>${t('recipe.'+r.id)}</h3><div class="detail-main"><div class="detail-art">${itemIcon(r.id,'huge')}</div><div class="needs">${Object.entries(r.cost).map(([k,v])=>`<div class="need ${state.inv[k]>=v?'ok':''}">${itemIcon(k)}<span>${t(ITEMS[k])}</span><b>${state.inv[k]}/${v}</b><i>${state.inv[k]>=v?'✓':'✕'}</i></div>`).join('')}</div></div><p>${t('recipe.'+r.id+'.d')}</p><button class="px-btn gold big craft-action" data-craft="${r.id}" ${reason?'disabled':''}>${t(reason||'craft.make')}</button>`;
  $('#craft-inv').innerHTML=['wood','stone','scrap','cloth','seed','ore','wire','water'].map(k=>`<span class="slot" title="${t(ITEMS[k])}">${itemIcon(k)}<em>${state.inv[k]}</em></span>`).join('');
  $$('[data-pick]').forEach(b=>b.onclick=()=>{craftPick=b.dataset.pick;craftCat=RECIPES.find(r=>r.id===craftPick).cat;sfx('click');renderCraft();});
- $$('[data-craft]').forEach(b=>b.onclick=()=>{const id=b.dataset.craft;if(!craft(state,id,nearBase()))return;sfx('craft');buzz(10);refreshHud();renderCraft();dirtyFrame=true;toast(t('craft.done.'+id));if(id==='repair'){save();say('made');}});}
+ $$('[data-craft]').forEach(b=>b.onclick=()=>{const id=b.dataset.craft;if(!craft(state,id,nearBase()))return;sfx('craft');buzz(10);refreshHud();renderCraft();dirtyFrame=true;toast(t('craft.done.'+id));if(id==='repair'){save();say('made');}if(id==='planter'&&inPrologue(state)){save();say('kit');}});}
 for(const b of $$('#craft-tabs [data-cat]'))b.onclick=()=>{craftCat=b.dataset.cat;craftPick=null;sfx('click');renderCraft();};
 // ---------- hotbar ----------
 const HOT=[{id:'torch',art:'torch',label:'hot.torch'},{id:'water',art:'water',label:'hot.water'},{id:'food',art:'can',label:'hot.food'},{id:'medkit',art:'medkit',label:'hot.medkit'},{id:'sling',art:'ammo',label:'hot.sling'}];
@@ -301,7 +305,7 @@ function findTarget(){if(player.climb)return null;const foot=player.y+player.h;i
  for(const n of nodes){if(state.harvested[n.id]||(n.x>1600&&!state.completed))continue;const d=Math.abs(n.x-player.x);if(d<bestD){bestD=d;best={kind:'node',node:n,key:n.id,time:n.time,x:n.x,name:'node.'+n.id,verb:n.type==='wood'?'verb.chop':n.type==='scrap'?'verb.open2':'verb.collect',w:n.type==='wood'?50:40,h:n.type==='wood'?42:30};}}
  if(near(690,34))best={kind:'river',key:'river',time:.8,x:690,name:'target.river',verb:'verb.fill'};
  if(inPrologue(state))return stationTargets(best);
- if(state.built.filter&&near(FILTER_X,26))best={kind:'purify',key:'purify',time:1.2,x:FILTER_X,name:state.inv.dirty?'target.filter':'target.filterEmpty',verb:'verb.purify'};
+ if(state.story)best=waterTargets(best);else if(state.built.filter&&near(FILTER_X,26))best={kind:'purify',key:'purify',time:1.2,x:FILTER_X,name:state.inv.dirty?'target.filter':'target.filterEmpty',verb:'verb.purify'};
  if(near(1270,42)&&!state.vault)best={kind:'vault',key:'vault',time:3.2,x:1270,name:state.built.generator?'target.vaultOn':'target.vaultOff',verb:'verb.open'};
  if(near(METRO,30))best=state.forest.every(Boolean)?{kind:'door',to:'mine',key:'metro',time:.3,x:METRO,name:'target.metro',verb:'verb.enter'}:{kind:'locked',key:'metro',time:.3,x:METRO,name:'target.metroLocked',verb:'verb.act'};
  for(let i=0;i<3;i++)if(!state.beds[i]&&near(beds[i],23))best={kind:'bed',key:'bed-'+i,index:i,time:1.5,x:beds[i],name:state.inv.planter?'target.bed':'target.bedNoKit',verb:'verb.plant'};
@@ -310,7 +314,7 @@ function findTarget(){if(player.climb)return null;const foot=player.y+player.h;i
 const gain=(loot)=>Object.entries(loot).map(([k,v])=>t('toast.gain',{n:v,item:t(ITEMS[k]).toLowerCase()}));
 function finishAction(tg){const gy=groundY();
  if(state.story&&prologueFinish(tg))return;
- if(tg.kind==='node'){const n=tg.node;state.harvested[n.id]=1;for(const[k,v]of Object.entries(n.reward))state.inv[k]+=v;const g=gain(n.reward);toast(g.join(' · '));floatText(tg.x,gy-34,g[0]);burst(tg.x,gy-18,'#e4c38e');sfx('gain');}
+ if(tg.kind==='node'){const n=tg.node,[cx,cy]=contactPoint(tg);state.harvested[n.id]=1;for(const[k,v]of Object.entries(n.reward))state.inv[k]+=v;const g=gain(n.reward);toast(g.join(' · '));floatText(cx,cy-18,g[0]);burst(cx,cy,'#e4c38e');sfx('gain');}
  else if(tg.kind==='river'){state.inv.dirty++;toast(t('toast.river',{n:state.inv.dirty}));floatText(tg.x,gy-40,t('toast.gain',{n:1,item:t(ITEMS.dirty).toLowerCase()}));sfx('water');}
  else if(tg.kind==='purify'){if(!state.inv.dirty){toast(t('toast.filterEmpty'));autoAction=false;return;}state.inv.dirty--;state.inv.water++;floatText(tg.x,gy-56,t('toast.gain',{n:1,item:t(ITEMS.water).toLowerCase()}));burst(tg.x+8,gy-12,'#9fd6e0',6);sfx('water');}
  else if(tg.kind==='vault'){if(!state.built.generator){toast(t('toast.needPower'));held.action=false;autoAction=false;return;}state.vault=true;state.inv.seed+=3;burst(tg.x,gy-30,'#c4e39b',18);toast(t('toast.seeds'));sfx('plant');}
@@ -333,7 +337,9 @@ function swingKind(tg){return tg.kind==='ore'||tg.kind==='node'&&tg.node.type!==
 // Swing cycle (seconds) and the phase at which the tool touches the target.
 const SWING=.62,CONTACT=.5;
 function strikesFor(tg){return tg.kind==='ore'?4:tg.node?.type==='stone'?4:4;}
-function impact(tg){const gy=groundY();if(tg.kind==='ore'){nodeShake[tg.key]=.16;burst(tg.x-player.face*6,gy-14,'#e0802c',4);sfx('pick');}else if(tg.kind==='node'){nodeShake[tg.node.id]=.16;burst(tg.x-player.face*6,gy-14,tg.node.type==='wood'?'#b88a55':tg.node.type==='stone'?'#b3b1a6':'#c9b98d',4);sfx(tg.node.type==='wood'?'chop':'pick');}else burst(tg.x,gy-16,tg.kind==='river'?'#9fd6e0':'#c4e39b',2);}
+// Where the tool meets the object: its near edge, at the height the swing lands (the reward and chips appear there).
+function contactPoint(tg){const gy=groundY(),half=tg.kind==='ore'?16:tg.node?.type==='wood'?14:tg.node?.type==='stone'?13:10,h=tg.kind==='ore'?14:tg.node?.type==='wood'?16:12;return [tg.x-player.face*half,gy-h];}
+function impact(tg){const gy=groundY(),[cx,cy]=contactPoint(tg);if(tg.kind==='ore'){nodeShake[tg.key]=.16;burst(cx,cy,'#e0802c',4);sfx('pick');}else if(tg.kind==='node'){nodeShake[tg.node.id]=.16;burst(cx,cy,tg.node.type==='wood'?'#b88a55':tg.node.type==='stone'?'#b3b1a6':'#c9b98d',4);sfx(tg.node.type==='wood'?'chop':'pick');}else burst(tg.x,gy-16,tg.kind==='river'?'#9fd6e0':'#c4e39b',2);}
 function floatText(x,y,text){if(floats.length>=4)floats.shift();floats.push({x,y,text,life:1.2});}
 function overlaps(x,y){return x-player.w/2<obstacle.x+obstacle.w&&x+player.w/2>obstacle.x&&y<obstacle.y+obstacle.h&&y+player.h>obstacle.y;}
 
@@ -408,7 +414,7 @@ function simulate(dt){if(!active())return;if(hitstop>0){hitstop-=dt;return;}
  // Holding Use next to a hostile mutant strikes it (rate-limited by the strike cooldown) instead of gathering.
  if(pushing&&danger&&!actionLatch){autoAction=false;interaction={key:'',value:0};swing=0;if(atk.cool<=0)attack();}
  // Something stands in the way (a missing tool or part): say why, once per press, and start no progress.
- else if(pressing&&targetNow?.block){toast(t(targetNow.block));actionLatch=true;autoAction=false;interaction={key:'',value:0};sfx('click');}
+ else if(pressing&&targetNow?.block){const b=targetNow.block;toast(Array.isArray(b)?t(b[0],b[1]):t(b));actionLatch=true;autoAction=false;interaction={key:'',value:0};sfx('click');}
  else if(pressing&&targetNow){if(interaction.key!==targetNow.key){interaction={key:targetNow.key,value:0};swing=0;hits=0;}
   // Jobs with a working spot: walk there first and face the object; nothing happens until the hero is in place.
   let ready=true;if(targetNow.spot!=null){const d=targetNow.spot-player.x;if(Math.abs(d)>1.5){ready=false;player.x+=Math.sign(d)*Math.min(Math.abs(d),80*dt);player.walk+=dt*5;player.face=Math.sign(d);}else player.face=Math.sign(targetNow.x-player.x)||player.face;}
@@ -429,7 +435,7 @@ function simulate(dt){if(!active())return;if(hitstop>0){hitstop-=dt;return;}
  if(inMine()&&!mobs.caveHint&&mobs.some(m=>m.kind==='stoneback'&&m.st==='chase')){mobs.caveHint=true;toast(t('toast.cave'));}
  updateMobs(dt);updateShots(dt);updateMira(dt);updateStory(dt);
  if(state.beds.every(Boolean)&&!state.completed){state.defense.time=Math.min(90,state.defense.time+dt);const wave=Math.floor(state.defense.time/15)+1;
-  if(wave>state.defense.wave&&wave<=6){state.defense.wave=wave;for(let i=0;i<(wave>3?2:1);i++){const fromLeft=i===1;mobs.push(makeMob('crawler',fromLeft?185:790,{hp:wave===6?5:3,role:'raider',goal:fromLeft?405:490,min:150,max:830}));}toast(wave===1?t('toast.wave1'):t('toast.wave',{n:wave}));}
+  if(wave>state.defense.wave&&wave<=6){state.defense.wave=wave;for(let i=0;i<(wave>3?2:1);i++){const fromLeft=i===1;mobs.push(makeMob('crawler',fromLeft?185:790,{hp:wave===6?5:3,role:'raider',goal:fromLeft?BEDS[0]:BEDS[2],min:150,max:830}));}toast(wave===1?t('toast.wave1'):t('toast.wave',{n:wave}));}
   if(state.defense.hp<=0){state.defense={time:0,hp:100,wave:0};mobs=mobs.filter(m=>m.role!=='raider');player.x=450;toast(t('toast.defenseFail'));}
   if(state.defense.time>=90){state.completed=true;if(art.garden)bakeBackground();mobs=mobs.filter(m=>m.role!=='raider');winShown=true;save();setTimeout(()=>showWin(1),1200);}}
  // The vault is frozen: without a lit torch the cold slowly drains health.
@@ -439,7 +445,7 @@ function simulate(dt){if(!active())return;if(hitstop>0){hitstop-=dt;return;}
  for(let i=effects.length-1;i>=0;i--){const e=effects[i];e.x+=e.vx*dt;e.y+=e.vy*dt;e.vy+=85*dt;e.life-=dt;if(e.life<=0)effects.splice(i,1);}
  uiClock+=dt;saveClock+=dt;if(uiClock>=.25){refreshHud();refreshContext();setMood(inMine()||inVault()||inBunker()?'mine':state.beds.every(Boolean)&&!state.completed?'defense':player.x>1600?'forest':'city');uiClock=0;}if(saveClock>15&&!saveQueued){saveClock=0;saveQueued=true;const flush=()=>{saveQueued=false;save();};if(window.requestIdleCallback)window.requestIdleCallback(flush,{timeout:3000});else setTimeout(flush,0);}
 }
-function refreshContext(){let label=targetNow?(kbHints?'E · ':'')+t(targetNow.name):'',verb=targetNow?.verb||'verb.act';
+function refreshContext(){let label=targetNow?(kbHints?'E · ':'')+t(targetNow.name,targetNow.np):'',verb=targetNow?.verb||'verb.act';
  if(!targetNow&&!inPrologue(state)){if(state.beds.every(Boolean)&&!state.completed)label=t('target.defend');else if(nearestMob(110))label=t('target.enemy');else if(nearBase()){label=t('target.base');verb='verb.craft';}else if(state.scene==='surface'&&player.x>1000&&player.x<1100)label=t('target.beam');}
  setText(ui['target-label'],label);setText(ui['action-text'],t(autoAction?'verb.stop':verb));$('#action')?.classList.toggle('auto-working',autoAction);}
 
@@ -454,9 +460,11 @@ const DIALOG={
  tool:[['mira','dlg.tool']],hatch:[['mira','dlg.hatch']],road:[['mira','dlg.road1'],['mira','dlg.road2']],mats:[['mira','dlg.mats']],
  station:[['mira','dlg.station1'],['mira','dlg.station2'],['mira','dlg.station3']],made:[['mira','dlg.made']],fixed:[['mira','dlg.fixed']],
  water:[['mira','dlg.water1'],['einstein','dlg.water2'],['mira','dlg.water3']],
- radio:[['radio','dlg.radio1'],['radio','dlg.radio2'],['mira','dlg.radio3'],['einstein','dlg.radio4']]};
+ radio:[['radio','dlg.radio1'],['radio','dlg.radio2'],['mira','dlg.radio3'],['einstein','dlg.radio4']],
+ seeds0:[['mira','dlg.seeds0']],seeds:[['mira','dlg.seeds1'],['einstein','dlg.seeds2']],kit:[['mira','dlg.kit']],planted:[['mira','dlg.planted']],watered:[['mira','dlg.watered']],
+ sprout:[['mira','dlg.sprout1'],['einstein','dlg.sprout2'],['mira','dlg.sprout3']]};
 // What Mira repeats when you talk to her: the line that explains the current step.
-const NUDGE={101:'dlg.wake5',102:'dlg.tool',103:'dlg.hatch',104:'dlg.road2',105:'dlg.mats',106:'dlg.station3',107:'dlg.made',108:'dlg.fixed',109:'dlg.water3'};
+const NUDGE={101:'dlg.wake5',102:'dlg.tool',103:'dlg.hatch',104:'dlg.road2',105:'dlg.mats',106:'dlg.station3',107:'dlg.made',108:'dlg.fixed',109:'dlg.water3',110:'dlg.seeds0',111:'dlg.seeds2',112:'dlg.kit',113:'dlg.planted',114:'dlg.watered'};
 let talk={lines:[],i:0,t:0,then:null,shown:''},intro=null,waterFill=.12;
 // A new story beat replaces chatter that is still queued (its follow-ups still run), so lines never lag behind events.
 function flushTalk(){const rest=talk.lines.slice(talk.i+1);talk={lines:[],i:0,t:0,then:null,shown:''};for(const l of rest)if(l[0]==='@')l[1]();const box=$('#dialog');if(box){box.hidden=true;$('#game').classList.remove('talking');}}
@@ -495,10 +503,21 @@ function stationTargets(best){const st=story(),near=(x,r)=>Math.abs(player.x-x)<
  // Each object has its own stretch of ground; they do not overlap, so the button never hesitates between two.
  if(near(262,28))best={kind:'bench',key:'bench',time:.01,x:262,name:'target.bench',verb:'verb.open2',w:66,h:40};
  const mx=(x)=>machineAt(x,0)[0];
- if(!st.fixed&&near(FILTER_X-20,36))best={kind:'fixFilter',key:'fix',time:TURN*5,x:mx(MACHINE.unit[0]+5),spot:STATION.spot,name:state.inv.repair?'target.filterBroken':'target.filterNoPart',verb:'verb.repair2',block:state.inv.repair?null:'toast.needPart',w:20,h:24,lift:26};
- else if(st.fixed&&!st.water&&near(FILTER_X-20,36))best={kind:'startWater',key:'tap',time:TURN*3,x:mx(MACHINE.wheel[0]),spot:STATION.spot,name:'target.filterStart',verb:'verb.tap',w:16,h:16,lift:36};
+ if(!st.fixed&&near(FILTER_X-24,40))best={kind:'fixFilter',key:'fix',time:TURN*5,x:mx(MACHINE.unit[0]+5),spot:STATION.spot,name:state.inv.repair?'target.filterBroken':'target.filterNoPart',verb:'verb.repair2',block:state.inv.repair?null:'toast.needPart',w:20,h:24,lift:26};
+ else if(st.fixed&&!st.water&&near(FILTER_X-24,40))best={kind:'startWater',key:'tap',time:TURN*3,x:mx(MACHINE.wheel[0]),spot:STATION.spot,name:'target.filterStart',verb:'verb.tap',w:16,h:16,lift:36};
  if(st.water&&!st.radio&&near(STATION.radio,18))best={kind:'radio',key:'radio',time:.2,x:STATION.radio,name:'target.radio',verb:'verb.listen',w:24,h:30};
+ best=waterTargets(best);
+ // The first bed: plant the kit, then water it.
+ // The zone reaches back over the spot the hero kneels on, so a second press from there still finds the bed.
+ if(st.seeds&&near(BEDS[0]-8,24)){if(!state.beds[0])best=state.inv.planter>0?{kind:'sow',key:'sow',time:TURN*3,x:BEDS[0],spot:BEDS[0]-25,name:'target.bedSow',verb:'verb.sow',w:34,h:14}:{kind:'sow',key:'sow',time:1,x:BEDS[0],name:'target.bedNoKit',verb:'verb.sow',block:'toast.needKit2',w:34,h:14};
+  else if(!st.watered)best=state.inv.water>0?{kind:'waterBed',key:'waterBed',time:TURN*3,x:BEDS[0],spot:BEDS[0]-25,name:'target.bedWater',verb:'verb.water',w:34,h:14}:{kind:'waterBed',key:'waterBed',time:1,x:BEDS[0],name:'target.bedDry',verb:'verb.water',block:'toast.needWater',w:34,h:14};}
+ if(st.radio&&!st.seeds&&near(mira.x,26))best={kind:'seeds',key:'seeds',time:.2,x:mira.x,name:'target.miraSeeds',verb:'verb.get',w:24,h:64};
  if(!best&&st.out&&near(mira.x,22))best={kind:'mira',key:'mira',time:.1,x:mira.x,name:'target.mira',verb:'verb.talk',w:24,h:64};
+ return best;}
+// Clean water at the Station (story saves, during and after the prologue): the tank under the spout, raw water into the filter.
+function waterTargets(best){const st=story(),near=(x,r)=>Math.abs(player.x-x)<r;if(!st.water)return best;
+ if(state.inv.dirty>0&&st.tank<TANK.max&&near(FILTER_X-24,40))best={kind:'pour',key:'pour',time:TURN*2,x:machineAt(MACHINE.wheel[0],0)[0],spot:STATION.spot,name:'target.pour',verb:'verb.pour',w:16,h:16,lift:36};
+ if(near(STATION.tank-6,16)){const sec=Math.ceil(TANK.refill-tankT);best=st.tank>0?{kind:'tank',key:'tank',time:TURN*2,x:STATION.tank,spot:STATION.tank-15,name:'target.tank',np:{n:st.tank,max:TANK.max},verb:'verb.fill',w:16,h:14}:{kind:'tank',key:'tank',time:1,x:STATION.tank,name:'target.tankEmpty',np:{s:sec},verb:'verb.fill',block:['toast.tankEmpty',{s:sec}],w:16,h:14};}
  return best;}
 // Prologue actions. Returns true when it handled the target.
 function prologueFinish(tg){const st=story(),gy=groundY();
@@ -509,14 +528,23 @@ function prologueFinish(tg){const st=story(),gy=groundY();
   case 'mira':{const q=quest(state);sayLine('mira',NUDGE[q.step]||'dlg.mats');held.action=false;autoAction=false;actionLatch=true;return true;}
   case 'bench':held.action=false;autoAction=false;actionLatch=true;craftCat='build';openSheet('craft-dialog');return true;
   case 'fixFilter':state.inv.repair--;st.fixed=true;burst(tg.x,gy-30,'#f2c14e',12);sfx('craft');toast(t('toast.fixed'));say('fixed');break;
-  case 'startWater':st.water=true;state.built.filter=true;burst(tg.x+14,gy-20,'#9fd6e0',16);sfx('water');toast(t('toast.water'));mira.joy=1.2;save();say('water');break;
-  case 'radio':held.action=false;autoAction=false;actionLatch=true;say('radio',finishPrologue,true);return true;
+  case 'startWater':st.water=true;st.tank=TANK.start;state.built.filter=true;burst(tg.x+14,gy-20,'#9fd6e0',16);sfx('water');toast(t('toast.water'));mira.joy=1.2;save();say('water');break;
+  case 'radio':held.action=false;autoAction=false;actionLatch=true;say('radio',()=>{st.radio=true;save();refreshHud();say('seeds0');},true);return true;
+  case 'seeds':held.action=false;autoAction=false;actionLatch=true;st.seeds=true;state.inv.seed+=2;floatText(tg.x,gy-70,t('toast.seedsGot'));burst(tg.x,gy-40,'#c4e39b',8);sfx('gain');toast(t('toast.seedsGot'));say('seeds');save();refreshHud();return true;
+  case 'tank':st.tank--;state.inv.water++;floatText(tg.x,gy-26,t('toast.gain',{n:1,item:t(ITEMS.water).toLowerCase()}));sfx('water');break;
+  case 'pour':state.inv.dirty--;st.tank=Math.min(TANK.max,st.tank+1);burst(tg.x,gy-40,'#9fd6e0',6);sfx('water');break;
+  case 'sow':state.inv.planter--;state.beds[0]=true;burst(tg.x,gy-8,'#6a4a2a',10);sfx('plant');toast(t('toast.sown'));say('planted');break;
+  case 'waterBed':state.inv.water--;st.watered=true;sproutAt=now+3.2;burst(tg.x,gy-8,'#9fd6e0',12);sfx('water');toast(t('toast.watered'));say('watered');break;
   default:return false;}
  autoAction=false;held.action=false;buzz(12);save();refreshHud();dirtyFrame=true;return true;}
 // The end of the first chapter: the campaign takes over (filter and workbench already stand), mutants return to the city.
-function finishPrologue(){const st=story();if(st.done)return;st.radio=true;st.done=true;syncCalm();if(!mobs.length&&state.scene==='surface')mobs.push(makeMob('crawler',1140,{hp:3,min:1100,max:1300}));save();refreshHud();showWin(5);}
+function finishPrologue(){const st=story();if(st.done)return;st.done=true;syncCalm();if(!mobs.length&&state.scene==='surface')mobs.push(makeMob('crawler',1140,{hp:3,min:1100,max:1300}));save();refreshHud();showWin(5);}
 // Story beats that happen by walking: leaving the metro, reaching the Station, having enough for the repair unit.
-function updateStory(dt){const st=story();if(!state.story||st.done)return;
+// Clean-water tank: refills one can every TANK.refill seconds while the filter runs (story saves, also after the prologue).
+let tankT=0,sproutAt=0,sproutT=0;
+function updateTank(dt){const st=story();if(!state.story||!st.water)return;if(st.tank>=TANK.max){tankT=0;return;}tankT+=dt;if(tankT>=TANK.refill){tankT=0;st.tank++;}}
+function updateStory(dt){const st=story();if(!state.story)return;updateTank(dt);if(st.sprout)sproutT=Math.min(2,sproutT+dt);if(st.done)return;
+ if(st.watered&&!st.sprout){if(!sproutAt)sproutAt=now+3.2;if(now>=sproutAt){st.sprout=true;sproutT=0;mira.joy=1.4;burst(BEDS[0],GROUND-14,'#bfe49b',14);sfx('win');toast(t('toast.sprout'));save();say('sprout',finishPrologue);}}
  if(intro){intro.t+=dt;if(intro.t>.9&&!intro.talk){intro.talk=true;say('wake',()=>hint('move'));}
   if(intro.t>1.9&&player.x<BUNKER.capsule+34){player.x+=40*dt;player.face=1;player.walk+=dt*5;}
   if(intro.t>2.6){intro=null;st.woke=true;save();}}
@@ -526,10 +554,15 @@ function updateStory(dt){const st=story();if(!state.story||st.done)return;
   const cost=STORY.repairCost;if(!st.station&&!st.road&&Object.entries(cost).every(([k,n])=>state.inv[k]>=n)){st.road=true;say('mats');}}
  if(targetNow&&!st.said.includes('h-act'))hint('act');}
 function updateMira(dt){const st=story();if(!state.story)return;let tx;
- if(inBunker())tx=BUNKER.mira;else if(state.scene!=='surface')return;else if(st.station||st.done)tx=STATION.mira;else tx=player.x-player.face*46;
+ if(inBunker())tx=BUNKER.mira;else if(state.scene!=='surface')return;
+ else if(st.done&&!st.sprout||st.radio&&!st.seeds)tx=STATION.mira;
+ else if(st.station){const busy=interaction.key&&targetNow;tx=busy?player.x-(Math.sign(targetNow.x-player.x)||player.face)*44:Math.abs(mira.x-player.x)>90?player.x-player.face*52:mira.x;}
+ else tx=player.x-player.face*46;
  // She keeps a comfortable distance: never on top of the object being used, never pressed against the hero.
- if(targetNow&&Math.abs(tx-targetNow.x)<40){const side=Math.sign(mira.x-targetNow.x)||Math.sign(mira.x-player.x)||1;tx=targetNow.x+side*48;}
- if(Math.abs(tx-player.x)<30&&!inBunker()){const side=Math.sign(tx-player.x)||1;tx=player.x+side*30;}
+ // While the hero works she steps clear of the object and of him; when he walks up to talk she stays put.
+ const busy=!!(interaction.key&&targetNow);
+ if(busy&&Math.abs(tx-targetNow.x)<40){const side=Math.sign(mira.x-targetNow.x)||Math.sign(mira.x-player.x)||1;tx=targetNow.x+side*48;}
+ if(busy&&Math.abs(tx-player.x)<30&&!inBunker()){const side=Math.sign(tx-player.x)||1;tx=player.x+side*30;}
  const dx=tx-mira.x;mira.moving=Math.abs(dx)>4;if(mira.moving){const v=Math.min(135,Math.abs(dx)*3+30);mira.x+=Math.sign(dx)*Math.min(Math.abs(dx),v*dt);mira.face=Math.sign(dx);mira.walk+=dt*v*4/56;}
  else{mira.walk=0;mira.face=inBunker()&&!talk.lines.length?1:Math.sign(player.x-mira.x)||mira.face;}
  // She hops over the fallen beam instead of walking through it.
@@ -544,7 +577,7 @@ const miraData=()=>extraHeroes.curie&&!Array.isArray(extraHeroes.curie)?extraHer
 function interactables(){const st=story(),out=[];if(!inPrologue(state))return out;
  if(inBunker()){if(!st.tool)out.push([BUNKER.tool,GROUND-34]);if(!st.hatch)out.push([BUNKER.valve,GROUND-66]);out.push([BUNKER.ladder,GROUND-96]);return out;}
  for(const c of CHESTS)if(!state.harvested[c.id])out.push([c.x,GROUND-34]);
- if(st.station){out.push([262,GROUND-46]);if(!st.water)out.push([FILTER_X-28,GROUND-62]);else if(!st.radio)out.push([STATION.radio,GROUND-40]);}
+ if(st.station){out.push([262,GROUND-46]);if(!st.water)out.push([FILTER_X-28,GROUND-62]);else if(!st.radio)out.push([STATION.radio,GROUND-40]);else if(!st.seeds)out.push([mira.x,GROUND-76]);else{if(st.tank>0)out.push([STATION.tank,GROUND-22]);if(!st.watered)out.push([BEDS[0],GROUND-22]);}}
  return out;}
 function drawHints(){for(const [x,y] of interactables()){if(Math.abs(x-player.x)>170||targetNow&&Math.abs(targetNow.x-x)<4)continue;const b=Math.round(Math.sin(now*3+x)*1.5);ctx.globalAlpha=.75;rect(x-2,y-6+b,4,4,'#f2c14e');rect(x-1,y-7+b,2,6,'#f2c14e');ctx.globalAlpha=1;}}
 // ---------- prologue art (drawn in code until the painted sprites arrive; see ASSETS_NEEDED.md) ----------
@@ -600,7 +633,7 @@ function drawBunkerProps(){const st=story(),G=GROUND,B=BUNKER;
  const L=B.ladder,top=G-176;if(st.hatch){rect(L-16,top-8,32,10,'#050607');if(rendered.shaft){ctx.globalAlpha=.8+.1*Math.sin(now*2);ctx.imageSmoothingEnabled=true;ctx.drawImage(rendered.shaft,L-16,top-4,32,150);ctx.imageSmoothingEnabled=false;ctx.globalAlpha=1;}}
  else{rect(L-17,top-8,34,10,'#4a5258');for(let i=0;i<4;i++)rect(L-15+i*8,top-6,4,6,i%2?'#e0b030':'#1a1a1a');rect(L+14,top+4,4,4,Math.floor(now*2)%2?'#ff5a3c':'#6a2a20');}
  // Red alarm lamp in the ceiling until the exit is open.
- if(!st.hatch){const ax=B.valve-110,on=Math.floor(now*1.5)%2;rect(ax,top+30,10,8,on?'#ff4a3a':'#5a2020');if(on){ctx.globalAlpha=.1;rect(ax-22,top+38,54,44,'#ff3a2a');ctx.globalAlpha=.05;rect(ax-44,top+82,98,60,'#ff3a2a');ctx.globalAlpha=1;}}
+ if(!st.hatch){const ax=B.valve-110,on=Math.floor(now*1.5)%2;rect(ax,top+30,10,8,on?'#ff4a3a':'#5a2020');if(on&&prefs.effects){ctx.globalAlpha=.1;rect(ax-22,top+38,54,44,'#ff3a2a');ctx.globalAlpha=.05;rect(ax-44,top+82,98,60,'#ff3a2a');ctx.globalAlpha=1;}}
  // Water glints in the channel under the floor.
  for(let i=0;i<5;i++)rect((i*137+now*18)%BUNKER.w,G+92+(i%3)*8,6,1,'#4fa3ac');}
 function paintBunker(){const B=BUNKER,bw=B.w;const cx=bw<=VW?(bw-VW)/2:Math.max(0,Math.min(bw-VW,renderX-VW*.42));camera.x=Math.round(cx*scale)/scale;camera.y=Math.round((GROUND-VH*(VW>VH?.72:.66))*scale)/scale;if(shake>0){const m=shake*14;camera.x+=Math.round((Math.random()-.5)*m*scale)/scale;camera.y+=Math.round((Math.random()-.5)*m*scale)/scale;}
@@ -615,7 +648,7 @@ function bakeSign(){const c=document.createElement('canvas');c.width=160;c.heigh
 // water cans fed by the spout, the radio. Baked pieces are drawn at 1/SP scale; only the moving parts are drawn each frame.
 function blitArt(img,x,y,flip=false){const w=img.width/SP,h=img.height/SP;ctx.imageSmoothingEnabled=smoothFor(SP);if(flip){ctx.save();ctx.translate(x+w,y);ctx.scale(-1,1);ctx.drawImage(img,0,0,w,h);ctx.restore();}else ctx.drawImage(img,x,y,w,h);ctx.imageSmoothingEnabled=false;}
 function drawStationBack(){const A=rendered.station,G=GROUND;if(camera.x>340||camera.x+VW<200)return;blitArt(A.canopy,262-48,G-82);}
-const CANS=[{art:'bucket',x:438},{art:'canRed',x:454},{art:'canOlive',x:468},{art:'drum',x:486}];
+const CANS=[{art:'bucket',x:STATION.tank},{art:'canRed',x:450},{art:'canOlive',x:462},{art:'drum',x:474}];
 // The machine stands a little taller than the hero, like the concept: drawn at MS times its baked size, in its own local coordinates.
 const MS=1.2,machineLeft=()=>FILTER_X-MACHINE.w*MS/2,machineAt=(mx,my)=>[machineLeft()+mx*MS,GROUND+1-(MACHINE.h-my)*MS];
 function drawFilterMachine(){const A=rendered.station,M=MACHINE,st=story(),G=GROUND,running=st.water||!inPrologue(state)&&state.built.filter,fixed=st.fixed||running,left=machineLeft(),top=G+1-M.h*MS;
@@ -643,18 +676,36 @@ function drawStation(){const st=story(),G=GROUND,A=rendered.station;
  if(A){const running=st.water||!inPrologue(state)&&state.built.filter;if(running)waterFillT=Math.min(1,waterFillT+.003);
   // Water cans and a bucket under the spout; the bucket fills once the water runs.
   for(const c of CANS){const im=A[c.art],w=im.width/SP;drawShadow(c.x,G+1,w*.9,.7);blitArt(im,c.x-w/2,G+1-im.height/SP);}
-  {const b=CANS[0],lvl=Math.round((running?.2+.6*waterFillT:.08)*8);rect(b.x-5,G-10+(8-lvl),10,1,'#7fd0ec');}
+  // Bucket level shows the clean-water stock (story saves); a ripple while the stream runs into it.
+  {const b=CANS[0],stock=state.story?story().tank/TANK.max:waterFillT,lvl=Math.round((running?.15+.75*stock:.08)*8);rect(b.x-5,G-10+(8-lvl),10,1,'#7fd0ec');if(running&&Math.floor(now*6)%2)rect(b.x-2,G-10+(8-lvl),3,1,'#e6fbff');}
   // Radio on a crate by the workbench: dial lights up and the antenna sends rings once the power is back.
   const rx=STATION.radio;drawProp('crate',rx,G+1,24);blitArt(A.radio,rx-10,G-14-14);const on=st.water;if(on){ctx.globalAlpha=.6+.3*Math.sin(now*6);rect(rx+0.5,G-24,7,2,'#ffcf6a');ctx.globalAlpha=1;}
   rect(rx+7,G-40,1,12,'#8a949a');rect(rx+7,G-41,2,1,'#c3ccd0');if(on&&!st.radio){const p=(now*1.3)%1;ctx.globalAlpha=1-p;ctx.strokeStyle='#9fe0c8';ctx.lineWidth=.8;ctx.beginPath();ctx.arc(rx+7.5,G-40,3+p*9,-2.4,-.7);ctx.stroke();ctx.globalAlpha=1;}}
  // Road sign towards the Station.
  if(!rendered.sign)bakeSign();const sx=1330;rect(sx-1,G-40,3,40,'#5b4a3a');ctx.imageSmoothingEnabled=true;ctx.drawImage(rendered.sign,sx-26,G-52,52,15);ctx.imageSmoothingEnabled=false;}
+// Planter boxes. The first bed of a story save shows each step of the first planting in its own look:
+// dry and cracked → sown (dark furrow, seeds) → watered (wet, glistening) → a sprout that grows in and sways.
+function drawBed(i){const x=beds[i],G=GROUND,st=story(),first=state.story&&i===0,stage=first?(st.sprout?3:st.watered?2:state.beds[0]?1:0):state.beds[i]?4:0;
+ if(x<camera.x-30||x>camera.x+VW+30)return;
+ // Wooden box (40 x 15): dark outline, two planks, nails; the soil line sits 2 units below the rim.
+ drawShadow(x,G+1,44,.6);rect(x-21,G-16,42,16,'#1e140c');rect(x-20,G-15,40,15,'#6b4a2c');rect(x-20,G-15,40,2,'#8c6136');rect(x-20,G-8,40,1,'#4a3020');rect(x-20,G-1,40,1,'#3a2414');for(const nx of [-18,16])for(const ny of [-13,-6])rect(x+nx,G+ny,2,2,'#c9c2b0');
+ const soil=stage===2||stage===3?'#2e1f12':stage===1?'#5a3e26':stage===4?'#4a3420':'#9a7a54';rect(x-18,G-17,36,4,soil);
+ if(stage===0){rect(x-12,G-17,1,3,'#6a5038');rect(x+3,G-16,5,1,'#6a5038');rect(x-4,G-15,4,1,'#6a5038');for(let j=0;j<3;j++)rect(x-12+j*11,G-24-j%2*3,1,7+j%2*3,'#8a7048'),rect(x-13+j*11,G-24-j%2*3,3,1,'#8a7048');}
+ if(stage===1){rect(x-15,G-16,30,1,'#2a1c10');for(let j=0;j<5;j++)rect(x-12+j*6,G-17,2,1,'#f0e2a8');}
+ // Watered: dark wet soil with puddles that catch the light, a few drops still falling off the rim.
+ if(stage===2||stage===3){rect(x-14,G-17,8,1,'#5fa8c8');rect(x+2,G-17,10,1,'#5fa8c8');rect(x-12,G-17,3,1,'#cdf2fb');rect(x+5,G-17,3,1,'#cdf2fb');if(stage===2)for(let k=0;k<2;k++){const t=(now*1.2+k*.5)%1;rect(x-19+k*37,G-12+t*10,1,2,'#7fd0ec');}}
+ // The sprout grows in over 1.6 s, then sways: a stem and two pairs of leaves.
+ if(stage===3){const g=Math.min(1,sproutT/1.6),e=1-Math.pow(1-g,3),h=Math.round(3+e*16),sw=g>=1?Math.sin(now*2)*1.2:0;rect(x+sw*.4,G-17-h,2,h,'#4e9a40');if(h>7){rect(x-6+sw,G-17-h,6,3,'#7cc85a');rect(x+2+sw,G-19-h,6,3,'#9ede70');rect(x-6+sw,G-17-h,2,1,'#c6f0a0');}if(h>12){rect(x-5+sw*.7,G-12-h+6,5,2,'#6ab84e');rect(x+2+sw*.7,G-13-h+6,5,2,'#6ab84e');}}
+ if(stage===4)for(let j=0;j<4;j++){const xx=x-12+j*8,height=17+(j%2)*9;rect(xx,G-height,2,height-4,'#93b36e');rect(xx-4,G-height+3,5,3,'#b2ce82');rect(xx+2,G-height-1,5,3,'#c6dda1');rect(xx+1,G-height-4,3,3,j%2?'#dcc17f':'#bccea1');}
+ // Watering: a stream from the hero's hand into the box on each pour.
+ if(first&&interaction.key==='waterBed'){const f=turnPhase();if(f<.7){const hx=player.x+player.face*10,hy=G-24;for(let k=0;k<6;k++){const t=(f/.7+k/6)%1;rect(hx+(x-6-hx)*t,hy+(G-18-hy)*t*t,1,2,'#7fd0ec');}}}}
 // Lamp light, added on top: warm light under the canopy, the filter's status colour on the tank.
-function drawStationLight(){const A=rendered.station,G=GROUND,st=story();if(camera.x>520||camera.x+VW<180)return;ctx.save();ctx.globalCompositeOperation='lighter';ctx.imageSmoothingEnabled=true;
+function drawStationLight(){const A=rendered.station,G=GROUND,st=story();if(!prefs.effects||camera.x>620||camera.x+VW<180)return;ctx.save();ctx.globalCompositeOperation='lighter';ctx.imageSmoothingEnabled=true;
  ctx.globalAlpha=.32+.03*Math.sin(now*5);ctx.drawImage(A.warm,262-55,G-112,110,110);
  const running=st.water||!inPrologue(state)&&state.built.filter,fixed=st.fixed||running,lamp=running?A.green:fixed?A.warm:A.red,blink=running||fixed?1:Math.floor(now*3)%2;
  if(blink){const [lx,ly]=machineAt(MACHINE.lamp[0],MACHINE.lamp[1]);ctx.globalAlpha=.35;ctx.drawImage(lamp,lx-24,ly-24,48,48);}
  if(running){ctx.globalAlpha=.22;ctx.drawImage(A.cyan,CANS[0].x-18,G-30,36,30);}
+ if(st.sprout){ctx.globalAlpha=.3*Math.min(1,sproutT);ctx.drawImage(A.green,BEDS[0]-26,G-44,52,44);}
  ctx.restore();ctx.imageSmoothingEnabled=false;}
 function drawBrokenFilter(){const G=GROUND,F=FILTER_X,fixed=story().fixed;drawProp('filter',F,G+2,46,false,1,1,!fixed);if(!fixed){rect(F-6,G-40,2,10,'#0a0a0a');rect(F-4,G-34,2,6,'#0a0a0a');rect(F-2,G-30,3,2,'#0a0a0a');}}
 
@@ -717,11 +768,13 @@ function stepLength(){const a=atlases.hero;if(!a)return 34;const k=72/atlases.he
 // A wheel turned by the wrench: a quarter turn per push, eased so it moves with the arm.
 function wheelAngle(){const n=Math.floor(interaction.value/TURN),f=Math.min(1,turnPhase()/.55);return (n+f*f*(3-2*f))*Math.PI/2;}
 // Wrench jobs and their rhythm: one push of the arm per TURN seconds.
-const TURN=.42,WRENCH_JOBS=new Set(['valve','fixFilter','startWater']);
+const TURN=.42,WRENCH_JOBS=new Set(['valve','fixFilter','startWater','tank','sow','waterBed','pour']);
 const turnPhase=()=>WRENCH_JOBS.has(targetNow?.kind)&&interaction.key===targetNow.key?(interaction.value%TURN)/TURN:0;
-function turnPulse(tg){const gy=groundY();sfx('pick');buzz(6);if(tg.kind==='fixFilter')burst(tg.x,gy-30,'#ffe08a',3);else if(tg.kind==='valve')burst(tg.x,gy-44,'#c9c2b0',2);else burst(tg.x,gy-36,'#9fd6e0',2);}
+function turnPulse(tg){const gy=groundY();buzz(6);
+ if(tg.kind==='fixFilter'){sfx('pick');burst(tg.x,gy-30,'#ffe08a',3);}else if(tg.kind==='valve'){sfx('pick');burst(tg.x,gy-44,'#c9c2b0',2);}else if(tg.kind==='startWater'){sfx('pick');burst(tg.x,gy-42,'#9fd6e0',2);}
+ else if(tg.kind==='tank'||tg.kind==='pour'){sfx('water');burst(tg.x,gy-10,'#9fd6e0',3);}else if(tg.kind==='sow'){sfx('plant');burst(tg.x+player.face*-4,gy-9,'#6a4a2a',3);}else if(tg.kind==='waterBed'){sfx('water');burst(tg.x,gy-10,'#9fd6e0',4);}}
 function toolFor(tg){if(swingKind(tg))return tg.kind==='node'&&tg.node.type==='wood'?'axe':'pick';
- if(tg.kind==='bed'||tg.kind==='river'||tg.kind==='crate'||tg.kind==='node')return 'kneel';return ['panel','purify','clean','valve','fixFilter','startWater'].includes(tg.kind)?'wrench':'';}
+ if(tg.kind==='bed'||tg.kind==='river'||tg.kind==='crate'||tg.kind==='node')return 'kneel';if(['tank','sow','waterBed'].includes(tg.kind))return 'kneel';return ['panel','purify','clean','valve','fixFilter','startWater'].includes(tg.kind)?'wrench':'';}
 function heldItem(working){if(player.climb)return null;if(working){const tl=toolFor(targetNow);return atlases.hero?.length>=27&&(tl==='axe'||tl==='wrench')?tl:null;}if(sling.anim>0)return 'sling';if(atk.anim>0||nearestMob(120))return 'sword';if((inMine()||inVault())&&state.built.torch&&torchOn)return 'torch';return null;}
 function bakeWeapons(){if(rendered.sword||typeof document==='undefined'||!document.createElement)return;
  // Sword at 4 px per world unit, blade pointing up, grip centre at (14,104).
@@ -870,6 +923,10 @@ function drawTargetMarker(){if(!targetNow)return;const gy=groundY(),tx=targetNow
 function bakeVault(){if(!art.vault)return;rendered.vaultSky=topColor(art.vault);rendered.vault=true;dirtyFrame=true;}
 // Backgrounds are drawn straight from the source image each frame (only the visible slice), so they keep full detail.
 function blit(img,wx,wy,ww,wh){ctx.imageSmoothingEnabled=smoothFor(img.width/ww);const x0=Math.max(wx,camera.x),x1=Math.min(wx+ww,camera.x+VW),y0=Math.max(wy,camera.y),y1=Math.min(wy+wh,camera.y+VH);if(x1<=x0||y1<=y0)return;const kx=img.width/ww,ky=img.height/wh;ctx.drawImage(img,(x0-wx)*kx,(y0-wy)*ky,(x1-x0)*kx,(y1-y0)*ky,x0-camera.x,y0-camera.y,x1-x0,y1-y0);}
+// First use of an image costs a decode and an upload. Draw every sprite sheet and baked canvas once into the game canvas
+// at start-up (invisibly), so a repair or a fight never stalls on its first frame.
+function warmAll(){const list=[art.hero,art.held,art.mira,art.mobs,art.props,art.objects,art.items,rendered.bunker?.canvas,rendered.shaft,...Object.values(rendered.station||{})].filter(Boolean);
+ ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=.004;for(const im of list){try{ctx.drawImage(im,0,0,2,2);}catch{}}ctx.restore();dirtyFrame=true;}
 function warmImage(img){try{const c=document.createElement('canvas');c.width=c.height=2;c.getContext('2d').drawImage(img,0,0,2,2);}catch{}}
 function topColor(img){try{const c=document.createElement('canvas');c.width=c.height=1;const g=c.getContext('2d');g.drawImage(img,0,0,img.width,6,0,0,1,1);const d=g.getImageData(0,0,1,1).data;return `rgb(${d[0]},${d[1]},${d[2]})`;}catch{return '#1c1630';}}
 function drawEarth(from){if(!rendered.earth)return;const gy=from-camera.y;if(gy>=VH)return;const sx=Math.max(0,Math.floor(camera.x)),sw=Math.min(Math.ceil(VW)+2,WORLD-sx),eh=Math.min(240,Math.ceil(VH-gy)+1);if(eh>0&&sw>0)ctx.drawImage(rendered.earth,sx,0,sw,eh,sx-camera.x,gy,sw,eh);}
@@ -902,7 +959,7 @@ function paint(){ctx.setTransform(scale,0,0,scale,0,0);if(inBunker()){ctx.imageS
  rect(camera.x,GROUND,Math.min(VW,WORLD-camera.x),2,'#8b9668');
  // The last greenhouse stands behind the three beds; equipment appears at the shelter as it is built.
  // Sizes follow the hero (68 units ≈ 1.75 m): doorways and cages are taller than a person, a workbench is waist-high.
- drawProp('greenhouse',GREENHOUSE_X,GROUND+3,300,false,1,1,inPrologue(state));drawProp('metro',METRO,GROUND+4,124);
+ drawProp('greenhouse',GREENHOUSE_X,GROUND+3,300,false,1,1,inPrologue(state)&&!story().sprout);drawProp('metro',METRO,GROUND+4,124);
  for(const n of nodes){if(n.x<camera.x-70||n.x>camera.x+VW+70)continue;const done=state.harvested[n.id],nx=n.x+(nodeShake[n.id]>0?Math.sin(now*80)*1.6:0);
   // What remains after the job: a cut stump, an opened crate, a pile of rubble.
   if(art.props&&n.type==='wood')done?drawProp('stumpCut',nx,GROUND+3,44):drawProp('stump',nx,GROUND+3,50);
@@ -916,11 +973,12 @@ function paint(){ctx.setTransform(scale,0,0,scale,0,0);if(inBunker()){ctx.imageS
  if(art.props){drawProp('vaultDoor',1270,GROUND+2,60);rect(1247,GROUND-53,46,2,state.vault?'#3a3f36':state.built.generator?'#c3e5a1':'#b99a76');if(state.vault)rect(1255,GROUND-41,32,40,'#0b0d10');}
  else if(!state.vault){drawObject(3,1270,GROUND,54);rect(1247,GROUND-51,46,2,state.built.generator?'#c3e5a1':'#b99a76');}else{ctx.globalAlpha=.55;drawObject(3,1270,GROUND,54);ctx.globalAlpha=1;rect(1257,GROUND-40,26,40,'#0b0d10');}
  art.props?drawProp('beam',1072,GROUND+2,42):drawObject(0,1072,GROUND,47);
- const grow=state.beds.filter(Boolean).length;
- for(let i=0;i<3;i++){const x=beds[i];rect(x-15,GROUND-4,30,5,'#856443');rect(x-12,GROUND-5,24,2,'#493d2d');if(!state.beds[i]&&state.story&&!state.completed)for(let j=0;j<4;j++)rect(x-10+j*6,GROUND-8-j%2*3,1,4+j%2*3,'#7a6040');if(state.beds[i]){for(let j=0;j<4;j++){const xx=x-10+j*7,height=15+(j%2)*9;rect(xx,GROUND-height,2,height-4,'#93b36e');rect(xx-4,GROUND-height+3,5,3,'#b2ce82');rect(xx+2,GROUND-height-1,5,3,'#c6dda1');rect(xx+1,GROUND-height-4,3,3,j%2?'#dcc17f':'#bccea1');}}}
+ // Fireflies over planted beds; the first story bed brings them only once its sprout is up.
+ const grow=state.beds.filter((b,i)=>b&&!(state.story&&i===0&&!story().sprout)).length;
+ for(let i=0;i<3;i++)drawBed(i);
  for(const m of mobs)drawMob(m);drawMira();
  if(state.vault){const fx=545+Math.sin(now*.5)*14,left=Math.cos(now*.5)<0;art.props?drawProp('fox',fx,GROUND+1,29,left):drawObject(6,fx,GROUND,38,Math.sin(now*.5)<0);}
- if(grow>0)for(let i=0;i<grow*2;i++){const x=440+Math.sin(now*.65+i*2)*65,y=GROUND-35+Math.sin(now*1.3+i)*12;rect(x-1,y,2,3,'#e4dcaa');rect(x-5,y-2,4,3,'#a9d9c7');rect(x+1,y-2,4,3,'#c5df9c');}
+ if(grow>0)for(let i=0;i<grow*2;i++){const x=BEDS[1]+Math.sin(now*.65+i*2)*65,y=GROUND-35+Math.sin(now*1.3+i)*12;rect(x-1,y,2,3,'#e4dcaa');rect(x-5,y-2,4,3,'#a9d9c7');rect(x+1,y-2,4,3,'#c5df9c');}
  drawHero();drawSlash();
  for(const s of shots){rect(s.x-1,s.y-1,3,3,'#d8d2c0');rect(s.x-Math.sign(s.vx)*4,s.y,2,1,'#d8d2c066');}
  for(const e of effects)rect(e.x,e.y,2,2,e.color);
@@ -932,13 +990,14 @@ function loop(timestamp){const t0=performance.now();const raw=last?timestamp-las
  const alpha=Math.min(1,accum/STEP);renderX=prevX+(player.x-prevX)*alpha;renderY=prevY+(player.y-prevY)*alpha;if(Math.abs(player.x-prevX)>20){renderX=player.x;renderY=player.y;}
  if(toastUntil&&now>toastUntil){ui.toast.classList.remove('show');$('#game')?.classList.remove('toasting');toastUntil=0;}
  // Paint on every n-th display refresh: 60 Hz→1, 120 Hz→2, so frame pacing stays even instead of alternating.
- const Q=QUALITY[prefs.quality],fps=ecoFallback?Q.fps/2:Q.fps,every=Math.max(1,Math.round(1000/fps/rafDelta));rafCount++;
+ const cap=+prefs.fpsCap,fps=ecoFallback?cap/2:cap,every=Math.max(1,Math.round(1000/fps/rafDelta));rafCount++;
  if(assetsReady&&visible&&(dirtyFrame||active()&&rafCount>=every)){rafCount=0;paint();frames++;frameMs+=performance.now()-t0;}
  // Telemetry counts only live gameplay: pauses, menus and the start screen must not look like slow frames.
  if(!active()){frames=0;frameMs=0;telemetryClock=0;fastWindows=0;}else telemetryClock+=elapsed;
  if(telemetryClock>=2){const rate=frames/telemetryClock;canvas.dataset.renderFps=Math.round(rate);if(prefs.fps)setText($('#performance'),t('perf',{fps:Math.round(rate),ms:Math.round(worstMs),n:hitches,res:`${canvas.width}×${canvas.height}`})+(ecoFallback?' · auto '+fps:''));
   const goal=Math.min(fps,1000/rafDelta/every);if(rate<goal*.8)slowWindows++;else slowWindows=0;
-  if(slowWindows>=2){slowWindows=0;fastWindows=0;if(prefs.quality==='detail'){if(!ecoFallback&&fps>60)ecoFallback=true;}else if(adaptiveScale>.55){adaptiveScale=Math.max(.55,adaptiveScale-.15);resize();}else if(prefs.quality==='smooth'&&!ecoFallback)ecoFallback=true;}
+  // Too slow: first halve a 120 cap, then lower the resolution, last halve a 60 cap to a steady 30.
+  if(slowWindows>=2){slowWindows=0;fastWindows=0;if(cap>60&&!ecoFallback)ecoFallback=true;else if(adaptiveScale>.55){adaptiveScale=Math.max(.55,adaptiveScale-.15);resize();}else if(cap===60&&!ecoFallback)ecoFallback=true;}
   // Recover sharpness after ~10 s of steady frames, so one bad moment does not leave the picture blurry for good.
   else if(rate>=goal*.95&&worstMs<34){if(++fastWindows>=5){fastWindows=0;if(ecoFallback)ecoFallback=false;else if(adaptiveScale<1){adaptiveScale=Math.min(1,adaptiveScale+.15);resize();}}}else fastWindows=0;
   worstMs=0;frames=0;frameMs=0;telemetryClock=0;}
@@ -948,13 +1007,13 @@ async function boot(){
  sceneArt.mine=loadImage('assets/mine-wall.webp').then(img=>{art.mineWall=img;if(assetsReady)bakeMine();warmImage(img);dirtyFrame=true;});
  sceneArt.vault=loadImage('assets/vault-world.webp').then(img=>{art.vault=img;bakeVault();warmImage(img);});
  sceneArt.mine.catch(()=>{});sceneArt.vault.catch(()=>{});
- try{const loaded=await Promise.all([loadImage('assets/expedition-world.webp'),loadImage(`assets/hero-${heroId(state.hero)}.webp`),loadImage('assets/objects-mobile.webp'),loadImage('assets/props.webp').catch(()=>null),loadImage('assets/mobs.webp').catch(()=>null),loadImage('assets/held.webp').catch(()=>null),state.story?loadImage('assets/hero-mira.webp').catch(()=>null):null]);[art.environment,,art.objects,art.props,art.mobs,art.held,art.mira]=loaded;bakeBunker();if(state.story)rendered.station=bakeStationArt(document);useHero(heroId(state.hero),loaded[1]);atlases.objects=atlasLayout.objects;bakeBackground();
+ try{const loaded=await Promise.all([loadImage('assets/expedition-world.webp'),loadImage(`assets/hero-${heroId(state.hero)}.webp`),loadImage('assets/objects-mobile.webp'),loadImage('assets/props.webp').catch(()=>null),loadImage('assets/mobs.webp').catch(()=>null),loadImage('assets/held.webp').catch(()=>null),state.story?loadImage('assets/hero-mira.webp').catch(()=>null):null]);[art.environment,,art.objects,art.props,art.mobs,art.held,art.mira]=loaded;bakeBunker();if(state.story)rendered.station=bakeStationArt(document);warmAll();useHero(heroId(state.hero),loaded[1]);atlases.objects=atlasLayout.objects;bakeBackground();
   try{rendered.shellback=bakeShellback();const sb=rendered.shellback;rendered.shellRed=tinted(sb.canvas,0,0,sb.w,sb.h,'#ff5a3c');rendered.stoneback=bakeShellback(document,'stone');rendered.stoneRed=tinted(rendered.stoneback.canvas,0,0,sb.w,sb.h,'#ff5a3c');const a=atlases.objects[7];rendered.mobWhite=tinted(art.objects,a.x,a.y,a.w,a.h,'#fff6e2');rendered.mobRed=tinted(art.objects,a.x,a.y,a.w,a.h,'#ff5a3c');}catch{}
   bakeMine();bakeWeapons();await loadHeroArt(state.hero);if(state.scene==='mine'&&sceneArt.mine)await sceneArt.mine.catch(()=>{});if(state.scene==='vault'&&sceneArt.vault)await sceneArt.vault.catch(()=>{});prewarm(state.scene==='surface'?toneAt(player.x):state.scene);if(inBunker())prewarm('city');if(state.scene==='surface'&&player.x<1560)prewarm(toneAt(300));assetsReady=true;ui['start-btn'].disabled=false;setText(ui['start-btn'],t(continuing?'menu.continue':'menu.start'));dirtyFrame=true;
   // Repaint the gate sign once the pixel font arrives, and fetch the forest after start-up.
   document.fonts?.ready?.then(()=>bakeGate());loadImage('assets/forest-world.webp').then(img=>{art.forest=img;bakeForest();}).catch(()=>{});
   // Backgrounds for later scenes load after start-up so the first screen appears quickly.
-  loadImage('assets/items.webp').then(img=>{art.items=img;}).catch(()=>{});
+  loadImage('assets/items.webp').then(img=>{art.items=img;warmImage(img);}).catch(()=>{});
   loadImage('assets/world-garden.webp').then(img=>{art.garden=img;if(state.completed){bakeBackground();if(art.forest)bakeForest();}}).catch(()=>{});
   const tones=[state.completed?'forest':null,state.forest.every(Boolean)?'mine':null,state.mine.panel?'vault':null].filter(Boolean);prewarmLater(tones);}
  catch{setText(ui['start-btn'],t('menu.loadFail'));setText($('.title-hint'),t('menu.loadFailNote'));}}

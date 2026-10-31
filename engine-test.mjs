@@ -44,13 +44,13 @@ function clearMobs(x,r=260,limit=30){down('attack');for(let i=0;i<limit*60;i++){
  padSend('pointerup',5,200);up('attack');assert.equal(mobsNear(x,r).length,0,`Mutants near ${x} must be defeated`);}
 function make(id){el('craft-btn').onclick();window.afterfall.pick(id);const button=el('craft-'+id);assert.equal(typeof button.onclick,'function',`Craft button ${id}`);button.onclick();el('resume-btn').onclick();}
 el("start-btn").onclick();el("hero-go").onclick();run(1);assert.equal(snap().player.ground,true);
-moveTo(520);
+moveTo(640);
 // Chopping is a series of strikes: progress moves on each contact and the wood arrives on the last one, once.
 {down('action');up('action');run(.2);assert.equal(snap().work.hits,0,'Wind-up before the first contact');run(.12);assert.equal(snap().work.hits,1,'First contact');assert.equal(snap().state.inv.wood,0);
  run(1.2);assert.equal(snap().state.inv.wood,0,'No wood before the last strike');run(.6);assert.equal(snap().state.inv.wood,12);run(2);assert.equal(snap().state.inv.wood,12,'A cut tree gives wood once');
  hold(3);assert.equal(snap().state.inv.wood,12,'The stump left behind cannot be chopped again');}
 console.log('PASS: tool work — wind-up, contact, progress per strike, single reward on the last strike, spent object cannot be farmed.');
-moveTo(590);hold(2.4);assert.equal(snap().state.inv.stone,10);
+moveTo(760);hold(2.4);assert.equal(snap().state.inv.stone,10);
 moveTo(260);make('bench');assert.equal(snap().state.built.bench,true);
 moveTo(800);hold(2.6);moveTo(915);hold(3.4);assert.equal(snap().state.inv.scrap,8);assert.equal(snap().state.inv.fuse,1);
 moveTo(690);{const d0=snap().state.inv.dirty;hold(2.6);assert.equal(snap().state.inv.dirty,d0+1,'Holding Use completes one action, not a stream of them');}for(let i=0;i<2;i++)hold(1);assert.ok(snap().state.inv.dirty>=3);
@@ -62,8 +62,8 @@ for(let i=0;i<300&&!snap().mobs.some(m=>m.st==='windup');i++)run(1/60);const hpW
 clearMobs(1160);
 moveTo(1270);hold(3.4);assert.equal(snap().state.vault,true);assert.equal(snap().state.inv.seed,3);
 moveTo(260);for(let i=0;i<3;i++){make('water');make('planter');}
-for(const x of [410,450,490]){moveTo(x);hold(1.7);}
-assert.equal(snap().state.beds.every(Boolean),true);assert.equal(snap().state.completed,false);moveTo(450);down('attack');for(let i=0;i<95*60&&!snap().state.completed;i++)run(1/60);up('attack');assert.equal(snap().state.completed,true);assert.ok(snap().state.defense.hp>0);assert.equal(snap().state.inv.planter,0);assert.ok(Object.values(snap().state.inv).every(n=>n>=0));
+for(const x of [500,540,580]){moveTo(x);hold(1.7);}
+assert.equal(snap().state.beds.every(Boolean),true);assert.equal(snap().state.completed,false);moveTo(540);down('attack');for(let i=0;i<95*60&&!snap().state.completed;i++)run(1/60);up('attack');assert.equal(snap().state.completed,true);assert.ok(snap().state.defense.hp>0);assert.equal(snap().state.inv.planter,0);assert.ok(Object.values(snap().state.inv).every(n=>n>=0));
 console.log('PASS: actual engine pointer controls, resource holds, crafting, generator unlock, jump obstruction both directions, seed rescue, water, 3 planted beds and full 90-second defense.');
 console.log('Optimal route play time:',Math.round(snap().state.time),'seconds, excluding reading and menus.');
 const saved=Object.values(localStorage.data).map(JSON.parse).find(x=>x.version===3);assert.ok(saved);assert.ok(saved.time>0);

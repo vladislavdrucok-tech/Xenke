@@ -1,0 +1,16 @@
+const {chromium}=require('playwright');const S=process.argv[2]+'/st',W=+(process.argv[3]||844),H=+(process.argv[4]||390);require('fs').mkdirSync(S,{recursive:true});
+const story=o=>Object.assign({woke:true,tool:true,hatch:true,out:true,road:true,station:true,fixed:false,water:false,radio:false,done:false,said:['wake','tool','hatch','road','mats','station','h-move','h-act','h-climb','h-rotate']},o);
+const save=JSON.stringify({version:3,time:120,hero:'einstein',scene:'surface',inv:{wood:12,stone:0,scrap:6,cloth:2,fuse:0,seed:0,dirty:0,water:0,planter:0,berry:2,ammo:12,ore:0,wire:0,medkit:0,can:1,wrench:1,repair:0},built:{bench:true,filter:false,generator:false,purifier:false,torch:false,repair:false},beds:[false,false,false],vault:false,harvested:{'chest-a':1,'chest-b':1},player:{x:300,y:284},stats:{hp:100,food:90,thirst:90},defense:{time:0,hp:100,wave:0},completed:false,forest:[false,false,false],mine:{ore:[false,false,false],crates:[false,false],panel:false},seedvault:{caps:[false,false,false],boss:false,door:false},story:story({})});
+(async()=>{const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:W,height:H},hasTouch:true,isMobile:true,deviceScaleFactor:2,locale:'uk-UA'});
+await ctx.addInitScript(s=>{if(!sessionStorage.getItem('x')){sessionStorage.setItem('x','1');localStorage.setItem('afterfall-last-greenhouse-v3',s);}},save);
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.goto('http://localhost:8123/index.html');await p.waitForFunction(()=>!document.querySelector('#start-btn').disabled);await p.tap('#start-btn');await p.waitForTimeout(3200);
+const cdp=await ctx.newCDPSession(p);const T=(t,pts)=>cdp.send('Input.dispatchTouchEvent',{type:t,touchPoints:pts});const snap=()=>p.evaluate(()=>window.afterfall.snapshot());
+const box=async id=>{const r=await p.locator(id).boundingBox();return {x:r.x+r.width/2,y:r.y+r.height/2};};
+async function moveTo(x){const m=await box('#move-pad');const s0=await snap();const d=Math.sign(x-s0.player.x);await T('touchStart',[{x:m.x,y:m.y,id:1}]);await T('touchMove',[{x:m.x+d*30,y:m.y,id:1}]);for(let i=0;i<500;i++){await p.waitForTimeout(16);const px=(await snap()).player.x;if((px-x)*d>=-2)break;}await T('touchEnd',[]);await p.waitForTimeout(250);}
+async function act(){const a=await box('#action');await T('touchStart',[{x:a.x,y:a.y,id:3}]);await p.waitForTimeout(80);await T('touchEnd',[]);}
+const shot=n=>p.screenshot({path:`${S}/${n}-${W}.png`});
+await moveTo(372);await shot('a-broken');
+await moveTo(262);await act();await p.waitForTimeout(600);await shot('b-craft');await p.click('[data-craft="repair"]');await p.waitForTimeout(300);await shot('c-crafted');await p.click('#craft-dialog .close');await p.waitForTimeout(300);
+await moveTo(372);await act();await p.waitForTimeout(1300);await shot('d-fixing');await p.waitForTimeout(1800);await shot('e-fixed');
+await act();await p.waitForTimeout(800);await shot('f-tap');await p.waitForTimeout(1600);await shot('g-water');await p.waitForTimeout(2500);await shot('h-water2');
+const s=await snap();console.log(JSON.stringify({fixed:s.story.fixed,water:s.story.water,x:s.player.x,face:s.player.face,mira:s.mira.x}),errs);await b.close();})();

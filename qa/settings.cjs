@@ -1,0 +1,4 @@
+const {chromium}=require('playwright');(async()=>{const b=await chromium.launch();const p=await (await b.newContext({viewport:{width:844,height:390},hasTouch:true,isMobile:true,deviceScaleFactor:2,locale:'uk-UA'})).newPage();
+await p.goto('http://localhost:8123/index.html');await p.waitForFunction(()=>!document.querySelector('#start-btn').disabled);await p.tap('#menu-settings');await p.waitForTimeout(400);
+await p.tap('.seg[data-setting="fpsCap"] button[data-value="30"]');await p.waitForTimeout(200);const saved=await p.evaluate(()=>JSON.parse(localStorage.getItem('afterfall-controls-v3')).fpsCap);
+await p.screenshot({path:__dirname+'/out/settings.png'});console.log('fpsCap saved',saved,await p.evaluate(()=>[...document.querySelectorAll('.seg[data-setting="fpsCap"] button')].map(b=>b.textContent+':'+b.getAttribute('aria-pressed')).join(' ')));await b.close();})();

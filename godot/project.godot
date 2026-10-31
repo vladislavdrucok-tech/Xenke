@@ -1,0 +1,28 @@
+; Afterfall — trial Godot scene (Mira's workshop). Open this folder in Godot 4.3+.
+config_version=5
+
+[application]
+config/name="Afterfall — пробна сцена"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+
+[autoload]
+State="*res://scripts/state.gd"
+
+[display]
+window/size/viewport_width=560
+window/size/viewport_height=315
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=0
+
+[input_devices]
+pointing/emulate_touch_from_mouse=true
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=1
+environment/defaults/default_clear_color=Color(0.13, 0.22, 0.27, 1)

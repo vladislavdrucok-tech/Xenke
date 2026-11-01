@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pulse FX · віртуальний рахунок</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="mascot.svg">
+</head>
+<body>
+<div class="app">
+  <header class="titlebar">
+    <div class="brand"><img src="mascot.svg" alt="">Pulse FX</div>
+    <span class="chip virt" title="Угоди віртуальні: справжніх грошей і брокера немає">ВІРТУАЛЬНИЙ РАХУНОК</span>
+    <span class="chip" id="modeData"></span>
+    <span class="chip" id="modeAi"></span>
+    <div class="spacer"></div>
+    <span class="meta" id="lastBar"></span>
+    <span class="meta" id="nextRun"></span>
+    <button class="primary" id="runBtn">Запустити цикл</button>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <main class="grid">
+    <section class="card equity">
+      <div class="card-h"><span>Капітал</span><small id="eqSub"></small></div>
+      <div class="eq-line"><div class="eq-big" id="eqBig">—</div><div class="eq-ret" id="eqRet"></div></div>
+      <div class="chart" id="eqChart"></div>
+      <div class="kpis" id="kpis"></div>
+    </section>
+
+    <section class="card learn">
+      <div class="card-h"><span>Навчання</span><small id="learnSub"></small></div>
+      <div id="weights"></div>
+      <div class="chart small" id="wChart"></div>
+      <div class="hits" id="hits"></div>
+      <p class="hint">Після кожного дня бот перевіряє, чи вгадали технічний аналіз і новини напрямок наступного дня, і поступово дає більшу вагу тому, що працює краще. Межі ваги: 0.2–0.8.</p>
+    </section>
+
+    <section class="pairs" id="pairs"></section>
+
+    <section class="card ai">
+      <div class="card-h"><span>Рішення ШІ-аналітика</span><small id="aiSub"></small></div>
+      <p class="summary" id="aiSummary"></p>
+      <div id="aiPairs"></div>
+    </section>
+
+    <section class="card news">
+      <div class="card-h"><span>Новини дня</span><small id="newsSub"></small></div>
+      <ul class="headlines" id="headlines"></ul>
+    </section>
+
+    <section class="card journal">
+      <div class="card-h"><span>Журнал рішень</span><small>оцінка за рухом наступного дня</small></div>
+      <div class="scroll"><table><thead><tr><th>Дата</th><th>Пара</th><th>Дія</th><th>Оцінка</th><th>Тех.</th><th>Новини</th><th>Наступний день</th></tr></thead><tbody id="journalBody"></tbody></table></div>
+    </section>
+
+    <section class="card trades">
+      <div class="card-h"><span>Закриті угоди</span><small id="tradesSub"></small></div>
+      <div class="scroll"><table><thead><tr><th>Закрито</th><th>Пара</th><th>Напрям</th><th>Піпси</th><th>P&amp;L</th><th>Причина</th></tr></thead><tbody id="tradesBody"></tbody></table></div>
+    </section>
+
+    <section class="card rules">
+      <div class="card-h"><span>Guard: ризик-правила</span><small>змінюються у файлі .env</small></div>
+      <div id="rules"></div>
+      <div class="runs" id="runs"></div>
+    </section>
+  </main>
+  <footer>Pulse FX — дослідницький інструмент на віртуальних грошах. Не є фінансовою порадою. Минулі результати, тим паче в демо-режимі, не гарантують майбутніх.</footer>
+</div>
+<div class="tooltip" id="tip"></div>
+<script type="module" src="app.mjs"></script>
+</body>
+</html>

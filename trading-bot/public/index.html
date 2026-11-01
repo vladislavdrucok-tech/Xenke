@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pulse Terminal · ДЕМО</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="mascot.svg">
+</head>
+<body>
+<div id="boot" class="boot">
+  <div class="boot-orb"><img src="mascot.svg" alt=""></div>
+  <h1>Pulse Terminal</h1>
+  <div class="chip"><span class="dot"></span>ДЕМО · симуляція</div>
+  <ul class="boot-list">
+    <li>dex feed · 24 токени (вигадані)</li>
+    <li>агенти: scout · filter · analyst · sniper · guard</li>
+    <li>синхронізація 512 гаманців</li>
+  </ul>
+</div>
+
+<div class="app" id="app">
+  <header class="titlebar">
+    <div class="lights"><i></i><i></i><i></i></div>
+    <div class="brand"><img src="mascot.svg" alt="">Pulse Terminal</div>
+    <div class="chip demo" title="Усі дані згенеровані симулятором. Реальної торгівлі немає."><span class="dot"></span>ДЕМО · симуляція</div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="overview" class="on">Огляд</button>
+      <button data-tab="feed">Копі-стрічка</button>
+      <button data-tab="wallets">Гаманці</button>
+      <button data-tab="rules">Правила</button>
+    </nav>
+    <div class="controls">
+      <button id="play" class="btn" title="Пауза / старт">❚❚</button>
+      <select id="speed" class="btn" title="Швидкість симуляції">
+        <option value="1">1×</option><option value="5">5×</option><option value="20" selected>20×</option><option value="60">60×</option>
+      </select>
+      <span class="status" id="status"><span class="dot"></span>Live</span>
+      <span class="clock" id="clock">00:00:00</span>
+      <span class="wallet-pill" id="walletPill">0.00 SOL</span>
+    </div>
+  </header>
+
+  <div class="ticker" id="ticker"></div>
+
+  <aside class="side">
+    <div class="side-h">Термінал</div>
+    <button class="side-i on" data-tab="overview"><span>Огляд</span></button>
+    <button class="side-i" data-tab="feed"><span>Копі-стрічка</span><b id="sideCopied">0</b></button>
+    <button class="side-i" data-tab="wallets"><span>Розумні гаманці</span><b>512</b></button>
+    <button class="side-i" data-tab="rules"><span>Правила</span><b>6/6</b></button>
+    <div class="side-i static"><span>Risk guard</span><b id="sideStops">0 стопів</b></div>
+    <div class="side-h">Агенти</div>
+    <div id="sideAgents"></div>
+    <div class="main-wallet">
+      <div class="mw-h"><img src="mascot.svg" alt=""><div><b>Демо-гаманець</b><small>симуляція</small></div></div>
+      <div class="mw-v" id="mwSol">0.00 <small>SOL</small></div>
+      <div class="mw-s" id="mwUsd">$0.00</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="view on" id="view-overview">
+      <div class="row top">
+        <div class="card equity">
+          <div class="card-h"><span>Капітал</span><small id="eqSub"></small></div>
+          <div class="eq-line">
+            <div class="eq-big" id="eqBig">$0</div>
+            <div class="eq-mult" id="eqMult">1.00×</div>
+          </div>
+          <div class="eq-pnl" id="eqPnl"></div>
+          <div class="eq-open" id="eqOpen"></div>
+          <div class="chart" id="chart"></div>
+          <div class="kpis" id="kpis"></div>
+        </div>
+        <div class="card radar">
+          <div class="card-h"><span>Радар гаманців</span><small>512 відстежується</small></div>
+          <canvas id="radar"></canvas>
+          <div class="radar-f"><span>sweep · 512 гаманців</span><b id="radarHits">0 сигналів</b></div>
+        </div>
+      </div>
+      <div class="pipeline" id="pipeline"></div>
+      <div class="row bottom">
+        <div class="card positions">
+          <div class="card-h"><span>Позиції</span><small id="posSub"></small></div>
+          <table><thead><tr><th>Токен</th><th>Розмір</th><th>PnL</th><th></th><th>Статус</th></tr></thead><tbody id="posBody"></tbody></table>
+        </div>
+        <div class="card treemap-card">
+          <div class="card-h"><span>PnL за токенами</span></div>
+          <div class="treemap" id="treemap"></div>
+        </div>
+        <div class="card logcard">
+          <div class="card-h"><span>Лог агентів</span></div>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-feed">
+      <div class="card full">
+        <div class="card-h"><span>Закриті угоди</span><small id="feedSub"></small></div>
+        <table class="wide"><thead><tr><th>Час</th><th>Токен</th><th>Гаманець</th><th>Вкладено</th><th>PnL</th><th>Статус</th><th>Причина</th></tr></thead><tbody id="feedBody"></tbody></table>
+      </div>
+    </section>
+
+    <section class="view" id="view-wallets">
+      <div class="card full">
+        <div class="card-h"><span>Гаманці, за якими стежить Scout</span><small>показано 48 з 512</small></div>
+        <table class="wide"><thead><tr><th>Адреса</th><th>Угод</th><th>Win rate</th><th>Скопійовано</th><th>Наш PnL</th><th>Тримає</th></tr></thead><tbody id="walletBody"></tbody></table>
+      </div>
+    </section>
+
+    <section class="view" id="view-rules">
+      <div class="card full rules">
+        <div class="card-h"><span>Правила та параметри симуляції</span><small>застосування перезапускає симуляцію</small></div>
+        <form id="rulesForm" class="rules-grid"></form>
+        <p class="note">Це демонстрація інтерфейсу. Ціни, токени, гаманці та угоди вигадані генератором випадкових чисел. Результат залежить від seed і «настрою ринку»: при нейтральному ринку медіана близько нуля, бувають і збитки. Не використовуйте ці записи як доказ прибутковості.</p>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="tooltip" id="tip"></div>
+<script type="module" src="app.mjs"></script>
+</body>
+</html>

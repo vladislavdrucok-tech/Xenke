@@ -2,35 +2,15 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize, sep } from 'node:path';
-import { ROOT, loadConfig, PAIRS } from './lib/config.mjs';
+import { ROOT, loadConfig } from './lib/config.mjs';
 import { runCycle, loadState, saveState, freshState } from './lib/cycle.mjs';
-import { equityUsd, unrealizedUsd, quoteToUsd } from './lib/engine.mjs';
+import { publicState as toPublic } from './lib/core.mjs';
 
 const cfg = loadConfig();
 const pub = join(ROOT, 'public');
 const types = { '.html': 'text/html; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml' };
 
-export function nextRunAt(now = new Date()) {
-  const [h, m] = cfg.decisionTimeUtc.split(':').map(Number);
-  const t = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), h, m));
-  if (t <= now) t.setUTCDate(t.getUTCDate() + 1);
-  return t.toISOString();
-}
-
-function publicState(state) {
-  const prices = state.latest ? Object.fromEntries(PAIRS.map((p) => [p.id, state.latest.technical[p.id].close])) : null;
-  const positions = Object.fromEntries(Object.entries(state.positions).map(([id, p]) => [id, {
-    ...p, unrealizedUsd: prices ? unrealizedUsd(p, prices[id], quoteToUsd(id, prices)) : 0,
-  }]));
-  return {
-    mode: state.mode, account: state.account, positions, equity: prices ? equityUsd(state, prices) : state.account.cash,
-    trades: state.trades.slice(-60), equityCurve: state.equityCurve, journal: state.journal.slice(-120),
-    weights: state.weights, weightHistory: state.weightHistory.slice(-300), latest: state.latest, runs: state.runs.slice(-10),
-    lastBarDate: state.lastBarDate, nextRunAt: nextRunAt(),
-    config: { decisionTimeUtc: cfg.decisionTimeUtc, riskPerTradePct: cfg.riskPerTradePct, maxLeverage: cfg.maxLeverage, maxDrawdownPct: cfg.maxDrawdownPct,
-      stopAtr: cfg.stopAtr, takeAtr: cfg.takeAtr, minScore: cfg.minScore, startEquity: cfg.startEquity, model: cfg.liveAi ? cfg.claudeModel : null },
-  };
-}
+const publicState = (state) => toPublic(state, cfg);
 
 const send = (res, code, body) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(body)); };
 

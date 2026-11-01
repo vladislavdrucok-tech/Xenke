@@ -2,6 +2,12 @@ const $ = (id) => document.getElementById(id);
 const PAIRS = ['EUR/USD', 'GBP/USD', 'EUR/GBP'];
 let state = null;
 
+// Джерело даних: сервер (node server.mjs) або браузерна демо-версія, яка підставляє свій API.
+const api = globalThis.PULSE_FX_API ?? {
+  state: async () => (await fetch('/api/state')).json(),
+  run: async () => (await fetch('/api/run', { method: 'POST', headers: { 'X-Pulse-FX': '1' } })).json(),
+};
+
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const usd = (v, d = 2) => (v < 0 ? '−' : '') + '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 const sgnUsd = (v) => (v >= 0 ? '+' : '−') + '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -53,12 +59,14 @@ function render() {
   $('modeAi').textContent = s.mode.ai === 'claude' ? `ШІ: Claude` : 'ШІ: демо-аналітик';
   $('lastBar').textContent = `Свічка: ${s.lastBarDate ?? '—'}`;
   $('nextRun').textContent = `Наступне рішення: ${fmtLocal(s.nextRunAt)}`;
+  $('nextRun').hidden = !!s.webDemo;
   $('runBtn').textContent = live ? 'Запустити цикл зараз' : 'Наступний день (демо) ▶';
 
   const lastRun = s.runs.at(-1);
   const banner = $('banner');
   const msgs = [];
-  if (!live) msgs.push('Демо-режим: курси й новини згенеровані. У демо-світі новини навмисно трохи впливають на курс, щоб було видно навчання; на справжньому ринку все складніше. Додайте ключі у файл .env, щоб перейти на справжні дані.');
+  if (s.webDemo) msgs.push('Браузерна демо-версія: курси й новини згенеровані, бот працює прямо на цій сторінці, а кнопка «Наступний день» прокручує один торговий день. У демо-світі новини навмисно трохи впливають на курс, щоб було видно навчання; на справжньому ринку все складніше. Справжні дані й Claude — у версії, що запускається на комп’ютері (node server.mjs).');
+  else if (!live) msgs.push('Демо-режим: курси й новини згенеровані. У демо-світі новини навмисно трохи впливають на курс, щоб було видно навчання; на справжньому ринку все складніше. Додайте ключі у файл .env, щоб перейти на справжні дані.');
   if (s.account.pausedUntil) msgs.push('Guard: ' + s.account.pauseReason);
   if (lastRun?.errors?.length) msgs.push('Проблеми останнього запуску: ' + lastRun.errors.join('; '));
   banner.hidden = !msgs.length;
@@ -167,8 +175,7 @@ function render() {
 }
 
 async function load() {
-  const res = await fetch('/api/state');
-  state = await res.json();
+  state = await api.state();
   render();
 }
 
@@ -176,8 +183,7 @@ $('runBtn').addEventListener('click', async () => {
   const b = $('runBtn');
   b.disabled = true; const old = b.textContent; b.textContent = 'Працюю…';
   try {
-    const res = await fetch('/api/run', { method: 'POST', headers: { 'X-Pulse-FX': '1' } });
-    state = await res.json();
+    state = await api.run();
     render();
   } catch (e) {
     $('banner').hidden = false; $('banner').className = 'banner err'; $('banner').textContent = 'Не вдалося запустити цикл: ' + e.message;
@@ -187,4 +193,4 @@ $('runBtn').addEventListener('click', async () => {
 
 addEventListener('resize', () => state && render());
 load().catch((e) => { $('banner').hidden = false; $('banner').className = 'banner err'; $('banner').textContent = 'Сервер недоступний: ' + e.message; });
-setInterval(() => load().catch(() => {}), 60000);
+if (!globalThis.PULSE_FX_API) setInterval(() => load().catch(() => {}), 60000);

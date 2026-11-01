@@ -1,6 +1,6 @@
 // Навчання: оцінюємо кожне рішення за рухом наступного дня і перерозподіляємо
 // вагу між технічним сигналом і новинами залежно від того, що реально спрацьовувало.
-import { PIP } from './config.mjs';
+import { PIP } from './pairs.mjs';
 import { clamp } from './indicators.mjs';
 
 export const DEFAULT_WEIGHTS = Object.freeze({ quant: 0.5, news: 0.5 });

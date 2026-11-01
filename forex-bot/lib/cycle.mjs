@@ -1,27 +1,14 @@
 // Щоденний цикл: дані → новини → аналіз → рішення → віртуальні угоди → навчання → збереження.
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { PAIRS } from './config.mjs';
-import { quantSignal } from './indicators.mjs';
-import { fetchCandlesLive, demoWorld, demoHeadlines } from './market.mjs';
+import { PAIRS } from './pairs.mjs';
+import { fetchCandlesLive } from './market.mjs';
 import { fetchNewsLive } from './news.mjs';
 import { analyzeWithClaude, analyzeDemo } from './analyst.mjs';
-import { newAccount, processBar, decide, execute, equityUsd, grossNotionalUsd } from './engine.mjs';
-import { DEFAULT_WEIGHTS, evaluateJournal, updateWeights, componentStats, trackRecordLines } from './learning.mjs';
+import { processBar } from './engine.mjs';
+import { STATE_VERSION, freshState, barsOn, advanceDay, advanceDemo } from './core.mjs';
 
-export const STATE_VERSION = 1;
-const DEMO_SEED = 20251101;
-const DEMO_HISTORY = 60;  // днів історії до старту (для EMA50)
-const DEMO_WARMUP = 120;  // днів, які демо прокручує при першому запуску
-
-export function freshState(cfg) {
-  return {
-    version: STATE_VERSION, mode: { data: cfg.liveData ? 'live' : 'demo', ai: cfg.liveAi ? 'claude' : 'demo' },
-    account: newAccount(cfg.startEquity), positions: {}, trades: [], equityCurve: [], journal: [],
-    weights: { ...DEFAULT_WEIGHTS }, weightHistory: [], lastBarDate: null, demoDay: null,
-    latest: null, runs: [],
-  };
-}
+export { freshState };
 
 export function loadState(cfg) {
   try {
@@ -36,55 +23,6 @@ export function saveState(cfg, state) {
   const tmp = cfg.dataFile + '.tmp';
   writeFileSync(tmp, JSON.stringify(state));
   renameSync(tmp, cfg.dataFile);
-}
-
-const barsOn = (candles, date) => Object.fromEntries(PAIRS.map((p) => [p.id, candles[p.id].find((c) => c.date === date)]));
-const upTo = (candles, date) => Object.fromEntries(PAIRS.map((p) => [p.id, candles[p.id].filter((c) => c.date <= date)]));
-
-// Один торговий день: свічка дня, оцінка минулих рішень, навчання, нове рішення.
-async function advanceDay(state, cfg, candles, date, headlines, analyze) {
-  const isNew = !state.lastBarDate || date > state.lastBarDate;
-  if (state.lastBarDate && isNew) processBar(state, date, barsOn(candles, date), cfg);
-  if (!state.lastBarDate) state.equityCurve.push({ date, equity: state.account.cash });
-
-  const hist = upTo(candles, date);
-  evaluateJournal(state.journal, hist);
-  const learned = updateWeights(state.weights, state.journal);
-  if (learned.changed) {
-    state.weights = learned.weights;
-    state.weightHistory.push({ date, ...learned.weights });
-    if (state.weightHistory.length > 1000) state.weightHistory.shift();
-  }
-
-  const technical = {};
-  for (const p of PAIRS) {
-    const cs = hist[p.id];
-    const q = quantSignal(cs);
-    const prev = cs.at(-2)?.close ?? cs.at(-1).close;
-    technical[p.id] = { ...q, close: cs.at(-1).close, atr: q.parts.atr ?? cs.at(-1).close * 0.006, changePct: (cs.at(-1).close / prev - 1) * 100 };
-  }
-  const analysis = await analyze({ date, technical, headlines, trackRecord: trackRecordLines(state.journal), weights: state.weights });
-  const plan = decide(state, cfg, { date, technical, analysis, weights: state.weights });
-  const actions = execute(state, plan, date);
-
-  for (const p of PAIRS) {
-    const pl = plan.plans[p.id], t = technical[p.id], a = analysis.pairs[p.id];
-    state.journal.push({ date, pair: p.id, price: t.close, atr: t.atr, quant: t.score, news: pl.news, bias: a.bias, confidence: a.confidence,
-      score: pl.score, dir: pl.dir, action: actions[p.id], weights: { ...state.weights }, outcome: null });
-  }
-  if (state.journal.length > 3000) state.journal.splice(0, state.journal.length - 3000);
-
-  const prices = plan.prices;
-  state.latest = {
-    date, headlines, analysis, actions,
-    technical: Object.fromEntries(PAIRS.map((p) => [p.id, { score: technical[p.id].score, text: technical[p.id].text, close: technical[p.id].close,
-      changePct: technical[p.id].changePct, rsi: technical[p.id].parts.rsi ?? null, atr: technical[p.id].atr }])),
-    plans: Object.fromEntries(Object.entries(plan.plans).map(([id, pl]) => [id, { dir: pl.dir, score: pl.score, quant: pl.quant, news: pl.news, guard: pl.guard }])),
-    equity: equityUsd(state, prices), gross: grossNotionalUsd(state, prices),
-    market: Object.fromEntries(PAIRS.map((p) => [p.id, hist[p.id].slice(-90)])),
-    stats: componentStats(state.journal),
-  };
-  state.lastBarDate = date;
 }
 
 let running = null;
@@ -111,16 +49,8 @@ async function runCycleInner(cfg, { fetchImpl = fetch, claudeClient, now = new D
 
   try {
     if (mode.data === 'demo') {
-      const first = state.demoDay == null;
-      const target = first ? DEMO_HISTORY + DEMO_WARMUP : state.demoDay + 1;
-      const world = demoWorld(DEMO_SEED, target + 1);
-      const demoAnalyze = cfg.liveAi && first ? async (input) => analyzeDemo(input) : analyze; // прогрів без витрат на API
-      for (let d = first ? DEMO_HISTORY : target; d <= target; d++) {
-        const date = world.candles['EUR/USD'][d].date;
-        await advanceDay(state, cfg, world.candles, date, demoHeadlines(world, d), d === target ? analyze : demoAnalyze);
-      }
-      state.demoDay = target;
-      run.note += first ? `Демо: прокручено ${DEMO_WARMUP} торгових днів, щоб показати, як бот працює й навчається.` : `Демо: день ${state.lastBarDate}.`;
+      const warm = cfg.liveAi ? async (input) => analyzeDemo(input) : analyze; // прогрів без витрат на API
+      run.note += await advanceDemo(state, cfg, analyze, warm);
     } else {
       const candles = await fetchCandlesLive(cfg, { fetchImpl, now });
       const dates = candles['EUR/USD'].map((c) => c.date).filter((d) => PAIRS.every((p) => candles[p.id].some((c) => c.date === d)));

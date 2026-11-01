@@ -1,5 +1,5 @@
 // Віртуальний рахунок, Trader (рішення + розмір позиції) і Guard (ризик-ліміти).
-import { PAIRS, PIP } from './config.mjs';
+import { PAIRS, PIP } from './pairs.mjs';
 import { clamp } from './indicators.mjs';
 
 const pairInfo = (id) => PAIRS.find((p) => p.id === id);

@@ -1,5 +1,5 @@
 // Котирування: справжні (Twelve Data) або демо-світ (детермінований генератор).
-import { PAIRS } from './config.mjs';
+import { PAIRS } from './pairs.mjs';
 
 // ---------- справжні дані: Twelve Data ----------
 export async function fetchCandlesLive(cfg, { fetchImpl = fetch, now = new Date() } = {}) {

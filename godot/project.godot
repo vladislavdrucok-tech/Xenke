@@ -1,14 +1,15 @@
-; Afterfall — trial Godot scene (Mira's workshop). Open this folder in Godot 4.3+.
+; Afterfall — mission 2.2 «Пральня» (main scene) and the trial workshop scene (main.tscn). Open this folder in Godot 4.3+.
 config_version=5
 
 [application]
-config/name="Afterfall — пробна сцена"
-run/main_scene="res://main.tscn"
+config/name="Afterfall"
+run/main_scene="res://laundry.tscn"
 config/icon="res://icon.png"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 
 [autoload]
 State="*res://scripts/state.gd"
+Game="*res://scripts/game.gd"
 
 [display]
 window/size/viewport_width=560

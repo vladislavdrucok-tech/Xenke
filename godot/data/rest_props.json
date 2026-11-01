@@ -1,0 +1,128 @@
+{
+ "laundry_door": {
+  "states": 2,
+  "w": 67.8,
+  "h": 92.0,
+  "src": "A158"
+ },
+ "valve": {
+  "states": 2,
+  "w": 36.7,
+  "h": 40.0,
+  "src": "A156"
+ },
+ "jack": {
+  "states": 2,
+  "w": 23.3,
+  "h": 30.0,
+  "src": "A164"
+ },
+ "cart": {
+  "states": 2,
+  "w": 65.4,
+  "h": 44.0,
+  "src": "A160"
+ },
+ "cargo_gate": {
+  "states": 2,
+  "w": 173.3,
+  "h": 112.0,
+  "src": "A163"
+ },
+ "gauge": {
+  "states": 3,
+  "w": 13.1,
+  "h": 16.0,
+  "src": "A167"
+ },
+ "crate": {
+  "states": 2,
+  "w": 29.6,
+  "h": 24.0,
+  "src": "A111"
+ },
+ "barrel": {
+  "states": 2,
+  "w": 23.6,
+  "h": 32.0,
+  "src": "A126"
+ },
+ "pipe": {
+  "states": 2,
+  "w": 39.9,
+  "h": 14.0,
+  "src": "A162"
+ },
+ "pump": {
+  "states": 2,
+  "w": 38.6,
+  "h": 30.0,
+  "src": "A154"
+ },
+ "rubble": {
+  "states": 2,
+  "w": 66.6,
+  "h": 60.0,
+  "src": "A115"
+ },
+ "tap": {
+  "states": 2,
+  "w": 32.7,
+  "h": 56.0,
+  "src": "A173"
+ },
+ "filter_body": {
+  "states": 1,
+  "w": 37.3,
+  "h": 44.0,
+  "src": "A157"
+ },
+ "walkway": {
+  "states": 1,
+  "w": 300.0,
+  "h": 54.6,
+  "src": "A159"
+ },
+ "floor_bunker": {
+  "states": 1,
+  "w": 420.0,
+  "h": 73.3,
+  "src": "A113"
+ },
+ "floor_city": {
+  "states": 1,
+  "w": 420.0,
+  "h": 81.5,
+  "src": "A114"
+ },
+ "ladder": {
+  "states": 1,
+  "w": 26.3,
+  "h": 110.0,
+  "src": "A110"
+ },
+ "wrench": {
+  "states": 1,
+  "w": 25.5,
+  "h": 20.0,
+  "src": "A112"
+ },
+ "bg_street": {
+  "states": 0,
+  "w": 1440.0,
+  "h": 480,
+  "src": "A014"
+ },
+ "bg_laundry": {
+  "states": 0,
+  "w": 450.0,
+  "h": 300,
+  "src": "A165"
+ },
+ "bg_yard": {
+  "states": 0,
+  "w": 1440.0,
+  "h": 480,
+  "src": "A026"
+ }
+}

@@ -1,0 +1,17 @@
+A022 | Марія Кюрі: піксельний портрет.png | Afterfall_Remaining/legacy_assets/A022.png
+A033 | Стара шахтна кліть із ліхтарем.png | Afterfall_Remaining/legacy_assets/A033.png
+A038 | Колісний очищувач для відновлення ґрунту.png | Afterfall_Remaining/legacy_assets/A038.png
+A045 | Вісім піксельних поз Ейнштейна.png | Afterfall_Remaining/legacy_einstein/A045.png
+A050 | Піксельний набір шахтарських об’єктів.png | Afterfall_Remaining/legacy_tools/A050.png
+A068 | Вісім піксельних поз в одному аркуші.png | Afterfall_Remaining/legacy_scientists/A068.png
+A073 | Піксельний спрайт-лист героя з котушкою.png | Afterfall_Remaining/legacy_scientists/A073.png
+A074 | Піксельний атлас травми й рухів Ніколи Тесли.png | Afterfall_Remaining/legacy_scientists/A074.png
+A076 | Піксельний портрет Миколи Тесли.png | Afterfall_Remaining/legacy_scientists/A076.png
+A078 | Піксельний мандрівник із киркою та сіткою.png | Afterfall_Remaining/legacy_scientists/A078.png
+A085 | Піксельний дослідник: 8 поз із киркою.png | Afterfall_Remaining/legacy_guest_character/A085.png
+A089 | Піксельний спрайт-лист Трампа у восьми позах.png | Afterfall_Remaining/legacy_guest_character/A089.png
+A110 | Пошарпана сталева драбина бункера.png | Afterfall_Remaining/chapter_01/A110.png
+A132 | Піксельний кам’яний броненосець — аркуш анімації.png | Afterfall_Remaining/chapter_03/A132.png
+A149 | Заросла платформа насіннєвого сховища.png | Afterfall_Remaining/archive_superseded/A149.png
+A164 | Ручний гвинтовий домкрат у двох положеннях.png | Afterfall_Remaining/laundry_mission/A164.png
+A177 | Яна у теплому піксельному світлі.png | Afterfall_Remaining/water_mission/A177.png

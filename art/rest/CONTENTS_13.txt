@@ -1,0 +1,18 @@
+A016 | Атлас піксельних предметів постапокаліпсису.png | Afterfall_Remaining/legacy_assets/A016.png
+A024 | Кришталевий олень — охоронець насіннєвого сховища.png | Afterfall_Remaining/legacy_assets/A024.png
+A034 | Відремонтований генератор для постапокаліптичного укриття.png | Afterfall_Remaining/legacy_assets/A034.png
+A046 | Спрайт-лист героя у восьми позах.png | Afterfall_Remaining/legacy_einstein/A046.png
+A048 | Піксельний атлас інструментів.png | Afterfall_Remaining/legacy_tools/A048.png
+A052 | Піксельний атлас грибного повзуна.png | Afterfall_Remaining/legacy_creatures/A052.png
+A053 | Піксельний атлас восьми поз повзучої істоти.png | Afterfall_Remaining/legacy_creatures/A053.png
+A055 | Вісім малих саламандр у спрайт-листі.png | Afterfall_Remaining/legacy_creatures/A055.png
+A071 | Піксельний Атлас: вісім поз.png | Afterfall_Remaining/legacy_scientists/A071.png
+A082 | Піксельний атлас із восьми поз Дарвіна.png | Afterfall_Remaining/legacy_scientists/A082.png
+A114 | Зруйнована міська платформа з потрісканим асфальтом.png | Afterfall_Remaining/chapter_01/A114.png
+A128 | Три стадії виснаження рудного покладу.png | Afterfall_Remaining/chapter_03/A128.png
+A135 | Шахтний вагончик: порожній і з рудою.png | Afterfall_Remaining/chapter_03/A135.png
+A136 | Шахтарський ліхтар: згаслий і запалений.png | Afterfall_Remaining/chapter_03/A136.png
+A157 | Порожній синій корпус водяного фільтра.png | Afterfall_Remaining/laundry_mission/A157.png
+A161 | Піксельний мутант-кроулер: шість фаз руху.png | Afterfall_Remaining/laundry_mission/A161.png
+A183 | Ручний рейковий важіль у двох положеннях.png | Afterfall_Remaining/archive_superseded/A183.png
+A201 | Ботанічні ворота: закриті та відкриті.png | Afterfall_Remaining/chapter_04_expansion/A201.png

@@ -1,0 +1,21 @@
+A020 | Піксельний атлас Ейнштейна з киркою.png | Afterfall_Remaining/legacy_assets/A020.png
+A030 | Піксельний верстак із лампою та інструментами.png | Afterfall_Remaining/legacy_assets/A030.png
+A032 | Станція фільтрації з синьої бочки.png | Afterfall_Remaining/legacy_assets/A032.png
+A036 | Оливкова скринька для збереження насіння.png | Afterfall_Remaining/legacy_assets/A036.png
+A040 | Старий пень із колодами та мохом.png | Afterfall_Remaining/legacy_assets/A040.png
+A069 | Вісім піксельних фігур на прозорому тлі.png | Afterfall_Remaining/legacy_scientists/A069.png
+A075 | Вісім піксельних поз Tesla на прозорому тлі.png | Afterfall_Remaining/legacy_scientists/A075.png
+A113 | Піксельна бункерна платформа зі сталі й бетону.png | Afterfall_Remaining/chapter_01/A113.png
+A120 | Змінний фільтрувальний картридж.png | Afterfall_Remaining/chapter_02/A120.png
+A123 | Стара металева лійка.png | Afterfall_Remaining/chapter_02/A123.png
+A148 | Фіолетові гриби серед кристалічних коренів.png | Afterfall_Remaining/chapter_04/A148.png
+A151 | Мохова кам’яна платформа з плющем.png | Afterfall_Remaining/chapter_04/A151.png
+A159 | Іржава промислова платформа з перилами.png | Afterfall_Remaining/laundry_mission/A159.png
+A160 | Візок із синім фільтром.png | Afterfall_Remaining/laundry_mission/A160.png
+A167 | Піксельні манометри: три стани.png | Afterfall_Remaining/water_mission/A167.png
+A187 | Вентиляційний люк шахти — два стани.png | Afterfall_Remaining/chapter_03_expansion/A187.png
+A191 | Двопозиційний важіль залізничної стрілки.png | Afterfall_Remaining/archive_superseded/A191.png
+A192 | Піксельні важелі без золотих шестерень.png | Afterfall_Remaining/chapter_03_expansion/A192.png
+A199 | Три молоді дерева з мохом.png | Afterfall_Remaining/chapter_04_expansion/A199.png
+A200 | Вінтажний пакет насіння лугових багаторічників.png | Afterfall_Remaining/chapter_04_expansion/A200.png
+A203 | Конверт із насінням квасолі.png | Afterfall_Remaining/chapter_04_expansion/A203.png

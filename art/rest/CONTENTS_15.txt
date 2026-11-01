@@ -1,0 +1,19 @@
+A023 | Підземний броненосець-мутант.png | Afterfall_Remaining/legacy_assets/A023.png
+A025 | Фіолетовогрибний повзун лісу.png | Afterfall_Remaining/legacy_assets/A025.png
+A035 | Піксельна формація залізної руди.png | Afterfall_Remaining/legacy_assets/A035.png
+A037 | Дружній лис із папоротевим хвостом.png | Afterfall_Remaining/legacy_assets/A037.png
+A092 | 41370.png | Afterfall_Remaining/story_concepts/A092.png
+A093 | 41369.png | Afterfall_Remaining/story_concepts/A093.png
+A112 | Піксельний розвідний ключ.png | Afterfall_Remaining/chapter_01/A112.png
+A125 | Вінтажний пакетик насіння з паростком.png | Afterfall_Remaining/chapter_02/A125.png
+A130 | Старовинна ручна лебідка.png | Afterfall_Remaining/chapter_03/A130.png
+A134 | Піксельна кам’яна платформа шахти.png | Afterfall_Remaining/chapter_03/A134.png
+A139 | Енергокартридж для шахтного підйомника.png | Afterfall_Remaining/chapter_03/A139.png
+A145 | Ручний сканер насіннєвого сховища.png | Afterfall_Remaining/chapter_04/A145.png
+A146 | Двостановий термінал насіннєвого сховища.png | Afterfall_Remaining/chapter_04/A146.png
+A162 | Пошкоджена та відремонтована труба.png | Afterfall_Remaining/laundry_mission/A162.png
+A170 | Синій монтажний адаптер із латунними болтами.png | Afterfall_Remaining/water_mission/A170.png
+A184 | Два потертих шахтарських кухлі.png | Afterfall_Remaining/chapter_03_expansion/A184.png
+A193 | Телескопічний привод у двох станах.png | Afterfall_Remaining/chapter_04_expansion/A193.png
+A206 | Аварійний міст у двох станах.png | Afterfall_Remaining/archive_superseded/A206.png
+A208 | Два стани аварійного містка.png | Afterfall_Remaining/archive_superseded/A208.png

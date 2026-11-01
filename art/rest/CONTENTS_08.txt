@@ -1,0 +1,14 @@
+A015 | Піксельний Ейнштейн: вісім кадрів виживання.png | Afterfall_Remaining/legacy_assets/A015.png
+A039 | Відновлена ботанічна теплиця.png | Afterfall_Remaining/legacy_assets/A039.png
+A062 | Піксельний кришталевий олень у русі.png | Afterfall_Remaining/legacy_creatures/A062.png
+A072 | Піксельний атлас рухів Тесли.png | Afterfall_Remaining/legacy_scientists/A072.png
+A077 | Чарльз Дарвін: вісім піксельних поз.png | Afterfall_Remaining/legacy_scientists/A077.png
+A084 | Піксельний мандрівник із киркою: вісім поз.png | Afterfall_Remaining/legacy_guest_character/A084.png
+A091 | 41371.png | Afterfall_Remaining/story_concepts/A091.png
+A108 | Міра — восьмикадровий піксельний спрайт механіка.png | Afterfall_Remaining/chapter_01/A108.png
+A117 | Чотири стани дерев’яної грядки.png | Afterfall_Remaining/chapter_02/A117.png
+A119 | Важкий дубовий верстак із лещатами.png | Afterfall_Remaining/chapter_02/A119.png
+A126 | Синя бочка — порожня і повна.png | Afterfall_Remaining/chapter_02/A126.png
+A127 | Павло-гарденер: піксельні пози та рухи.png | Afterfall_Remaining/chapter_02/A127.png
+A137 | Гніздо живлення: порожнє та з картриджем.png | Afterfall_Remaining/chapter_03/A137.png
+A207 | Міра-механік: вісім ігрових поз.png | Afterfall_Remaining/archive_superseded/A207.png

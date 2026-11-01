@@ -1,0 +1,12 @@
+A004 | Синергія SOAK + SHOCK у бою.png | Afterfall_Remaining/early_concepts/A004.png
+A021 | Марія Кюрі: піксельні пози дослідниці.png | Afterfall_Remaining/legacy_assets/A021.png
+A031 | Зруйнований вхід до метро.png | Afterfall_Remaining/legacy_assets/A031.png
+A042 | Піксельний атлас Ейнштейна в русі.png | Afterfall_Remaining/legacy_einstein/A042.png
+A079 | Піксельний атлас рухів Чарльза Дарвіна.png | Afterfall_Remaining/legacy_scientists/A079.png
+A105 | Літній дослідник — піксельний спрайт-лист.png | Afterfall_Remaining/chapter_01/A105.png
+A147 | Двері насіннєвого сховища: закриті й відкриті.png | Afterfall_Remaining/chapter_04/A147.png
+A150 | Кришталевий олень: шість кадрів анімації.png | Afterfall_Remaining/chapter_04/A150.png
+A168 | Двостороння листівка тихого саду.png | Afterfall_Remaining/water_mission/A168.png
+A179 | Пошкоджене та відремонтоване гальмо підйомника.png | Afterfall_Remaining/chapter_03_expansion/A179.png
+A181 | Капсула збереження: закрита й відкрита.png | Afterfall_Remaining/chapter_03_expansion/A181.png
+A209 | Вісім піксельних поз старого дослідника.png | Afterfall_Remaining/archive_superseded/A209.png

@@ -1,0 +1,13 @@
+A065 | Марія Кюрі: 16 піксельних поз.png | Afterfall_Remaining/legacy_scientists/A065.png
+A070 | Тесла-винахідник: аркуш спрайтів дослідника.png | Afterfall_Remaining/legacy_scientists/A070.png
+A086 | Піксельний атлас із 16 рухів.png | Afterfall_Remaining/legacy_guest_character/A086.png
+A138 | Шахтний міст: зламаний і відремонтований.png | Afterfall_Remaining/chapter_03/A138.png
+A142 | Польовий щоденник Олени.png | Afterfall_Remaining/chapter_04/A142.png
+A143 | Підземне сховище насіння.png | Afterfall_Remaining/chapter_04/A143.png
+A155 | Назар, караванний вантажник — спрайтшит.png | Afterfall_Remaining/archive_superseded/A155.png
+A158 | Заклинені та відкриті двері пральні.png | Afterfall_Remaining/laundry_mission/A158.png
+A166 | Назар: аркуш анімацій для Afterfall.png | Afterfall_Remaining/laundry_mission/A166.png
+A169 | Портативний набір для аналізу води.png | Afterfall_Remaining/water_mission/A169.png
+A176 | Бак питної води у двох станах.png | Afterfall_Remaining/water_mission/A176.png
+A186 | Промисловий вентилятор — два режими.png | Afterfall_Remaining/chapter_03_expansion/A186.png
+A189 | Семен, шахтарський бригадир: набір поз.png | Afterfall_Remaining/chapter_03_expansion/A189.png

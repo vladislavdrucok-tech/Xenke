@@ -66,7 +66,7 @@ $('speed').addEventListener('change', (e) => { speed = Number(e.target.value); }
 
 function restart(next) {
   settings = next;
-  localStorage.setItem(STORE, JSON.stringify(settings));
+  try { localStorage.setItem(STORE, JSON.stringify(settings)); } catch { /* сховище недоступне — працюємо без нього */ }
   sim = createSim(settings);
   lastLogEntry = null;
   render(true);

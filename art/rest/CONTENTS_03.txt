@@ -1,0 +1,10 @@
+A005 | Три глітч-герої Pocket Chaos.png | Afterfall_Remaining/early_concepts/A005.png
+A009 | Світова сцена: притулок після падіння.png | Afterfall_Remaining/story_concepts/A009.png
+A011 | Опівнічне сховище насіння.png | Afterfall_Remaining/story_concepts/A011.png
+A057 | Піксельний атлас восьми поз армадилло.png | Afterfall_Remaining/legacy_creatures/A057.png
+A095 | Ейнштейн відновлює воду в руїнах.png | Afterfall_Remaining/story_concepts/A095.png
+A097 | Світанок над зруйнованим містом.png | Afterfall_Remaining/story_concepts/A097.png
+A100 | Охоронець останніх насінин.png | Afterfall_Remaining/story_concepts/A100.png
+A101 | Перший паросток у світанковій оранжереї.png | Afterfall_Remaining/story_concepts/A101.png
+A106 | Корозійна лабораторна стіна з бурштиновим світлом.png | Afterfall_Remaining/chapter_01/A106.png
+A140 | Лавандовий місяць над ботанічним інститутом.png | Afterfall_Remaining/chapter_04/A140.png

@@ -1,0 +1,14 @@
+{
+  "name": "pulse-terminal-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Демо-дашборд копітрейдинг-бота з симульованими даними. Без реальної торгівлі.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node test.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

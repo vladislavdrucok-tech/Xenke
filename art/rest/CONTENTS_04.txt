@@ -1,0 +1,11 @@
+A008 | Світова сцена: піксельна битва трьох на трьох.png | Afterfall_Remaining/early_concepts/A008.png
+A012 | Видобуток руди під руїнами міста.png | Afterfall_Remaining/story_concepts/A012.png
+A041 | Спрайт-лист Альберта Ейнштейна: 16 анімацій.png | Afterfall_Remaining/legacy_einstein/A041.png
+A096 | Пробудження в бункері спадщини.png | Afterfall_Remaining/story_concepts/A096.png
+A098 | Перша місія відновлення води.png | Afterfall_Remaining/story_concepts/A098.png
+A099 | Сапфірові глибини старої шахти.png | Afterfall_Remaining/story_concepts/A099.png
+A104 | Світанок над зруйнованим містом(1).png | Afterfall_Remaining/chapter_01/A104.png
+A129 | Зношена шахтарська кирка.png | Afterfall_Remaining/chapter_03/A129.png
+A144 | Два стани стелажа для насіння.png | Afterfall_Remaining/chapter_04/A144.png
+A196 | Дитячий малюнок майбутньої майстерні Міри.png | Afterfall_Remaining/chapter_04_expansion/A196.png
+A205 | Відкрита папка з ботанічними нотатками.png | Afterfall_Remaining/chapter_04_expansion/A205.png

@@ -1,0 +1,11 @@
+A001 | Піксельна битва в зачарованих руїнах.png | Afterfall_Remaining/early_concepts/A001.png
+A002 | Створення істоти в Pocket Chaos.png | Afterfall_Remaining/early_concepts/A002.png
+A007 | Піксельний вибір шести легенд.png | Afterfall_Remaining/early_concepts/A007.png
+A013 | Крафт фільтра для води в майстерні.png | Afterfall_Remaining/story_concepts/A013.png
+A018 | Піксельний атлас Ейнштейна: вісім поз.png | Afterfall_Remaining/legacy_assets/A018.png
+A058 | Піксельний кришталевий олень — вісім поз.png | Afterfall_Remaining/legacy_creatures/A058.png
+A063 | Піксельна анімація Марі Кюрі, 16 кадрів.png | Afterfall_Remaining/legacy_scientists/A063.png
+A103 | Капсула пробудження: два стани.png | Afterfall_Remaining/chapter_01/A103.png
+A109 | Двері аварійного бункера: закрито й відкрито.png | Afterfall_Remaining/chapter_01/A109.png
+A122 | Піксельний парник: занедбаний і відновлений.png | Afterfall_Remaining/chapter_02/A122.png
+A131 | Покинута шахта з блакитним водоспадом.png | Afterfall_Remaining/chapter_03/A131.png

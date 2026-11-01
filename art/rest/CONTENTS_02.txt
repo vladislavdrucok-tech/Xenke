@@ -1,0 +1,9 @@
+A003 | Шлях Мокі: три еволюції.png | Afterfall_Remaining/early_concepts/A003.png
+A006 | Три світи піксельних героїв.png | Afterfall_Remaining/early_concepts/A006.png
+A027 | Покинута шахта з бурштиновим сяйвом.png | Afterfall_Remaining/legacy_assets/A027.png
+A102 | Світло над затопленою електростанцією.png | Afterfall_Remaining/story_concepts/A102.png
+A116 | Зруйнована майстерня на світанку.png | Afterfall_Remaining/chapter_02/A116.png
+A153 | Покинута пральня на затопленій вулиці.png | Afterfall_Remaining/archive_superseded/A153.png
+A165 | Піксельна пральня з розбитими вікнами.png | Afterfall_Remaining/laundry_mission/A165.png
+A185 | Підземна майстерня після апокаліпсису.png | Afterfall_Remaining/chapter_03_expansion/A185.png
+A194 | Занедбана трамвайна вулиця у фіолетових сутінках.png | Afterfall_Remaining/chapter_04_expansion/A194.png

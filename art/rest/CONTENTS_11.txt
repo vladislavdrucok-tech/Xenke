@@ -1,0 +1,16 @@
+A047 | Піксельний арсенал для виживання після апокаліпсису.png | Afterfall_Remaining/legacy_tools/A047.png
+A051 | Мутант-кроулер: атлас восьми спрайтів.png | Afterfall_Remaining/legacy_creatures/A051.png
+A054 | Анімаційний лист мохового саламандра.png | Afterfall_Remaining/legacy_creatures/A054.png
+A067 | Марі Кюрі: 8 поз падіння й стрибка.png | Afterfall_Remaining/legacy_scientists/A067.png
+A080 | Піксельний атлас рухів Дарвіна.png | Afterfall_Remaining/legacy_scientists/A080.png
+A081 | Піксельний Дарвін: вісім фаз руху.png | Afterfall_Remaining/legacy_scientists/A081.png
+A087 | Піксельний атлас спрайтів Трампа.png | Afterfall_Remaining/legacy_guest_character/A087.png
+A088 | Вісім поз карикатури Дональда Трампа.png | Afterfall_Remaining/legacy_guest_character/A088.png
+A090 | Піксельний портрет мандрівника в синьому костюмі.png | Afterfall_Remaining/legacy_guest_character/A090.png
+A115 | Завал бункера: до і після розчищення.png | Afterfall_Remaining/chapter_01/A115.png
+A141 | Насіннєвий контейнер: закритий і відкритий.png | Afterfall_Remaining/chapter_04/A141.png
+A154 | Портативна водяна помпа — вимкнено та працює.png | Afterfall_Remaining/laundry_mission/A154.png
+A163 | Завантажувальні ворота: закриті та відкриті.png | Afterfall_Remaining/laundry_mission/A163.png
+A173 | Водорозбірна колонка у двох станах.png | Afterfall_Remaining/water_mission/A173.png
+A178 | Обвідна труба у двох станах.png | Afterfall_Remaining/water_mission/A178.png
+A180 | Пульт шахтного підіймача: вимкнено й увімкнено.png | Afterfall_Remaining/chapter_03_expansion/A180.png

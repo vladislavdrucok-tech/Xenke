@@ -1,0 +1,14 @@
+A019 | Ейнштейн-дослідник із сяйливим паростком.png | Afterfall_Remaining/legacy_assets/A019.png
+A044 | Ейнштейн: падіння, відновлення та стрибки.png | Afterfall_Remaining/legacy_einstein/A044.png
+A056 | Кам’яний броненосець: 8 піксельних поз.png | Afterfall_Remaining/legacy_creatures/A056.png
+A059 | Атлас кришталевого оленя у пікселях.png | Afterfall_Remaining/legacy_creatures/A059.png
+A061 | Атлас восьми кришталевих оленів.png | Afterfall_Remaining/legacy_creatures/A061.png
+A064 | Курі — 16 піксельних поз.png | Afterfall_Remaining/legacy_scientists/A064.png
+A107 | Бункерний термінал: вимкнено й увімкнено.png | Afterfall_Remaining/chapter_01/A107.png
+A118 | Водоочисна машина: три стани.png | Afterfall_Remaining/chapter_02/A118.png
+A133 | Шахтна клітка із закритими й відкритими воротами.png | Afterfall_Remaining/chapter_03/A133.png
+A156 | Піксельний водозапірний вентиль: закритий і відкритий.png | Afterfall_Remaining/laundry_mission/A156.png
+A171 | Яна — координаторка водних запасів.png | Afterfall_Remaining/water_mission/A171.png
+A190 | Портрет Семена, шахтарського бригадира.png | Afterfall_Remaining/chapter_03_expansion/A190.png
+A195 | Архівна шафа: закрита й відкрита.png | Afterfall_Remaining/archive_superseded/A195.png
+A202 | Три стани старої настінної сирени.png | Afterfall_Remaining/chapter_04_expansion/A202.png

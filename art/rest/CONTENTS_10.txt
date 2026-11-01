@@ -1,0 +1,15 @@
+A043 | Ейнштейн у прозорому спрайт-листі 4×4.png | Afterfall_Remaining/legacy_einstein/A043.png
+A049 | Піксельний атлас виснажених ресурсів Afterfall.png | Afterfall_Remaining/legacy_tools/A049.png
+A060 | Спрайт-аркуш із восьми кристальних оленів.png | Afterfall_Remaining/legacy_creatures/A060.png
+A066 | Аркуш Кюрі: 16 мініатюрних поз.png | Afterfall_Remaining/legacy_scientists/A066.png
+A083 | Портрет Чарльза Дарвіна в пікселях.png | Afterfall_Remaining/legacy_scientists/A083.png
+A111 | Оливковий ящик: закритий і відкритий.png | Afterfall_Remaining/chapter_01/A111.png
+A121 | Імпровізований генератор у двох режимах.png | Afterfall_Remaining/chapter_02/A121.png
+A124 | Вінтажне радіо у двох станах.png | Afterfall_Remaining/chapter_02/A124.png
+A152 | Експедиційний футляр із насіннєвими капсулами.png | Afterfall_Remaining/chapter_04/A152.png
+A172 | Пошкоджені й відновлені сині лещата.png | Afterfall_Remaining/water_mission/A172.png
+A175 | Мірний глечик: порожній і наповнений.png | Afterfall_Remaining/water_mission/A175.png
+A182 | Шахтна опора: пошкоджена та укріплена.png | Afterfall_Remaining/chapter_03_expansion/A182.png
+A188 | Латунний жетон шахтаря з обірваним шнурком.png | Afterfall_Remaining/chapter_03_expansion/A188.png
+A198 | Холодильна установка сховища: вимкнено та стабілізовано.png | Afterfall_Remaining/chapter_04_expansion/A198.png
+A204 | Спрайт архівної шафи з лівими петлями.png | Afterfall_Remaining/chapter_04_expansion/A204.png

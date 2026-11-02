@@ -102,7 +102,7 @@ func _physics_process(delta: float) -> void:
 	var toward := signf(hero.global_position.x - global_position.x) if hero else 0.0
 	match st:
 		"sleep":
-			body.frame = 4
+			body.frame = body.pose("sleep_breathe" if fmod(t, 2.4) < -1.2 else "sleep", 4)
 			if d < NOTICE_SLEEP:
 				_alert(toward)
 		"patrol":
@@ -113,7 +113,7 @@ func _physics_process(delta: float) -> void:
 				_alert(toward)
 		"alert":
 			body.face = int(toward) if toward != 0.0 else body.face
-			body.frame = 5
+			body.frame = body.pose("alert", 5)
 			body.position.x = 1.0 if int(t * 30.0) % 2 == 0 else -1.0
 			if t <= 0.0:
 				st = "lunge"
@@ -121,7 +121,7 @@ func _physics_process(delta: float) -> void:
 				dir = body.face
 		"lunge":
 			position.x = clampf(position.x + dir * 170.0 * delta, min_x, max_x)
-			body.frame = 5
+			body.frame = body.pose("lunge", 5)
 			if d < REACH and hero.has_method("hurt"):
 				hero.hurt(20, global_position.x)
 				st = "recover"
@@ -130,13 +130,15 @@ func _physics_process(delta: float) -> void:
 				st = "recover"
 				t = 0.8
 		"recover":
-			body.frame = 4
+			body.frame = body.pose("land", 4)
 			if t <= 0.0:
 				st = "patrol" if d > NOTICE_AWAKE else "alert"
 				t = 0.6
 		"distracted":
 			if absf(position.x - bait_x) > 3.0:
 				_walk(signf(bait_x - position.x) * 60.0, delta)
+			elif body.has_pose("eat"):
+				body.frame = body.pose("eat", 4)
 			else:
 				body.frame = 4 if int(t * 3.0) % 2 == 0 else 5
 			if t <= 0.0:
@@ -144,13 +146,14 @@ func _physics_process(delta: float) -> void:
 			elif d < 22.0:
 				_alert(toward)
 		"hit":
-			body.frame = 5
+			body.frame = body.pose("hit", 5)
 			if t <= 0.0:
 				body.tint = Color.WHITE
 				st = "flee" if hp <= 0 else "recover"
 				t = 0.5
 		"flee":
 			_walk(signf(max_x - position.x + 0.1) * 110.0, delta)
+			body.frame = body.pose("flee", body.frame)
 			body.modulate.a = maxf(0.0, body.modulate.a - delta * 0.7)
 			if position.x >= max_x - 1.0 or body.modulate.a <= 0.0:
 				st = "gone"

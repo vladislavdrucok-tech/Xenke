@@ -81,6 +81,8 @@ if __name__=='__main__':
     character('A105','einstein',4,2)   # older set-22 jump frames do not match this style; jumps use frames 6-7
     character('A166','nazar',4,2)      # 0-3 walk, 4 idle, 5 knock, 6 push cart, 7 crouch
     character('A161','crawler',3,2)    # six motion phases
+    character('A108','mira',4,2)       # 0-3 walk, 4 idle, 5 reach, 6 crouch, 7 point (extra moves: P3 via import_new.py)
+    character('A127','pavlo',4,2)      # 0-3 walk, 4 seed packet, 5 crouch, 6 watering, 7 bend
     # Props with states (world heights in units; the hero is 70).
     states('A158','laundry_door',2,92); states('A156','valve',2,40); states('A164','jack',2,30)
     states('A160','cart',2,44); states('A163','cargo_gate',2,112); states('A167','gauge',3,16)

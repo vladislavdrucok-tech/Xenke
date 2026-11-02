@@ -15,6 +15,9 @@ const GAP_X0 := 1750.0
 const GAP_X1 := 1840.0
 const CART_HOME := 2190.0
 const CART_SAFE := 2650.0
+## M5 laundry equipment once it arrives: [prop, state, x, flip]. Placed clear of every interaction spot.
+const LAUNDRY_DECO := [["washer", 0, 1588.0, false], ["washer", 1, 1655.0, false], ["rag_pile", 0, 1770.0, false],
+		["sink", 0, 1872.0, false], ["washer_toppled", 0, 1985.0, true], ["laundry_basket", 0, 652.0, false], ["drying_rack", 0, 1110.0, false]]
 const SPAWN := {"start": -120.0, "entrance": 640.0, "rescued": 1485.0, "route": 2095.0, "gate": 2275.0}
 
 var hero: CharacterBody2D
@@ -39,6 +42,7 @@ var ended := false
 var frame_ms: Array[float] = []
 var cam_y := 250.0
 var tex := {}
+var layers: Array[Node2D] = []
 
 # ======================================================================= setup
 func _ready() -> void:
@@ -90,6 +94,7 @@ func _layer(z: int, painter: Callable) -> Node2D:
 	n.z_index = z
 	add_child(n)
 	n.draw.connect(painter.bind(n))
+	layers.append(n)
 	return n
 
 func _body_rect(center: Vector2, size: Vector2, one_way := false) -> CollisionShape2D:
@@ -140,6 +145,7 @@ func _ladder(x: float, gate := Callable()) -> void:
 func _build_world() -> void:
 	_layer(-10, _draw_back)
 	_layer(-5, _draw_floor)
+	_layer(-4, _draw_mid)
 	_layer(-3, _draw_decks)
 	# Ground, world edges.
 	_body_rect(Vector2(1300, GROUND + 20), Vector2(3400, 40))
@@ -274,7 +280,7 @@ func _apply_flags() -> void:
 	get_node("Pump").state = 1 if Game.has("drained") else 0
 	get_node("Gauge").state = 0 if Game.has("drained") else 2
 	props.crate.state = 1 if Game.has("crate_open") else 0
-	get_node("Jack").visible = Game.has("supported")
+	get_node("Jack").visible = Game.has("supported") and Art.prop("beam").is_empty()
 	props.rubble.state = 1 if Game.has("rubble") else 0
 	_set_blocker("rubble", not Game.has("rubble"))
 	props.door.state = 1 if Game.has("rescued") else 0
@@ -336,7 +342,7 @@ func _restart() -> void:
 func _checkpoint(id: String) -> void:
 	if Game.checkpoint != id:
 		Game.reach_checkpoint(id)
-		hud.show_hint("Контрольна точка збережена.", 2.2)
+		hud.show_hint("Контрольна точка збережена.", 2.2, "saved")
 
 # ======================================================================= what each object does
 ## Called by every Prop: title, verb, why it is blocked, how long the job is and where the hero stands.
@@ -441,11 +447,11 @@ func done(id: String) -> void:
 			Game.give("planks", 2)
 			Game.give("can")
 			Game.note("У ящику знайшов домкрат, 2 дошки й консерву.")
-			hud.show_hint("+ Домкрат  + Дошки ×2  + Консерва", 3.0)
+			hud.show_hint("+ Домкрат  + Дошки ×2  + Консерва", 3.0, "jack")
 		"beam":
 			Game.take("jack")
 			Game.set_flag("supported")
-			get_node("Jack").visible = true
+			get_node("Jack").visible = Art.prop("beam").is_empty()
 			Game.note("Підпер балку домкратом — тепер завал можна розбирати безпечно.")
 		"rubble":
 			Game.set_flag("rubble")
@@ -465,7 +471,7 @@ func done(id: String) -> void:
 			Game.set_flag("body_taken")
 			Game.give("filter_body")
 			props.body.visible = false
-			hud.show_hint("+ Корпус фільтра (важкий — до візка донесеш)", 3.0)
+			hud.show_hint("+ Корпус фільтра (важкий — до візка донесеш)", 3.0, "filter_body")
 		"cart":
 			Game.take("filter_body")
 			Game.set_flag("loaded")
@@ -482,7 +488,7 @@ func done(id: String) -> void:
 			Game.set_flag("yard_crate")
 			props.yard_crate.state = 1
 			Game.give("can")
-			hud.show_hint("+ Консерва", 2.4)
+			hud.show_hint("+ Консерва", 2.4, "can")
 		"exit":
 			_finish()
 	Game.save()
@@ -555,6 +561,10 @@ func _goal() -> Array:
 
 func _refresh() -> void:
 	hud.set_hp(Game.hp)
+	# Flags change what the level layers show (beam, planks, puddles): redraw them.
+	for l in layers:
+		if l != fx:
+			l.queue_redraw()
 
 # ======================================================================= per frame
 func _process(delta: float) -> void:
@@ -686,13 +696,29 @@ func _draw_back(n: Node2D) -> void:
 	_tile(n, tex["bg_laundry.jpg"], 600, 2250, GROUND - 300, 450, 300)
 	n.draw_rect(Rect2(600, -200, 1650, GROUND - 300 + 200), Color("#10161a"))
 	n.draw_rect(Rect2(1540, GROUND - 300, 520, 300), Color(0.02, 0.04, 0.05, 0.35))
-	# Food scraps the crawlers sleep by.
+
+## Things standing on the floor in front of the walls: nests, the service door, laundry equipment, puddles, the facade.
+func _draw_mid(n: Node2D) -> void:
+	# Food scraps the crawlers sleep by (M5 nest when it arrives).
 	for x in [1712.0, 1938.0, 2545.0]:
-		n.draw_rect(Rect2(x - 8, GROUND - 3, 16, 3), Color("#4d3a26"))
-		n.draw_rect(Rect2(x - 3, GROUND - 5, 6, 2), Color("#7a5a3a"))
-	# Nazar's service passage.
-	n.draw_rect(Rect2(1518, GROUND - 62, 26, 62), Color("#07090b"))
-	n.draw_rect(Rect2(1516, GROUND - 64, 30, 3), Color("#3b4a52"))
+		if not Art.draw_prop(n, "crawler_nest", 0, Vector2(x + 6.0, GROUND + 1.0)):
+			n.draw_rect(Rect2(x - 8, GROUND - 3, 16, 3), Color("#4d3a26"))
+			n.draw_rect(Rect2(x - 3, GROUND - 5, 6, 2), Color("#7a5a3a"))
+	# Nazar's service passage (M7 door when it arrives).
+	if not Art.draw_prop(n, "service_door", 0, Vector2(1531, GROUND)):
+		n.draw_rect(Rect2(1518, GROUND - 62, 26, 62), Color("#07090b"))
+		n.draw_rect(Rect2(1516, GROUND - 64, 30, 3), Color("#3b4a52"))
+	# Laundry equipment (M5): only once the sheet arrives; the hall is plain wall until then.
+	for spec in LAUNDRY_DECO:
+		Art.draw_prop(n, spec[0], spec[1], Vector2(spec[2], GROUND + 1.0), spec[3])
+	# Puddles left after the water drained (M7).
+	if Game.has("drained"):
+		for x in [820.0, 1010.0, 1240.0, 1480.0]:
+			Art.draw_prop(n, "puddle", 0, Vector2(x, GROUND + 2.0))
+	# The building's front edge with the doorway around the entrance door (M6).
+	var fa := Art.prop("laundry_facade")
+	if not fa.is_empty():
+		Art.draw_prop(n, "laundry_facade", 0, Vector2(600.0 - float(fa.get("door_x", 0.0)), GROUND))
 
 func _draw_floor(n: Node2D) -> void:
 	_tile(n, tex["floor_bunker_0.png"], 600, 2252, GROUND - 4, 420, 73.3)
@@ -701,17 +727,29 @@ func _draw_decks(n: Node2D) -> void:
 	var w: Texture2D = tex["walkway_0.png"]
 	var top := DECK - 21.0
 	_tile(n, w, 680, 1205, top, 300, 54.6)
-	_tile(n, w, 1530, GAP_X0, top, 300, 54.6)
-	_tile(n, w, GAP_X1, 2080, top, 300, 54.6)
+	var hole := Art.prop("walkway_hole")
+	if not hole.is_empty():
+		# M4: one 300-unit piece with the hole in its middle, joined to the plain walkway on both sides.
+		var mid := (GAP_X0 + GAP_X1) / 2.0
+		_tile(n, w, 1530, mid - hole.w / 2.0, top, 300, 54.6)
+		_tile(n, w, mid + hole.w / 2.0, 2080, top, 300, 54.6)
+		Art.draw_prop(n, "walkway_hole", 1 if Game.has("bridge") else 0, Vector2(mid, top + hole.h))
+	else:
+		_tile(n, w, 1530, GAP_X0, top, 300, 54.6)
+		_tile(n, w, GAP_X1, 2080, top, 300, 54.6)
 	# The hole: broken ends, and planks once it is mended.
-	if Game.has("bridge"):
+	if not hole.is_empty():
+		pass
+	elif Game.has("bridge"):
 		for i in 6:
 			n.draw_rect(Rect2(GAP_X0 - 2 + i * 15.5, DECK - 1, 14, 4), Color("#8a6236") if i % 2 == 0 else Color("#7a5530"))
 			n.draw_rect(Rect2(GAP_X0 - 2 + i * 15.5, DECK + 3, 14, 1), Color("#3d2a18"))
 	else:
 		n.draw_line(Vector2(GAP_X0, DECK), Vector2(GAP_X0 + 8, DECK + 12), Color("#5a4636"), 2.0)
 		n.draw_line(Vector2(GAP_X1, DECK), Vector2(GAP_X1 - 6, DECK + 14), Color("#5a4636"), 2.0)
-	# The beam over the rubble: sags until the jack holds it.
+	# The beam over the rubble: sags until the jack holds it. M3 brings its own picture (the jack is drawn in state 2).
+	if Art.draw_prop(n, "beam", 1 if Game.has("supported") else 0, Vector2(1320, GROUND)):
+		return
 	var sag := 0.0 if Game.has("supported") else 8.0
 	var a := Vector2(1215, GROUND - 70)
 	var b := Vector2(1425, GROUND - 70)
@@ -739,14 +777,24 @@ func _draw_fx(n: Node2D) -> void:
 		var at := Vector2(hero.job.spot_x if hero.job and not is_nan(hero.job.spot_x) else p.global_position.x, hero.global_position.y - 80)
 		n.draw_rect(Rect2(at.x - 16, at.y, 32, 4), Color(0.05, 0.07, 0.08, 0.85))
 		n.draw_rect(Rect2(at.x - 15, at.y + 1, 30 * progress_of[id], 2), Color("#f2c14e"))
-	# The way home sign.
+	# A tin rolling where a distracted crawler gnaws it (M7).
+	for c in crawlers:
+		if c.st == "distracted":
+			Art.draw_prop(n, "can_crushed", 0, Vector2(c.bait_x + 8.0, GROUND))
+	# The way home sign (M7 sign when it arrives).
 	var e := Vector2(2770, GROUND)
-	n.draw_rect(Rect2(e.x - 1, e.y - 56, 3, 56), Color("#5a4636"))
-	n.draw_rect(Rect2(e.x - 24, e.y - 58, 48, 13), Color("#2a3236"))
-	n.draw_string(font, Vector2(e.x - 24, e.y - 48), "СТАНЦІЯ >", HORIZONTAL_ALIGNMENT_CENTER, 48, 8, Color("#f2c14e"))
+	if Art.draw_prop(n, "sign_station", 0, e):
+		pass
+	else:
+		_code_sign(n, e)
 	# The safe point for the cart.
 	if Game.has("gate") and not Game.has("delivered"):
 		n.draw_rect(Rect2(CART_SAFE - 30, GROUND - 2, 60, 2), Color(0.95, 0.76, 0.3, 0.6 + 0.3 * sin(Time.get_ticks_msec() / 200.0)))
+
+func _code_sign(n: Node2D, e: Vector2) -> void:
+	n.draw_rect(Rect2(e.x - 1, e.y - 56, 3, 56), Color("#5a4636"))
+	n.draw_rect(Rect2(e.x - 24, e.y - 58, 48, 13), Color("#2a3236"))
+	n.draw_string(font, Vector2(e.x - 24, e.y - 48), "СТАНЦІЯ >", HORIZONTAL_ALIGNMENT_CENTER, 48, 8, Color("#f2c14e"))
 
 # ======================================================================= automatic playthrough
 ## `-- --demo=<folder> [--perf] [--route=low]`: plays the whole mission, saves screenshots, prints frame times.

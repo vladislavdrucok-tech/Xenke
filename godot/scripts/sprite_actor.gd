@@ -34,8 +34,12 @@ var tint := Color.WHITE:
 		queue_redraw()
 
 static var _data := {}
+static var _new := {}
 var _tex: Texture2D
+var _tex_extra: Texture2D
 var _frames: Array = []
+## Named extra frames (M1 crawler, M2 Einstein, P3 Mira) or a whole new sheet (P2 Sava): name -> frame index.
+var _names := {}
 var _unit := 210.0
 var _wrench: Texture2D
 
@@ -45,13 +49,41 @@ func _ready() -> void:
 func _load() -> void:
 	if _data.is_empty():
 		_data = JSON.parse_string(FileAccess.get_file_as_string("res://data/rest_chars.json"))
-	if not _data.has(char_name):
+		if FileAccess.file_exists("res://data/new_art.json"):
+			var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/new_art.json"))
+			_new = d.get("chars", {}) if typeof(d) == TYPE_DICTIONARY else {}
+	_names = {}
+	_tex_extra = null
+	var extra: Dictionary = _new.get(char_name, {})
+	if _data.has(char_name):
+		_frames = _data[char_name].frames.duplicate()
+		_unit = _data[char_name].unit
+		_tex = load("res://assets/rest/%s.png" % char_name)
+	elif extra.has("atlas") and ResourceLoader.exists(extra.atlas):
+		_frames = extra.frames.duplicate()
+		_unit = extra.unit
+		_tex = load(extra.atlas)
+		_names = extra.names
+	else:
 		return
-	_frames = _data[char_name].frames
-	_unit = _data[char_name].unit
-	_tex = load("res://assets/rest/%s.png" % char_name)
+	if extra.has("extra") and ResourceLoader.exists(extra.extra):
+		_tex_extra = load(extra.extra)
+		var base := _frames.size()
+		for f in extra.frames:
+			var g: Dictionary = f.duplicate()
+			g["extra"] = true
+			_frames.append(g)
+		for n in extra.names:
+			_names[n] = base + int(extra.names[n])
 	_wrench = load("res://assets/rest/wrench_0.png")
 	queue_redraw()
+
+## Index of a named frame ("jump_up", "climb_1", "sleep"...), or `fallback` when that picture has not arrived yet.
+func pose(name: String, fallback: int) -> int:
+	return _names.get(name, fallback)
+
+func has_pose(name: String) -> bool:
+	return _names.has(name)
 
 func frame_count() -> int:
 	return _frames.size()
@@ -63,7 +95,8 @@ func _draw() -> void:
 	var k := height / _unit
 	var sx := face * (-1 if art_faces_left else 1)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(sx * k, k))
-	draw_texture_rect_region(_tex, Rect2(-f.anchor, -f.foot, f.w, f.h), Rect2(f.x, f.y, f.w, f.h), tint)
+	var t: Texture2D = _tex_extra if f.get("extra", false) else _tex
+	draw_texture_rect_region(t, Rect2(-f.anchor, -f.foot, f.w, f.h), Rect2(f.x, f.y, f.w, f.h), tint)
 	if held == "wrench" and _wrench:
 		var hand := Vector2(-f.anchor + f.hand[0], -f.foot + f.hand[1])
 		draw_set_transform(Vector2(hand.x * sx * k, hand.y * k), held_angle * sx, Vector2(sx * 0.22, 0.22))

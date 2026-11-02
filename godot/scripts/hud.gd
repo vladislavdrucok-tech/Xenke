@@ -27,8 +27,17 @@ var line_t := 0.0
 var hint_t := 0.0
 var goal_panel: PanelContainer
 
-const FACES := {"nazar": "", "einstein": "res://assets/portrait-einstein.webp", "sava": "", "mira": "res://assets/portrait-mira.webp"}
-const NAMES := {"nazar": "НАЗАР", "einstein": "ЕЙНШТЕЙН", "sava": "САВА", "mira": "МІРА"}
+## Portraits by character id: the new P1 portraits (assets/new/portraits) win; until they arrive, the old ones.
+const OLD_FACES := {"einstein": "res://assets/portrait-einstein.webp", "mira": "res://assets/portrait-mira.webp"}
+const NAMES := {"nazar": "НАЗАР", "einstein": "ЕЙНШТЕЙН", "sava": "САВА", "mira": "МІРА", "pavlo": "ПАВЛО", "yana": "ЯНА"}
+var hint_icon: TextureRect
+var heart_icon: TextureRect
+
+static func face(id: String) -> Texture2D:
+	var t := Art.portrait(id)
+	if t == null and OLD_FACES.has(id):
+		t = load(OLD_FACES[id])
+	return t
 
 func _ready() -> void:
 	font = load("res://assets/PixelifySans.ttf")
@@ -65,6 +74,13 @@ func _build() -> void:
 	heart.name = "Heart"
 	heart.text = "♥"
 	add_child(heart)
+	heart_icon = TextureRect.new()
+	heart_icon.texture = Art.icon("heart")
+	heart_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	heart_icon.size = Vector2(14, 14)
+	heart_icon.visible = heart_icon.texture != null
+	heart.visible = not heart_icon.visible
+	add_child(heart_icon)
 	# Goal ribbon.
 	goal_panel = PanelContainer.new()
 	goal_panel.add_theme_stylebox_override("panel", _style(Color("#6b5a2a")))
@@ -92,6 +108,8 @@ func _build() -> void:
 	jb.add_theme_font_override("font", font)
 	jb.add_theme_font_size_override("font_size", 9)
 	jb.focus_mode = Control.FOCUS_NONE
+	jb.icon = Art.icon("journal")
+	jb.expand_icon = true
 	jb.pressed.connect(func(): journal.visible = not journal.visible)
 	add_child(jb)
 	journal = PanelContainer.new()
@@ -144,6 +162,11 @@ func _build() -> void:
 	hs.set_content_margin_all(3)
 	hint.add_theme_stylebox_override("normal", hs)
 	add_child(hint)
+	hint_icon = TextureRect.new()
+	hint_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	hint_icon.size = Vector2(16, 16)
+	hint_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(hint_icon)
 	# Touch controls (multi-touch: walk and jump at once).
 	for spec in [["BtnLeft", "btn_left", "move_left"], ["BtnRight", "btn_right", "move_right"], ["BtnJump", "btn_jump", "jump"], ["BtnAct", "btn_action", "act"]]:
 		var b := TouchScreenButton.new()
@@ -172,6 +195,7 @@ func layout() -> void:
 	hp_back.position = Vector2(20, 9)
 	hp_bar.position = Vector2(21, 10)
 	get_node("Heart").position = Vector2(6, 3)
+	heart_icon.position = Vector2(3, 5)
 	var jb: Button = get_node("JournalBtn")
 	jb.position = Vector2(100, 4)
 	jb.size = Vector2(54, 18)
@@ -216,13 +240,16 @@ func set_hp(v: int) -> void:
 func set_action(text: String) -> void:
 	act_label.text = text
 
-func show_hint(text: String, secs := 2.6) -> void:
+## A message in the hint strip; `icon` is an item or event id from the I1 sheet ("jack", "saved"...), shown if it exists.
+func show_hint(text: String, secs := 2.6, icon := "") -> void:
 	hint.text = text
 	hint_t = secs
+	hint_icon.texture = Art.icon(icon) if icon != "" else null
 
 func set_target_hint(text: String) -> void:
 	if hint_t <= 0.0:
 		hint.text = text
+		hint_icon.texture = null
 
 func say(new_lines: Array) -> void:
 	lines = new_lines.duplicate()
@@ -236,10 +263,9 @@ func _show_line() -> void:
 	dlg.visible = not journal.visible
 	dlg_name.text = NAMES.get(l[0], l[0])
 	dlg_text.text = l[1]
-	var face: String = FACES.get(l[0], "")
-	dlg_face.visible = face != ""
-	if face != "":
-		dlg_face.texture = load(face)
+	var t := face(l[0])
+	dlg_face.visible = t != null
+	dlg_face.texture = t
 	line_t = clampf(1.6 + l[1].length() * 0.04, 2.6, 6.0)
 
 func next_line() -> void:
@@ -267,6 +293,8 @@ func _process(delta: float) -> void:
 	var vs := get_viewport().get_visible_rect().size
 	hint.reset_size()
 	hint.position = Vector2((vs.x - hint.size.x) / 2.0, vs.y - 52)
+	hint_icon.visible = hint.visible and hint_icon.texture != null
+	hint_icon.position = hint.position + Vector2(-19, (hint.size.y - 16) / 2.0)
 	if not lines.is_empty():
 		line_t -= delta
 		if line_t <= 0.0:

@@ -165,18 +165,32 @@ func hurt(dmg: int, from_x: float) -> void:
 	if Game.hp <= 0:
 		died.emit()
 
+## Frames: the A105 sheet (0-3 walk, 4 idle, 5 wrench, 6 kneel, 7 knee up) plus, once M2 arrives,
+## named moves; until then each move falls back to the closest A105 pose.
 func _animate() -> void:
 	var f := 4
 	if not climb.is_empty():
-		f = 7 if floori(walk_phase) % 2 == 0 else 4
-		body.face = 1 if floori(walk_phase) % 2 == 0 else -1
+		var a := floori(walk_phase) % 2 == 0
+		if body.has_pose("climb_1"):
+			f = body.pose("climb_1" if a else "climb_2", 7)
+			body.face = 1
+		else:
+			f = 7 if a else 4
+			body.face = 1 if a else -1
+	elif hurt_t > 0.75 and body.has_pose("hurt"):
+		f = body.pose("hurt", 4)
 	elif job and at_spot() and job.work_time > 0.0:
 		var phase := fmod(job_t, job.pulse) / job.pulse
 		f = 6 if job.tool == "kneel" else (5 if phase < 0.55 else 4)
 	elif not is_on_floor():
-		f = 7 if velocity.y < 60.0 else 6
+		if velocity.y < -150.0:
+			f = body.pose("jump_up", 7)
+		elif velocity.y < 60.0:
+			f = body.pose("jump_up", 7) if not body.has_pose("fall") else (body.pose("jump_up", 7) if velocity.y < 0.0 else body.pose("fall", 6))
+		else:
+			f = body.pose("fall", 6)
 	elif velocity.x != 0.0:
 		f = floori(walk_phase) % 4
 	elif land_t > 0.0:
-		f = 6
+		f = body.pose("land", 6)
 	body.frame = f

@@ -1,0 +1,374 @@
+{
+ "chars": {
+  "crawler": {
+   "extra": "res://assets/new/crawler_extra.png",
+   "frames": [
+    {
+     "w": 252,
+     "h": 203,
+     "anchor": 115.7,
+     "foot": 203.5,
+     "hand": [
+      235.3,
+      129.5
+     ],
+     "x": 0,
+     "y": 0
+    },
+    {
+     "w": 249,
+     "h": 203,
+     "anchor": 115.7,
+     "foot": 203.5,
+     "hand": [
+      236.8,
+      123.2
+     ],
+     "x": 254,
+     "y": 0
+    },
+    {
+     "w": 366,
+     "h": 198,
+     "anchor": 168.8,
+     "foot": 197.6,
+     "hand": [
+      341.0,
+      114.0
+     ],
+     "x": 505,
+     "y": 0
+    },
+    {
+     "w": 488,
+     "h": 248,
+     "anchor": 210.9,
+     "foot": 244.8,
+     "hand": [
+      463.1,
+      130.5
+     ],
+     "x": 873,
+     "y": 0
+    },
+    {
+     "w": 460,
+     "h": 220,
+     "anchor": 157.8,
+     "foot": 210.9,
+     "hand": [
+      433.5,
+      116.0
+     ],
+     "x": 1363,
+     "y": 0
+    },
+    {
+     "w": 260,
+     "h": 345,
+     "anchor": 109.8,
+     "foot": 321.4,
+     "hand": [
+      225.1,
+      154.8
+     ],
+     "x": 0,
+     "y": 250
+    },
+    {
+     "w": 512,
+     "h": 201,
+     "anchor": 208.6,
+     "foot": 200.5,
+     "hand": [
+      487.8,
+      85.0
+     ],
+     "x": 262,
+     "y": 250
+    },
+    {
+     "w": 451,
+     "h": 206,
+     "anchor": 211.6,
+     "foot": 191.7,
+     "hand": [
+      426.1,
+      110.0
+     ],
+     "x": 776,
+     "y": 250
+    }
+   ],
+   "names": {
+    "sleep": 0,
+    "sleep_breathe": 1,
+    "eat": 2,
+    "alert": 3,
+    "lunge": 4,
+    "hit": 5,
+    "flee": 6,
+    "land": 7
+   }
+  },
+  "einstein": {
+   "extra": "res://assets/new/einstein_extra.png",
+   "frames": [
+    {
+     "w": 149,
+     "h": 178,
+     "anchor": 75.0,
+     "foot": 178.2,
+     "hand": [
+      132.4,
+      54.7
+     ],
+     "x": 0,
+     "y": 0
+    },
+    {
+     "w": 151,
+     "h": 220,
+     "anchor": 41.5,
+     "foot": 220.0,
+     "hand": [
+      111.7,
+      69.2
+     ],
+     "x": 151,
+     "y": 0
+    },
+    {
+     "w": 171,
+     "h": 209,
+     "anchor": 64.1,
+     "foot": 208.8,
+     "hand": [
+      164.3,
+      68.1
+     ],
+     "x": 304,
+     "y": 0
+    },
+    {
+     "w": 166,
+     "h": 155,
+     "anchor": 69.4,
+     "foot": 155.3,
+     "hand": [
+      160.3,
+      83.3
+     ],
+     "x": 477,
+     "y": 0
+    },
+    {
+     "w": 146,
+     "h": 239,
+     "anchor": 48.2,
+     "foot": 239.4,
+     "hand": [
+      130.4,
+      88.3
+     ],
+     "x": 645,
+     "y": 0
+    },
+    {
+     "w": 146,
+     "h": 242,
+     "anchor": 58.5,
+     "foot": 242.4,
+     "hand": [
+      124.0,
+      90.0
+     ],
+     "x": 793,
+     "y": 0
+    },
+    {
+     "w": 158,
+     "h": 218,
+     "anchor": 98.5,
+     "foot": 218.2,
+     "hand": [
+      143.4,
+      68.8
+     ],
+     "x": 941,
+     "y": 0
+    },
+    {
+     "w": 186,
+     "h": 210,
+     "anchor": 153.2,
+     "foot": 210.0,
+     "hand": [
+      174.8,
+      66.0
+     ],
+     "x": 1101,
+     "y": 0
+    }
+   ],
+   "names": {
+    "jump_crouch": 0,
+    "jump_up": 1,
+    "fall": 2,
+    "land": 3,
+    "climb_1": 4,
+    "climb_2": 5,
+    "hurt": 6,
+    "run": 7
+   }
+  }
+ },
+ "props": {
+  "beam": {
+   "states": 2,
+   "w": 210.0,
+   "h": 64.4,
+   "anchor": "top",
+   "src": "M3_beam.png"
+  },
+  "walkway_hole": {
+   "states": 2,
+   "w": 235.3,
+   "h": 54.6,
+   "anchor": "bottom",
+   "src": "M4_walkway_hole.png",
+   "left_w": 98.0,
+   "right_w": 98.1,
+   "gap": 39.2,
+   "planks_x": 0.0,
+   "planks_y": 18.6,
+   "planks_w": 39.2,
+   "planks_h": 10.1
+  },
+  "washer": {
+   "states": 2,
+   "w": 44.3,
+   "h": 40.0,
+   "anchor": "bottomleft",
+   "src": "M5_laundry_props.png"
+  },
+  "washer_toppled": {
+   "states": 1,
+   "w": 40.7,
+   "h": 32.6,
+   "anchor": "bottom",
+   "src": "M5_laundry_props.png"
+  },
+  "laundry_basket": {
+   "states": 1,
+   "w": 41.6,
+   "h": 31.5,
+   "anchor": "bottom",
+   "src": "M5_laundry_props.png"
+  },
+  "drying_rack": {
+   "states": 1,
+   "w": 39.7,
+   "h": 38.2,
+   "anchor": "bottom",
+   "src": "M5_laundry_props.png"
+  },
+  "sink": {
+   "states": 1,
+   "w": 32.6,
+   "h": 36.7,
+   "anchor": "bottom",
+   "src": "M5_laundry_props.png"
+  },
+  "rag_pile": {
+   "states": 1,
+   "w": 35.9,
+   "h": 13.4,
+   "anchor": "bottom",
+   "src": "M5_laundry_props.png"
+  },
+  "crawler_nest": {
+   "states": 1,
+   "w": 41.3,
+   "h": 13.0,
+   "anchor": "bottom",
+   "src": "M5_laundry_props.png"
+  },
+  "sign_station": {
+   "states": 1,
+   "w": 42.4,
+   "h": 56.0,
+   "anchor": "bottom",
+   "src": "M7_small_props.png"
+  },
+  "planks": {
+   "states": 1,
+   "w": 24.8,
+   "h": 9.0,
+   "anchor": "bottom",
+   "src": "M7_small_props.png"
+  },
+  "can": {
+   "states": 1,
+   "w": 4.9,
+   "h": 7.0,
+   "anchor": "bottom",
+   "src": "M7_small_props.png"
+  },
+  "can_crushed": {
+   "states": 1,
+   "w": 10.3,
+   "h": 4.0,
+   "anchor": "bottom",
+   "src": "M7_small_props.png"
+  },
+  "service_door": {
+   "states": 1,
+   "w": 41.8,
+   "h": 80.0,
+   "anchor": "bottom",
+   "src": "M7_small_props.png"
+  },
+  "winch": {
+   "states": 2,
+   "w": 25.6,
+   "h": 36.0,
+   "anchor": "topleft",
+   "src": "M7_small_props.png"
+  },
+  "puddle": {
+   "states": 1,
+   "w": 60.0,
+   "h": 9.5,
+   "anchor": "bottom",
+   "src": "M7_small_props.png"
+  },
+  "laundry_facade": {
+   "states": 1,
+   "w": 185.2,
+   "h": 293.3,
+   "anchor": "bottom",
+   "src": "M6_laundry_facade.png",
+   "door_x": 5.8,
+   "door_w": 43.0,
+   "door_h": 96.0
+  }
+ },
+ "portraits": [],
+ "icons": [],
+ "present": [
+  "M1_crawler_actions.png",
+  "M2_einstein_moves.png",
+  "M3_beam.png",
+  "M4_walkway_hole.png",
+  "M5_laundry_props.png",
+  "M7_small_props.png",
+  "M6_laundry_facade.png"
+ ],
+ "notes": [
+  "M1_crawler_actions.png: drawn at 0.71x of laundry_mission/A161.png (frame \"flee\" vs its walk frames), rescaled to match",
+  "M2_einstein_moves.png: drawn at 0.81x of chapter_01/A105.png (frame \"run\" vs its walk frames), rescaled to match",
+  "M4: gap in the art 39.2 units, planks 39.2 long; pieces 98.0 + 98.1, height 54.6",
+  "M6_laundry_facade.png: doorway 43.0 x 96.0 units (closed door A158 is about 48 x 92), centre 5.8 from the middle; facade 185.2 x 293.3"
+ ]
+}

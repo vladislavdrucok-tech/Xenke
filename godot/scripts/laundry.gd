@@ -12,12 +12,13 @@ const DECK := 222.0
 const WATER_X0 := 760.0
 const WATER_X1 := 1500.0
 const GAP_X0 := 1750.0
-const GAP_X1 := 1840.0
+## 84 units: wider than a jump can cover (the hero crosses ~64 minus his width), still under the planks.
+const GAP_X1 := 1834.0
 const CART_HOME := 2190.0
 const CART_SAFE := 2650.0
 ## M5 laundry equipment once it arrives: [prop, state, x, flip]. Placed clear of every interaction spot.
-const LAUNDRY_DECO := [["washer", 0, 1588.0, false], ["washer", 1, 1655.0, false], ["rag_pile", 0, 1770.0, false],
-		["sink", 0, 1872.0, false], ["washer_toppled", 0, 1985.0, true], ["laundry_basket", 0, 652.0, false], ["drying_rack", 0, 1110.0, false]]
+const LAUNDRY_DECO := [["washer", 0, 1576.0, false], ["washer", 1, 1660.0, false], ["rag_pile", 0, 1775.0, false],
+		["sink", 0, 1872.0, false], ["washer_toppled", 0, 1985.0, true], ["laundry_basket", 0, 830.0, false], ["drying_rack", 0, 1110.0, false]]
 const SPAWN := {"start": -120.0, "entrance": 640.0, "rescued": 1485.0, "route": 2095.0, "gate": 2275.0}
 
 var hero: CharacterBody2D
@@ -43,6 +44,8 @@ var frame_ms: Array[float] = []
 var cam_y := 250.0
 var tex := {}
 var layers: Array[Node2D] = []
+var facade_layer: Node2D
+var inside := false
 
 # ======================================================================= setup
 func _ready() -> void:
@@ -146,6 +149,7 @@ func _build_world() -> void:
 	_layer(-10, _draw_back)
 	_layer(-5, _draw_floor)
 	_layer(-4, _draw_mid)
+	facade_layer = _layer(-4, _draw_facade)
 	_layer(-3, _draw_decks)
 	# Ground, world edges.
 	_body_rect(Vector2(1300, GROUND + 20), Vector2(3400, 40))
@@ -166,6 +170,9 @@ func _build_world() -> void:
 	_deco("pipe", 1980, DECK - 40, 1, -4)
 	_deco("barrel", 2560, GROUND, 0)
 	_deco("crate", 2470, GROUND, 1)
+	# M7 wall winch that opens the gate (only once the art is there): rest / chain taut.
+	if not Art.prop("winch").is_empty():
+		_deco("winch", 2228, GROUND - 16.0, 0, -1).name = "Winch"
 	var jack := _deco("jack", 1290, GROUND, 1, 0)
 	jack.name = "Jack"
 	jack.visible = false
@@ -186,7 +193,7 @@ func _build_world() -> void:
 	_ladder(2065)
 	_prop("body", "filter_body", 2110, GROUND, 40)
 	_prop("cart", "cart", CART_HOME, GROUND, 84)
-	_prop("gate", "cargo_gate", 2330, GROUND, 50, -100)
+	_prop("gate", "cargo_gate", 2330, GROUND, 70, -105)
 	blockers.gate = _body_rect(Vector2(2252, GROUND - 56), Vector2(10, 112))
 	_prop("yard_crate", "crate", 2415, GROUND, 40)
 	_prop("exit", "", 2770, GROUND, 50)
@@ -389,7 +396,7 @@ func info(id: String) -> Dictionary:
 		"gate":
 			if Game.has("gate"):
 				return {"usable": false}
-			return {"title": "Вантажні ворота · ланцюговий ворот", "verb": "Крутити ворот", "work": 3.8, "tool": "wrench", "spot": 2222.0}
+			return {"title": "Вантажні ворота · ланцюговий ворот", "verb": "Крутити ворот", "work": 3.8, "tool": "wrench", "spot": 2206.0}
 		"yard_crate":
 			if Game.has("yard_crate"):
 				return {"usable": false}
@@ -554,7 +561,7 @@ func _goal() -> Array:
 			return ["Візьми корпус фільтра", "Корпус лежить біля візка.", "", 2110.0]
 		return ["Поклади корпус на візок", "Назар чекає біля візка.", "", props.cart.position.x]
 	if not Game.has("gate"):
-		return ["Відчини вантажні ворота", "Ворот із ланцюгом — ліворуч від воріт.", "", 2222.0]
+		return ["Відчини вантажні ворота", "Ворот із ланцюгом — ліворуч від воріт.", "", 2206.0]
 	if not Game.has("delivered"):
 		return ["Проведи візок до безпечної точки", "Назар штовхає. Якщо попереду кроулер — візок стане, прожени або відволічи його.", "Консерви %d" % Game.count("can"), props.cart.position.x + 60.0]
 	return ["Повертайся на Станцію", "Корпус у дворі, Назар на місці. Дорога — праворуч.", "", 2770.0]
@@ -588,6 +595,13 @@ func _process(delta: float) -> void:
 	_nazar_knock(delta)
 	_cart(delta)
 	_pump_and_fx(delta)
+	var winch := get_node_or_null("Winch")
+	if winch:
+		winch.state = 1 if Game.has("gate") or progress_of.has("gate") else 0
+	var now_inside := hero.global_position.x > 612.0 and hero.global_position.x < 2260.0
+	if now_inside != inside:
+		inside = now_inside
+		facade_layer.queue_redraw()
 
 func _camera(delta: float) -> void:
 	var vs := get_viewport().get_visible_rect().size
@@ -715,10 +729,22 @@ func _draw_mid(n: Node2D) -> void:
 	if Game.has("drained"):
 		for x in [820.0, 1010.0, 1240.0, 1480.0]:
 			Art.draw_prop(n, "puddle", 0, Vector2(x, GROUND + 2.0))
-	# The building's front edge with the doorway around the entrance door (M6).
+
+
+## The laundry's front (M6), its doorway around the entrance door. Once the hero is inside, the part of the front that
+## stands over the hall fades, so the front reads as a wall he walked through, not one he walks in front of.
+func _draw_facade(n: Node2D) -> void:
 	var fa := Art.prop("laundry_facade")
-	if not fa.is_empty():
-		Art.draw_prop(n, "laundry_facade", 0, Vector2(600.0 - float(fa.get("door_x", 0.0)), GROUND))
+	var t := Art.prop_tex("laundry_facade")
+	if t == null:
+		return
+	var w: float = fa.w
+	var h: float = fa.h
+	var left := 600.0 - float(fa.get("door_x", 0.0)) - w / 2.0
+	var split := 600.0 - left
+	var k := t.get_width() / w
+	n.draw_texture_rect_region(t, Rect2(left, GROUND - h, split, h), Rect2(0, 0, split * k, t.get_height()))
+	n.draw_texture_rect_region(t, Rect2(600.0, GROUND - h, w - split, h), Rect2(split * k, 0, (w - split) * k, t.get_height()), Color(1, 1, 1, 0.22 if inside else 1.0))
 
 func _draw_floor(n: Node2D) -> void:
 	_tile(n, tex["floor_bunker_0.png"], 600, 2252, GROUND - 4, 420, 73.3)
@@ -729,11 +755,17 @@ func _draw_decks(n: Node2D) -> void:
 	_tile(n, w, 680, 1205, top, 300, 54.6)
 	var hole := Art.prop("walkway_hole")
 	if not hole.is_empty():
-		# M4: one 300-unit piece with the hole in its middle, joined to the plain walkway on both sides.
-		var mid := (GAP_X0 + GAP_X1) / 2.0
-		_tile(n, w, 1530, mid - hole.w / 2.0, top, 300, 54.6)
-		_tile(n, w, mid + hole.w / 2.0, 2080, top, 300, 54.6)
-		Art.draw_prop(n, "walkway_hole", 1 if Game.has("bridge") else 0, Vector2(mid, top + hole.h))
+		# M4, cut in two: its broken ends sit at the edges of the gap, the walkway A159 continues beyond them,
+		# and the planks strip is repeated across the gap (the art's own gap is only ~39 units, a jump would clear it).
+		var lw: float = hole.left_w
+		var rw: float = hole.right_w
+		var hh: float = hole.h
+		_tile(n, w, 1530, GAP_X0 - lw, top, 300, 54.6)
+		_tile(n, w, GAP_X1 + rw, 2080, top, 300, 54.6)
+		n.draw_texture_rect(Art.tex("res://assets/new/walkway_hole_left.png"), Rect2(GAP_X0 - lw, top, lw, hh), false)
+		n.draw_texture_rect(Art.tex("res://assets/new/walkway_hole_right.png"), Rect2(GAP_X1, top, rw, hh), false)
+		if Game.has("bridge"):
+			_tile(n, Art.tex("res://assets/new/walkway_hole_planks.png"), GAP_X0 - 6.0, GAP_X1 + 6.0, top + float(hole.planks_y), hole.planks_w, hole.planks_h)
 	else:
 		_tile(n, w, 1530, GAP_X0, top, 300, 54.6)
 		_tile(n, w, GAP_X1, 2080, top, 300, 54.6)
@@ -812,6 +844,10 @@ func _demo() -> void:
 	await get_tree().create_timer(1.0).timeout
 	frame_ms.clear()
 	await _shot(dir, "01-street", perf)
+	await _tap("jump")
+	await _wait(0.18)
+	await _shot(dir, "01b-jump", perf)
+	await _wait(0.5)
 	await _go(578)
 	await _use(0.9)
 	await _shot(dir, "02-door", perf)
@@ -819,7 +855,10 @@ func _demo() -> void:
 	await _wait(0.8)
 	await _shot(dir, "03-flooded", perf)
 	await _go(700)
-	await _climb()
+	await _use()
+	await _wait(0.6)
+	await _shot(dir, "03b-ladder", perf)
+	await _wait(1.2)
 	await _go(1040)
 	await _use(1.2)
 	await _shot(dir, "04-valve", perf)
@@ -884,7 +923,7 @@ func _demo() -> void:
 	await _use()
 	await _wait_job()
 	await _shot(dir, "14-loaded", perf)
-	await _go(2222)
+	await _go(2206)
 	await _use(2.0)
 	await _shot(dir, "15-gate", perf)
 	await _wait_job()

@@ -30,6 +30,12 @@ func _ready() -> void:
 		for i in int(m.states):
 			_tex.append(load("res://assets/rest/%s_%d.png" % [art, i]))
 		_size = Vector2(m.w, m.h) * art_scale
+	elif art != "" and not Art.prop(art).is_empty():
+		# A prop from the new sheets (M, C): same layout, other folder.
+		var m := Art.prop(art)
+		for i in int(m.states):
+			_tex.append(Art.prop_tex(art, i))
+		_size = Vector2(m.w, m.h) * art_scale
 	highlight = Rect2(-_size.x / 2.0, -_size.y, _size.x, _size.y)
 	var shape := RectangleShape2D.new()
 	shape.size = Vector2(zone_w, 60)

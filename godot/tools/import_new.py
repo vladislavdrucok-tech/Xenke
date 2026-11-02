@@ -20,31 +20,38 @@ PX = 3
 
 # ---------------------------------------------------------------- what is expected
 WALK8 = ['jump_crouch', 'jump_up', 'fall', 'land', 'climb_1', 'climb_2', 'hurt', 'run']
-CHAR_EXTRA = {   # file -> (character, cols, rows, frame names, base sheet in art/rest)
-    'M1_crawler_actions.png': ('crawler', 4, 2, ['sleep', 'sleep_breathe', 'eat', 'alert', 'lunge', 'hit', 'flee', 'land'], 'laundry_mission/A161.png', (3, 2)),
-    'M2_einstein_moves.png': ('einstein', 4, 2, WALK8, 'chapter_01/A105.png', (4, 2)),
-    'P3_mira_moves.png': ('mira', 4, 2, WALK8, 'chapter_01/A108.png', (4, 2)),
+# file -> (character, cols, rows, frame names, base sheet in art/rest, its grid, reference frame).
+# The reference frame is matched to the base sheet's walk frames ('h' = height, 'w' = body length), because the artist
+# did not keep the reference scale: M2 came out ~0.8x of A105, M1 ~0.7x of A161.
+CHAR_EXTRA = {
+    'M1_crawler_actions.png': ('crawler', 4, 2, ['sleep', 'sleep_breathe', 'eat', 'alert', 'lunge', 'hit', 'flee', 'land'], 'laundry_mission/A161.png', (3, 2), (6, 'w')),
+    'M2_einstein_moves.png': ('einstein', 4, 2, WALK8, 'chapter_01/A105.png', (4, 2), (7, 'h')),
+    'P3_mira_moves.png': ('mira', 4, 2, WALK8, 'chapter_01/A108.png', (4, 2), (7, 'h')),
 }
 CHAR_FULL = {    # file -> (character, cols, rows, frame names); walking height = median of the 4 walk frames
     'P2_sava_sheet.png': ('sava', 4, 2, ['walk_0', 'walk_1', 'walk_2', 'walk_3', 'idle', 'talk', 'arms_crossed', 'point']),
 }
 # file -> list of (name, [cell indices = states], size, anchor); size: ('h', units) or ('w', units); cells counted left-right, top-bottom.
+# anchor = how the states are laid on their shared canvas: 'bottom' (bottom-centre), 'top' (top-centre: the beam rests on the same
+# supports whether it sags or not), 'bottomleft' (washer body stays put when its door swings open), 'topleft' (winch plate), 'hinge'.
 SHEETS = {
-    'M3_beam.png': (1, 2, [('beam', [0, 1], ('w', 210), 'bottom')]),
-    'M4_walkway_hole.png': (1, 2, [('walkway_hole', [0, 1], ('w', 300), 'bottom')]),
-    'M5_laundry_props.png': (4, 2, [('washer', [0, 1], ('h', 42), 'bottom'), ('washer_toppled', [2], ('sheet', 'washer'), 'bottom'),
+    'M3_beam.png': (1, 2, [('beam', [0, 1], ('w', 210), 'top')]),
+    # Same pixel scale as the walkway A159 (1905 px -> 300 units), so the pieces join it exactly.
+    'M4_walkway_hole.png': (1, 2, [('walkway_hole', [0, 1], ('k', 300 / 1905), 'bottom')]),
+    'M5_laundry_props.png': (4, 2, [('washer', [0, 1], ('h', 40), 'bottomleft'), ('washer_toppled', [2], ('sheet', 'washer'), 'bottom'),
                                     ('laundry_basket', [3], ('sheet', 'washer'), 'bottom'), ('drying_rack', [4], ('sheet', 'washer'), 'bottom'),
                                     ('sink', [5], ('sheet', 'washer'), 'bottom'), ('rag_pile', [6], ('sheet', 'washer'), 'bottom'),
                                     ('crawler_nest', [7], ('sheet', 'washer'), 'bottom')]),
     # Cans are drawn too big on the sheet next to the door, so every small prop gets its own height.
     'M7_small_props.png': (4, 2, [('sign_station', [0], ('h', 56), 'bottom'), ('planks', [1], ('h', 9), 'bottom'), ('can', [2], ('h', 7), 'bottom'),
                                   ('can_crushed', [3], ('h', 4), 'bottom'), ('service_door', [4], ('h', 80), 'bottom'),
-                                  ('winch', [5, 6], ('h', 30), 'bottom'), ('puddle', [7], ('w', 60), 'bottom')]),
+                                  ('winch', [5, 6], ('h', 36), 'topleft'), ('puddle', [7], ('w', 60), 'bottom')]),
     'C1_lab_mechanisms.png': (4, 2, [('power_switch', [0, 1], ('h', 40), 'bottom'), ('drawbridge', [2, 3], ('w', 110), 'hinge'),
                                      ('bulkhead', [4, 5], ('h', 96), 'bottom'), ('lab_pump', [6, 7], ('h', 32), 'bottom')]),
     'C2_pavlo_shelf.png': (3, 1, [('pavlo_shelf', [0, 1, 2], ('h', 78), 'bottom')]),
 }
-SINGLES = {'M6_laundry_facade.png': ('laundry_facade', ('h', 300))}
+# The facade is scaled by its doorway: 96 units tall, so the door A158 (92) fits in it.
+SINGLES = {'M6_laundry_facade.png': ('laundry_facade', ('door_h', 96))}
 PORTRAITS = ['nazar', 'mira', 'sava', 'pavlo', 'einstein']
 ICONS = ['wrench', 'jack', 'planks', 'can', 'filter_body', 'repair_unit', 'rag', 'scrap',
          'seeds', 'measuring_cup', 'flashlight', 'notebook', 'heart', 'saved', 'journal', 'can_open']
@@ -113,6 +120,27 @@ def char_frames(parts, k):
         frames.append(dict(w=s.width, h=s.height, anchor=round(ax * k, 1), foot=round(fy * k, 1), hand=[round(hx * k, 1), round(hy * k, 1)]))
     return ims, frames
 
+def split_hole(canvases, k, out, meta, note):
+    """M4: the open hole as a left and a right piece, and the planks alone, so the game can set the gap it needs."""
+    open_, mended = canvases[0], canvases[1]; A = open_.getchannel('A').load(); W, H = open_.size
+    clear = [all(A[x, y] == 0 for y in range(H)) for x in range(W)]; runs = []; s = None
+    for x, v in enumerate(clear + [False]):
+        if v and s is None: s = x
+        if not v and s is not None: runs.append((s, x)); s = None
+    mid = [r for r in runs if r[0] > W * 0.2 and r[1] < W * 0.8]
+    if not mid: note('M4: no gap found in the open state'); return
+    g0, g1 = max(mid, key=lambda r: r[1] - r[0])
+    left = open_.crop((0, 0, g0, H)); right = open_.crop((g1, 0, W, H))
+    scaled(left, k).save(out / 'walkway_hole_left.png'); scaled(right, k).save(out / 'walkway_hole_right.png')
+    # Planks: the mended state inside the gap (the board ends lie on the deck, where they cannot be told apart from it);
+    # the game repeats this strip across the gap it needs.
+    strip = mended.crop((g0, 0, g1, H)); bb0 = strip.getbbox()
+    bb = (g0 + bb0[0], bb0[1], g0 + bb0[2], bb0[3]); planks = strip.crop(bb0); scaled(planks, k).save(out / 'walkway_hole_planks.png')
+    u = k / PX
+    meta.update({'left_w': round(g0 * u, 1), 'right_w': round((W - g1) * u, 1), 'gap': round((g1 - g0) * u, 1),
+                 'planks_x': round((bb[0] - g0) * u, 1), 'planks_y': round(bb[1] * u, 1), 'planks_w': round(planks.width * u, 1), 'planks_h': round(planks.height * u, 1)})
+    note(f'M4: gap in the art {meta["gap"]} units, planks {meta["planks_w"]} long; pieces {meta["left_w"]} + {meta["right_w"]}, height {meta["h"]}')
+
 # ---------------------------------------------------------------- main
 def main():
     o = args(); src, proj = o['src'], o['project']
@@ -125,16 +153,17 @@ def main():
     data = {'chars': {}, 'props': {}, 'portraits': [], 'icons': [], 'present': [n for n in EXPECTED if found[n]], 'notes': []}
     note = lambda t: (data['notes'].append(t), print('note:', t))
 
-    for fn, (name, cols, rows, names, base, bgrid) in CHAR_EXTRA.items():
+    for fn, (name, cols, rows, names, base, bgrid, (ref, dim)) in CHAR_EXTRA.items():
         if not found[fn]: continue
         base_parts = imp.cells(opaque(Image.open(root / 'art/rest' / base)), *bgrid)
         walk = statistics.median(c.height for c, _ in base_parts[:4])
-        k = 70 * PX / walk * o['scale'].get(name, 1.0)
         parts = imp.cells(imp.keyed(found[fn]), cols, rows)
-        ratio = statistics.median(c.height for c, _ in parts) / statistics.median(c.height for c, _ in base_parts)
+        size = (lambda c: c.height) if dim == 'h' else (lambda c: c.width)
+        ratio = size(parts[ref][0]) / statistics.median(size(c) for c, _ in base_parts[:4])
+        k = 70 * PX / walk / ratio * o['scale'].get(name, 1.0)
         ims, frames = char_frames(parts, k); pack(ims, frames, out / f'{name}_extra.png')
         data['chars'][name] = {'extra': f'res://assets/new/{name}_extra.png', 'frames': frames, 'names': {n: i for i, n in enumerate(names)}}
-        note(f'{fn}: figures are {ratio:.2f}x the height of the base sheet {base} (about 1.0 expected, unless the poses crouch or stretch)')
+        note(f'{fn}: drawn at {ratio:.2f}x of {base} (frame "{names[ref]}" vs its walk frames), rescaled to match')
 
     for fn, (name, cols, rows, names) in CHAR_FULL.items():
         if not found[fn]: continue
@@ -146,38 +175,42 @@ def main():
     for fn, (cols, rows, items) in SHEETS.items():
         if not found[fn]: continue
         cells = grid_cells(imp.keyed(found[fn]), cols, rows); sheet_k = {}
+        place = {'bottom': lambda W, H, p: ((W - p.width) // 2, H - p.height), 'top': lambda W, H, p: ((W - p.width) // 2, 0),
+                 'bottomleft': lambda W, H, p: (0, H - p.height), 'hinge': lambda W, H, p: (0, H - p.height), 'topleft': lambda W, H, p: (0, 0)}
         for name, idx, size, anchor in items:
             parts = [cells[i] for i in idx]
             if any(p is None for p, _ in parts): note(f'{fn}: {name} has an empty cell, skipped'); continue
-            if anchor == 'hinge':
-                # Raised and lowered bridge turn about the same hinge: the bottom-left corner of each part.
-                W = max(p.width for p, _ in parts); H = max(p.height for p, _ in parts)
-                canvases = []
-                for p, _ in parts: c = Image.new('RGBA', (W, H)); c.alpha_composite(p, (0, H - p.height)); canvases.append(c)
-            else:
-                W = max(p.width for p, _ in parts); H = max(p.height for p, _ in parts); canvases = []
-                for p, _ in parts: c = Image.new('RGBA', (W, H)); c.alpha_composite(p, ((W - p.width) // 2, H - p.height)); canvases.append(c)
+            # Raised and lowered bridge turn about the same hinge: the bottom-left corner of each part.
+            W = max(p.width for p, _ in parts); H = max(p.height for p, _ in parts); canvases = []
+            for p, _ in parts: c = Image.new('RGBA', (W, H)); c.alpha_composite(p, place[anchor](W, H, p)); canvases.append(c)
             if size[0] == 'sheet': k = sheet_k[size[1]]
+            elif size[0] == 'k': k = size[1] * PX
             else: k = size[1] * PX / (H if size[0] == 'h' else W)
             k *= o['scale'].get(name, 1.0); sheet_k[name] = k
             for i, c in enumerate(canvases): scaled(c, k).save(out / f'{name}_{i}.png')
             data['props'][name] = {'states': len(canvases), 'w': round(W * k / PX, 1), 'h': round(H * k / PX, 1), 'anchor': anchor, 'src': fn}
+            if name == 'walkway_hole': split_hole(canvases, k, out, data['props'][name], note)
 
     for fn, (name, size) in SINGLES.items():
         if not found[fn]: continue
         im = imp.keyed(found[fn]); bb = im.getbbox(); im = im.crop(bb)
-        k = size[1] * PX / (im.height if size[0] == 'h' else im.width) * o['scale'].get(name, 1.0)
-        # The doorway: the widest fully transparent run along the bottom rows, so the door can be centred in it.
+        # The doorway: the widest fully transparent run along the bottom rows, and how high it stays clear above it.
         a = im.getchannel('A').load(); y = im.height - 3; runs = []; s = None
         for x in range(im.width + 1):
             clear = x < im.width and a[x, y] == 0
             if clear and s is None: s = x
             if not clear and s is not None: runs.append((s, x)); s = None
         door = max(runs, key=lambda r: r[1] - r[0]) if runs else (im.width // 2, im.width // 2)
+        cx = (door[0] + door[1]) // 2; dh = 0
+        while dh < im.height and a[cx, im.height - 1 - dh] == 0: dh += 1
+        base = {'h': im.height, 'w': im.width, 'door_h': max(1, dh)}[size[0]]
+        k = size[1] * PX / base * o['scale'].get(name, 1.0)
         scaled(im, k).save(out / f'{name}_0.png')
         data['props'][name] = {'states': 1, 'w': round(im.width * k / PX, 1), 'h': round(im.height * k / PX, 1), 'anchor': 'bottom', 'src': fn,
-                               'door_x': round(((door[0] + door[1]) / 2 - im.width / 2) * k / PX, 1), 'door_w': round((door[1] - door[0]) * k / PX, 1)}
-        note(f'{fn}: doorway {data["props"][name]["door_w"]} units wide (door A158 is 67.8), centre {data["props"][name]["door_x"]} from the middle')
+                               'door_x': round(((door[0] + door[1]) / 2 - im.width / 2) * k / PX, 1), 'door_w': round((door[1] - door[0]) * k / PX, 1),
+                               'door_h': round(dh * k / PX, 1)}
+        m = data['props'][name]
+        note(f'{fn}: doorway {m["door_w"]} x {m["door_h"]} units (closed door A158 is about 48 x 92), centre {m["door_x"]} from the middle; facade {m["w"]} x {m["h"]}')
 
     for p in PORTRAITS:
         f = found[f'P1_portrait_{p}.png']

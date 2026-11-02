@@ -7,7 +7,8 @@ signal changed
 signal journal_added(text: String)
 
 const SAVE_PATH := "user://afterfall_save.json"
-const ITEM_NAMES := {"wrench": "Розвідний ключ", "jack": "Домкрат", "planks": "Дошки", "can": "Консерва", "filter_body": "Корпус фільтра"}
+const ITEM_NAMES := {"wrench": "Розвідний ключ", "jack": "Домкрат", "planks": "Дошки", "can": "Консерва", "filter_body": "Корпус фільтра",
+		"hook": "Гак", "clamp": "Хомут", "rag": "Ганчірка", "straps": "Ремені"}
 
 var flags := {}
 var inv := {"wrench": 1}

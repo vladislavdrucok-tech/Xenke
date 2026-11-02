@@ -17,6 +17,8 @@ var hp := 3
 var dir := -1
 var bait_x := 0.0
 var walk := 0.0
+## Busy with a washer drum: ignores the hero walking right past (a tin is different: it still bites if bumped).
+var deaf := false
 @onready var body: SpriteActor = $Body
 
 const NOTICE_SLEEP := 46.0
@@ -35,6 +37,7 @@ func _ready() -> void:
 
 func reset() -> void:
 	position = Vector2(home, floor_y)
+	deaf = false
 	st = "sleep" if st != "gone" else "gone"
 	hp = 3 if st != "gone" else 0
 	visible = st != "gone"
@@ -74,6 +77,7 @@ func finish() -> void:
 		Game.take("can")
 		bait_x = clampf(global_position.x + signf(global_position.x - hero.global_position.x) * 90.0, min_x, max_x)
 		st = "distracted"
+		deaf = false
 		t = 7.0
 		Game.note("Кроулера відволікли консервою — він шукає їжу, а не тебе.")
 	super.finish()
@@ -87,6 +91,15 @@ func _take_hit() -> void:
 	if hp <= 0:
 		st = "flee"
 		Game.note("Кроулер утік після трьох ударів ключем.")
+
+## A running washer drum: every crawler that hears it runs there and gnaws at the noise for a while.
+func lure(x: float, secs: float) -> void:
+	if st in ["gone", "flee", "hit"] or absf(x - global_position.x) > 420.0:
+		return
+	st = "distracted"
+	bait_x = clampf(x, min_x, max_x)
+	t = secs
+	deaf = true
 
 ## Loud work nearby (a cart, a hammered door) wakes it up.
 func noise(x: float) -> void:
@@ -143,7 +156,8 @@ func _physics_process(delta: float) -> void:
 				body.frame = 4 if int(t * 3.0) % 2 == 0 else 5
 			if t <= 0.0:
 				st = "patrol"
-			elif d < 22.0:
+				deaf = false
+			elif d < 22.0 and not deaf:
 				_alert(toward)
 		"hit":
 			body.frame = body.pose("hit", 5)

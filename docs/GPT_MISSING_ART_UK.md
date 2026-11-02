@@ -240,17 +240,17 @@ warm lamp light from the upper left. 1024x1024, solid background colour #1a242c.
 
 #### P2. Сава — аркуш рухів
 - **Файл:** `P2_sava_sheet.png`.
-- **Хто це:** Сава — старший у поселенні біля пральні, приблизно 60 років.
-  - Широкоплечий, сива коротка борода, лисина.
-  - Довгий латаний плащ кольору хакі, шарф, окуляри на шнурку, палиця-посох.
+- **Хто це:** Сава — **торговка** (жінка) з поселення біля пральні, близько 50 років; напарниця Назара. Обережна, недовірлива до чужих.
+  - Хустка на голові, обвітрене обличчя, кілька пасом сивого волосся.
+  - Практичний одяг із багатьма кишенями, сумка через плече, мотузки й дрібні інструменти на поясі.
 - **Референс масштабу й подачі:** `art/rest/laundry_mission/A166.png` (Назар).
 - **Формат:** 1536×1024, 4×2.
-- **Кадри:** хода ×4 · стоїть · говорить (жест рукою) · схрестив руки · показує вперед.
+- **Кадри:** хода ×4 · стоїть · говорить (жест рукою) · схрестила руки · показує вперед.
 
 ```
 Pixel art character sprite sheet for a 2D side-scrolling game, same scale, framing and style as the attached sheet.
-Character: Sava, about 60, elder of a survivor settlement: broad shoulders, short grey beard, bald head, long patched khaki coat, scarf,
-glasses on a cord, wooden walking staff.
+Character: Sava, a woman of about 50, a cautious trader from a survivor settlement: headscarf, weathered face, a few grey strands of hair,
+practical clothes with many pockets, a bag across the shoulder, ropes and small tools on her belt.
 Layout: 1536x1024, exactly 4 columns x 2 rows of equal cells, one full-body pose per cell, feet on the same baseline, facing right, strict side view.
 Frames: 4 walk cycle frames; idle; talking with a hand gesture; arms crossed; pointing ahead.
 Transparent background. No text, no ground, no shadows, no grid lines.

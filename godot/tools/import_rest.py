@@ -41,6 +41,18 @@ def states(aid,name,n,world_h):
     for i,p in enumerate(parts):
         canvas=Image.new('RGBA',(W,H));canvas.alpha_composite(p,((W-p.width)//2,H-p.height));scaled(canvas,k).save(out/f'{name}_{i}.png')
     PROPS[name]={'states':len(parts),'w':round(W*k/PX,1),'h':round(H*k/PX,1),'src':aid}
+def states_hinge(aid,name,n,world_w):
+    """States that turn about a hinge at the bottom-left (the emergency bridge: raised / lowered)."""
+    im=load(aid);parts=[]
+    for x0,x1 in groups(im,n):
+        c=im.crop((x0,0,x1,im.height));c=c.crop(c.getbbox());parts.append(c)
+    W=max(p.width for p in parts);H=max(p.height for p in parts);k=world_w*PX/W
+    for i,p in enumerate(parts):
+        canvas=Image.new('RGBA',(W,H));canvas.alpha_composite(p,(0,H-p.height));scaled(canvas,k).save(out/f'{name}_{i}.png')
+    PROPS[name]={'states':len(parts),'w':round(W*k/PX,1),'h':round(H*k/PX,1),'src':aid,'anchor':'hinge'}
+def portrait(aid,name):
+    im=Image.open(next(src.glob(f'*/{aid}.png'))).convert('RGB');s=min(im.size)
+    im.crop(((im.width-s)//2,(im.height-s)//2,(im.width+s)//2,(im.height+s)//2)).resize((256,256),Image.Resampling.LANCZOS).save(out/f'portrait_{name}.png')
 def single(aid,name,world_h=None,world_w=None):
     im=load(aid);im=im.crop(im.getbbox());k=(world_h*PX/im.height) if world_h else (world_w*PX/im.width)
     scaled(im,k).save(out/f'{name}_0.png');PROPS[name]={'states':1,'w':round(im.width*k/PX,1),'h':round(im.height*k/PX,1),'src':aid}
@@ -83,6 +95,8 @@ if __name__=='__main__':
     character('A161','crawler',3,2)    # six motion phases
     character('A108','mira',4,2)       # 0-3 walk, 4 idle, 5 reach, 6 crouch, 7 point (extra moves: P3 via import_new.py)
     character('A127','pavlo',4,2)      # 0-3 walk, 4 seed packet, 5 crouch, 6 watering, 7 bend
+    character('A171','yana',4,2)       # 0-3 walk, 4 measuring cup, 5 notebook, 6 reach, 7 crouch
+    portrait('A177','yana')
     # Props with states (world heights in units; the hero is 70).
     states('A158','laundry_door',2,92); states('A156','valve',2,40); states('A164','jack',2,30)
     states('A160','cart',2,44); states('A163','cargo_gate',2,112); states('A167','gauge',3,16)
@@ -91,6 +105,11 @@ if __name__=='__main__':
     single('A157','filter_body',world_h=44); single('A159','walkway',world_w=300); single('A113','floor_bunker',world_w=420)
     single('A114','floor_city',world_w=420); single('A110','ladder',world_h=110); single('A112','wrench',world_h=20)
     # Backgrounds (one layer each, opaque).
+    # Extended laundry mission (approach, drainage plan, delivery, return to the Station).
+    states('A121','generator',2,34); states('A187','vent',2,20); states('A195','cabinet',2,72); states('A118','purifier',3,52)
+    states('A136','lantern',2,22); states_hinge('A206','em_bridge',2,112)
+    single('A170','clamp',world_h=14); single('A119','workbench',world_h=48); single('A120','cartridge',world_h=20)
+    background('A029','bg_court',480); background('A174','bg_station',300); background('A116','bg_workshop',300)
     background('A014','bg_street',480); background('A165','bg_laundry',300); background('A026','bg_yard',480)
     (data/'rest_props.json').write_text(json.dumps(PROPS,indent=1,ensure_ascii=False))
     (data/'rest_chars.json').write_text(json.dumps(CHARS,separators=(',',':')))

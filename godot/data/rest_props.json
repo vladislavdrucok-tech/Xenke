@@ -107,6 +107,79 @@
   "h": 20.0,
   "src": "A112"
  },
+ "generator": {
+  "states": 2,
+  "w": 47.7,
+  "h": 34.0,
+  "src": "A121"
+ },
+ "vent": {
+  "states": 2,
+  "w": 41.8,
+  "h": 20.0,
+  "src": "A187"
+ },
+ "cabinet": {
+  "states": 2,
+  "w": 48.1,
+  "h": 72.0,
+  "src": "A195"
+ },
+ "purifier": {
+  "states": 3,
+  "w": 62.5,
+  "h": 52.0,
+  "src": "A118"
+ },
+ "lantern": {
+  "states": 2,
+  "w": 8.8,
+  "h": 22.0,
+  "src": "A136"
+ },
+ "em_bridge": {
+  "states": 2,
+  "w": 112.0,
+  "h": 111.3,
+  "src": "A206",
+  "anchor": "hinge"
+ },
+ "clamp": {
+  "states": 1,
+  "w": 21.9,
+  "h": 14.0,
+  "src": "A170"
+ },
+ "workbench": {
+  "states": 1,
+  "w": 78.6,
+  "h": 48.0,
+  "src": "A119"
+ },
+ "cartridge": {
+  "states": 1,
+  "w": 18.7,
+  "h": 20.0,
+  "src": "A120"
+ },
+ "bg_court": {
+  "states": 0,
+  "w": 1440.0,
+  "h": 480,
+  "src": "A029"
+ },
+ "bg_station": {
+  "states": 0,
+  "w": 450.0,
+  "h": 300,
+  "src": "A174"
+ },
+ "bg_workshop": {
+  "states": 0,
+  "w": 450.0,
+  "h": 300,
+  "src": "A116"
+ },
  "bg_street": {
   "states": 0,
   "w": 1440.0,

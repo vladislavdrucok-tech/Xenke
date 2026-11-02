@@ -28,7 +28,7 @@ var hint_t := 0.0
 var goal_panel: PanelContainer
 
 ## Portraits by character id: the new P1 portraits (assets/new/portraits) win; until they arrive, the old ones.
-const OLD_FACES := {"einstein": "res://assets/portrait-einstein.webp", "mira": "res://assets/portrait-mira.webp"}
+const OLD_FACES := {"einstein": "res://assets/portrait-einstein.webp", "mira": "res://assets/portrait-mira.webp", "yana": "res://assets/rest/portrait_yana.png"}
 const NAMES := {"nazar": "НАЗАР", "einstein": "ЕЙНШТЕЙН", "sava": "САВА", "mira": "МІРА", "pavlo": "ПАВЛО", "yana": "ЯНА"}
 var hint_icon: TextureRect
 var heart_icon: TextureRect

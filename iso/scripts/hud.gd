@@ -487,12 +487,24 @@ func _bubble(h: Dictionary) -> void:
 		for i in 3:
 			overlay.draw_rect(Rect2(p.x - 8 + i * 6, p.y - 18, 3, 3), Color(0.2, 0.18, 0.15))
 		return
-	var text: String = h.text
-	var w := 34.0 + font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+	var items: Array = h.items
+	var widths := []
+	var w := 10.0
+	for it in items:
+		var tw: float = 26.0 + font.get_string_size(it.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+		widths.append(tw)
+		w += tw + 6.0
 	var r2 := Rect2(p.x - w / 2.0, p.y - 34, w, 26)
-	var ok: bool = h.ok
+	var all_ok := true
+	for it in items:
+		all_ok = all_ok and it.ok
+	var edge := Color("#e8f0e0") if all_ok else Color("#e8dcc0")
 	overlay.draw_rect(r2, Color(0.1, 0.12, 0.1, 0.9))
-	overlay.draw_rect(r2, Color("#e8f0e0") if ok else Color("#e8dcc0"), false, 2)
-	overlay.draw_colored_polygon(PackedVector2Array([Vector2(p.x - 6, r2.end.y), Vector2(p.x + 6, r2.end.y), Vector2(p.x, r2.end.y + 7)]), Color("#e8f0e0") if ok else Color("#e8dcc0"))
-	icon(overlay, h.icon, Rect2(r2.position.x + 5, r2.position.y + 4, 18, 18))
-	overlay.draw_string(font, Vector2(r2.position.x + 27, r2.position.y + 19), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#8ee07a") if ok else Color("#ffd08a"))
+	overlay.draw_rect(r2, edge, false, 2)
+	overlay.draw_colored_polygon(PackedVector2Array([Vector2(p.x - 6, r2.end.y), Vector2(p.x + 6, r2.end.y), Vector2(p.x, r2.end.y + 7)]), edge)
+	var x := r2.position.x + 6
+	for k in items.size():
+		var it: Dictionary = items[k]
+		icon(overlay, it.icon, Rect2(x, r2.position.y + 4, 18, 18))
+		overlay.draw_string(font, Vector2(x + 22, r2.position.y + 19), it.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#8ee07a") if it.ok else Color("#ffd08a"))
+		x += widths[k] + 6.0

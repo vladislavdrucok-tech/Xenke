@@ -68,6 +68,104 @@ def tiled_fill(a, mask, patch):
     ys, xs = np.nonzero(mask)
     a[ys, xs] = p[(ys - y0) % ph, (xs - x0) % pw]
 
+PAVING_SRC = [(420, 476, 598, 610), (604, 622, 790, 660), (752, 430, 848, 545), (440, 610, 520, 650)]   # clean open paving
+
+def patch_fill(a, mask, block=26, ring=5, step=2):
+    """Fills holes block by block (top-left first) with patches of clean paving: for each block the source is the spot
+    in PAVING_SRC whose surroundings match what is already around the block, so joints and stones continue."""
+    H, W = mask.shape
+    remaining = mask.copy()
+    af = a.astype(np.float32)
+    ok = np.zeros(mask.shape, bool)
+    for x0, y0, x1, y1 in PAVING_SRC:
+        ok[y0:y1, x0:x1] = True
+    ok &= ~ndimage.binary_dilation(mask, iterations=3)
+    ys, xs = np.nonzero(mask)
+    pad = ring + 1
+    for by in range(ys.min(), ys.max() + 1, block):
+        for bx in range(xs.min(), xs.max() + 1, block):
+            cell = np.zeros(mask.shape, bool)
+            cell[by:by + block, bx:bx + block] = True
+            reg = cell & remaining
+            if not reg.any():
+                continue
+            ctx = ndimage.binary_dilation(reg, iterations=ring) & ~remaining
+            y0, y1 = max(0, by - pad), min(H, by + block + pad)
+            x0, x1 = max(0, bx - pad), min(W, bx + block + pad)
+            r, c = reg[y0:y1, x0:x1], ctx[y0:y1, x0:x1]
+            tgt = af[y0:y1, x0:x1]
+            h, w = y1 - y0, x1 - x0
+            best, bo = None, None
+            for sx0, sy0, sx1, sy1 in PAVING_SRC:
+                for sy in range(sy0, sy1 - h + 1, step):
+                    for sx in range(sx0, sx1 - w + 1, step):
+                        if not ok[sy:sy + h, sx:sx + w][r | c].all():
+                            continue
+                        src = af[sy:sy + h, sx:sx + w]
+                        d = float(((src[c] - tgt[c]) ** 2).mean()) if c.any() else 0.0
+                        if best is None or d < best:
+                            best, bo = d, (sy, sx)
+            if bo is None:
+                continue
+            sy, sx = bo
+            blk = a[y0:y1, x0:x1]
+            blk[r] = a[sy:sy + h, sx:sx + w][r]
+            af[y0:y1, x0:x1][r] = blk[r]
+            remaining &= ~reg
+
+def offset_fill(a, mask, avoid, search=260, step=3, fallback=None):
+    """Fills each hole with a copy of the picture from somewhere nearby, at the offset whose surroundings match the
+    hole's own surroundings best: the paving's joints then continue through the filled place instead of a pasted tile.
+    `avoid`: places that must not be copied from (other holes, figures)."""
+    lab, n = ndimage.label(mask)
+    af = a.astype(np.float32)
+    H, W = mask.shape
+    for i in range(1, n + 1):
+        hole = lab == i
+        ring = ndimage.binary_dilation(hole, iterations=7) & ~hole
+        ys, xs = np.nonzero(hole | ring)
+        y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+        hr, rr = hole[y0:y1, x0:x1], ring[y0:y1, x0:x1]
+        target = af[y0:y1, x0:x1]
+        best, bo = None, (0, 0)
+        for dy in range(-search, search + 1, step):
+            for dx in range(-search, search + 1, step):
+                if abs(dy) < 20 and abs(dx) < 20:
+                    continue
+                sy0, sx0 = y0 + dy, x0 + dx
+                if sy0 < 0 or sx0 < 0 or sy0 + (y1 - y0) > H or sx0 + (x1 - x0) > W:
+                    continue
+                if avoid[sy0:sy0 + (y1 - y0), sx0:sx0 + (x1 - x0)][hr | rr].any():
+                    continue
+                src = af[sy0:sy0 + (y1 - y0), sx0:sx0 + (x1 - x0)]
+                d = float(((src[rr] - target[rr]) ** 2).mean())
+                if best is None or d < best:
+                    best, bo = d, (dy, dx)
+        if best is None and fallback is not None:
+            # Nowhere fully on open paving: allow any place that is not a hole.
+            for dy in range(-search, search + 1, step):
+                for dx in range(-search, search + 1, step):
+                    if abs(dy) < 20 and abs(dx) < 20:
+                        continue
+                    sy0, sx0 = y0 + dy, x0 + dx
+                    if sy0 < 0 or sx0 < 0 or sy0 + (y1 - y0) > H or sx0 + (x1 - x0) > W:
+                        continue
+                    if fallback[sy0:sy0 + (y1 - y0), sx0:sx0 + (x1 - x0)][hr | rr].any():
+                        continue
+                    src = af[sy0:sy0 + (y1 - y0), sx0:sx0 + (x1 - x0)]
+                    d = float(((src[rr] - target[rr]) ** 2).mean())
+                    if best is None or d < best:
+                        best, bo = d, (dy, dx)
+        print('  fill hole %d at (%d,%d) %dx%d from offset %s, mismatch %.0f' % (i, x0, y0, x1 - x0, y1 - y0, bo, best if best is not None else -1))
+        dy, dx = bo
+        src = a[y0 + dy:y1 + dy, x0 + dx:x1 + dx]
+        blk = a[y0:y1, x0:x1]
+        blk[hr] = src[hr]
+        # Feather the seam over two pixels.
+        edge = ndimage.binary_dilation(hr, iterations=2) & ~ndimage.binary_erosion(hr, iterations=1)
+        mix = (0.5 * blk[edge].astype(np.float32) + 0.5 * src[edge].astype(np.float32)).astype(np.uint8)
+        blk[edge] = mix
+
 def _figure_mask(img, box, grow):
     x0, y0, x1, y1 = box
     m = cc._flood_fg(np.asarray(img.crop(box).convert('RGB')).astype(int), 58) | cc.grab(img, box)
@@ -91,10 +189,19 @@ def clean(img):
     dr.ellipse((688, 592, 784, 620), fill=255)                                        # the researcher's
     dr.polygon(BUBBLE_PAVING, fill=255)
     hole |= np.asarray(extra) > 0
-    tiled_fill(a, hole, COBBLE)
-    edge = ndimage.binary_dilation(hole, iterations=2) & ~ndimage.binary_erosion(hole, iterations=2)
-    blur = np.asarray(Image.fromarray(a).filter(ImageFilter.GaussianBlur(1.0)))
-    a[edge] = blur[edge]
+    # Copy only from open paving: the walk area without objects, figures and other holes.
+    pav = Image.new('L', img.size, 0)
+    dp = ImageDraw.Draw(pav)
+    dp.polygon(WALK, fill=255)
+    for poly in OBSTACLES.values():
+        dp.polygon(poly, fill=0)
+    for poly, base in OCCLUDERS.values():
+        dp.polygon(poly, fill=0)
+    avoid = ~(np.asarray(pav) > 0) | ndimage.binary_dilation(hole, iterations=9) | _figure_mask(img, FIGURES['porter'], 6)
+    avoid = ndimage.binary_dilation(avoid, iterations=2)
+    fallback = ndimage.binary_dilation(hole, iterations=9) | _figure_mask(img, FIGURES['porter'], 6)
+    # The purifier's bubble sits over its pipes, not only paving: allow it to borrow from anywhere on the plaza edge.
+    patch_fill(a, hole)
     # The porter by the storage stays painted: he is the storekeeper the hero talks to.
     hm = np.zeros(a.shape[:2], np.uint8)
     for x0, y0, x1, y1 in HUD:          # the painted interface

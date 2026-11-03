@@ -227,7 +227,7 @@ func can_stand(p: Vector2) -> bool:
 ## Moves an actor, sliding along edges: full step, else along x, else along y.
 func _move(a: Actor, v: Vector2, delta: float) -> void:
 	var step := v * SPEED * delta
-	a.moving = step.length() > 0.5
+	a.moving = v.length() > 0.05      # by the stick, not the step: at 120 Hz a gentle tilt makes steps under a pixel
 	if not a.moving:
 		return
 	a.dir = v
@@ -238,9 +238,16 @@ func _move(a: Actor, v: Vector2, delta: float) -> void:
 	a.moving = false
 
 func _follow(delta: float) -> void:
-	var target := mira.position + Vector2(-48 if mira.facing_right else 48, 16)
+	var target := mira.position
 	if mira.moving and trail.size() > 6:
 		target = trail[mini(trail.size() - 1, 9)]
+	else:
+		# Stopped: a free place beside and a little in front of the leader, never on top of her.
+		var back := -1.0 if mira.facing_right else 1.0
+		for o in [Vector2(56 * back, 18), Vector2(-56 * back, 18), Vector2(56 * back, -14), Vector2(0, 40), Vector2(-56 * back, -14)]:
+			if can_stand(mira.position + o):
+				target = mira.position + o
+				break
 	var to := target - einstein.position
 	if to.length() > 260.0:
 		einstein.position = target if can_stand(target) else mira.position
@@ -250,10 +257,14 @@ func _follow(delta: float) -> void:
 	else:
 		einstein.moving = false
 		einstein.dir = Vector2(1 if mira.position.x > einstein.position.x else -1, 0)
-	# Keep apart from the leader.
+	# Keep apart from the leader (their sprites are ~60 px wide).
 	var d := einstein.position - mira.position
-	if d.length() < 28.0 and d.length() > 0.1 and can_stand(einstein.position + d.normalized() * 2.0):
-		einstein.position += d.normalized() * 2.0
+	if d.length() < 48.0:
+		var away := d.normalized() if d.length() > 0.5 else Vector2(-1, 0.3).normalized()
+		for v in [away, Vector2(away.x, 0).normalized(), Vector2(0, signf(away.y) if away.y != 0.0 else 1.0)]:
+			if v.length() > 0.1 and can_stand(einstein.position + v * 3.0):
+				einstein.position += v * 3.0
+				break
 
 ## Objects between the camera and a character (the character's feet above the object's base line, sprites
 ## overlapping) fade, so nobody is lost behind the purifier, the stall or the crates.
@@ -278,8 +289,10 @@ func info(id: String) -> Dictionary:
 		"storage":
 			return {"verb": "Склад", "ok": true, "talk": true}
 		"workbench":
-			var ok := can_pay(KIT)
-			return {"verb": "Верстак", "ok": true, "bubble": {"icon": "kit", "text": "%d/%d" % [mini(inv("scrap"), KIT.scrap), KIT.scrap], "ok": ok}}
+			var items := []
+			for k in KIT:
+				items.append({"icon": k, "text": "%d/%d" % [mini(inv(k), int(KIT[k])), KIT[k]], "ok": inv(k) >= int(KIT[k])})
+			return {"verb": "Верстак", "ok": true, "bubble": {"items": items}}
 		"purifier":
 			if S.flags.get("repaired", false):
 				return {}
@@ -567,7 +580,7 @@ func hints() -> Array:
 	# The workshop master (the workbench) always shows his talk mark; a repaired purifier shows what it has made.
 	out.append({"p": _screen(Vector2(1130, 262)), "kind": "talk"})
 	if S.flags.get("repaired", false):
-		out.append({"p": _screen(anchors.purifier), "kind": "need", "icon": "water", "text": "%d/%d" % [int(S.tank), TANK_MAX], "ok": true})
+		out.append({"p": _screen(anchors.purifier), "kind": "need", "items": [{"icon": "water", "text": "%d/%d" % [int(S.tank), TANK_MAX], "ok": true}]})
 	for id in anchors:
 		var i: Dictionary = info(id)
 		if i.is_empty() or id == "basin":
@@ -579,7 +592,8 @@ func hints() -> Array:
 			continue
 		if i.has("bubble") and (id == here or id in ["purifier", "bed"] or (id == "scrap" and S.flags.get("inspected", false))):
 			var b: Dictionary = i.bubble
-			out.append({"p": p, "kind": "need", "icon": b.icon, "text": b.text, "ok": b.get("ok", false)})
+			var items: Array = b.get("items", [{"icon": b.get("icon", ""), "text": b.get("text", ""), "ok": b.get("ok", false)}])
+			out.append({"p": p, "kind": "need", "items": items})
 	return out
 
 func progress() -> Dictionary:

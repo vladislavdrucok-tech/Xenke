@@ -7,3 +7,4 @@ Afterfall_*.apk
 godot/tools/__pycache__/
 squad/tools/__pycache__/
 iso/tools/__pycache__/
+builds/*.idsig

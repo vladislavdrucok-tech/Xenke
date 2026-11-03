@@ -2,3 +2,7 @@
 Afterfall_*.zip
 qa/out/
 Afterfall_*.apk
+
+# Python bytecode from the art tools
+godot/tools/__pycache__/
+squad/tools/__pycache__/

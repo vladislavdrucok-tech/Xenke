@@ -275,6 +275,24 @@
     700,
     478
    ]
+  ],
+  "keeper": [
+   [
+    432.5,
+    720
+   ],
+   [
+    454.5,
+    710
+   ],
+   [
+    476.5,
+    720
+   ],
+   [
+    454.5,
+    732
+   ]
   ]
  },
  "spots": {
@@ -291,8 +309,8 @@
    528
   ],
   "storage": [
-   450,
-   738
+   502,
+   744
   ],
   "purifier": [
    790,
@@ -361,7 +379,14 @@
    "w": 55,
    "h": 100,
    "hip": 73,
-   "split": 32.7
+   "split": 32.7,
+   "walk": [
+    "res://assets/yard/mira_walk_0.png",
+    "res://assets/yard/mira_walk_1.png",
+    "res://assets/yard/mira_walk_2.png",
+    "res://assets/yard/mira_walk_3.png"
+   ],
+   "idle_frame": 1
   },
   "einstein": {
    "tex": "res://assets/yard/einstein.png",
@@ -369,6 +394,25 @@
    "h": 114,
    "hip": 94,
    "split": 42.0
+  }
+ },
+ "overlays": {
+  "purifier_broken": {
+   "x": 780,
+   "y": 402,
+   "tex": "res://assets/yard/purifier_broken_bg.png"
+  }
+ },
+ "npcs": {
+  "pavlo": {
+   "tex": "res://assets/yard/npc_pavlo.png",
+   "x": 1279.0,
+   "y": 692
+  },
+  "keeper": {
+   "tex": "res://assets/yard/npc_keeper.png",
+   "x": 454.5,
+   "y": 726
   }
  }
 }

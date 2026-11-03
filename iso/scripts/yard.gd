@@ -61,6 +61,16 @@ func _ready() -> void:
 	bg.centered = false
 	bg.z_index = -10
 	add_child(bg)
+	# States painted over the ground (the broken purifier with its dropped wheel and dry basin, from S2a).
+	for name in D.get("overlays", {}):
+		var o: Dictionary = D.overlays[name]
+		var ov := Sprite2D.new()
+		ov.texture = load(o.tex)
+		ov.centered = false
+		ov.position = Vector2(o.x, o.y)
+		ov.z_index = -9
+		ov.name = "Overlay_" + name
+		add_child(ov)
 	sorted = Node2D.new()
 	sorted.y_sort_enabled = true
 	add_child(sorted)
@@ -73,6 +83,23 @@ func _ready() -> void:
 		s.offset = Vector2(0, float(o.y) - float(o.base))
 		sorted.add_child(s)
 		occluders[name] = {"sprite": s, "rect": Rect2(o.x, o.y, s.texture.get_width(), s.texture.get_height()), "base": float(o.base), "a": 1.0}
+	# People of the yard (kept from the concept until their own animated sheets come): standing where they work.
+	for name in D.get("npcs", {}):
+		var n: Dictionary = D.npcs[name]
+		var holder := Node2D.new()
+		holder.position = Vector2(n.x, n.y)
+		holder.name = "Npc_" + name
+		var sh := Sprite2D.new()
+		sh.texture = Actor.shadow_tex()
+		sh.scale = Vector2(0.8, 0.28)
+		sh.position = Vector2(0, -2)
+		holder.add_child(sh)
+		var sp := Sprite2D.new()
+		sp.texture = load(n.tex)
+		sp.centered = false
+		sp.offset = Vector2(-sp.texture.get_width() / 2.0, -sp.texture.get_height())
+		holder.add_child(sp)
+		sorted.add_child(holder)
 	mira = _actor("mira", true)
 	einstein = _actor("einstein", false)
 	camera = Camera2D.new()
@@ -125,7 +152,13 @@ func _keys() -> void:
 func _actor(name: String, faces_right: bool) -> Actor:
 	var a := Actor.new()
 	var c: Dictionary = D.chars[name]
-	a.setup(load(c.tex), faces_right, float(c.get("hip", c.h * 0.72)), float(c.get("split", c.w / 2.0)))
+	if c.has("walk"):
+		var frames := []
+		for p in c.walk:
+			frames.append(load(p))
+		a.setup_frames(frames, true, int(c.get("idle_frame", 0)))
+	else:
+		a.setup(load(c.tex), faces_right, float(c.get("hip", c.h * 0.72)), float(c.get("split", c.w / 2.0)))
 	a.stepped.connect(_dust)
 	sorted.add_child(a)
 	return a
@@ -206,6 +239,9 @@ func _show_purifier() -> void:
 	var s: Sprite2D = occluders.purifier.sprite
 	s.texture = load("res://assets/yard/purifier.png" if on else "res://assets/yard/purifier_broken.png")
 	drops.emitting = on
+	var ov := get_node_or_null("Overlay_purifier_broken")
+	if ov:
+		ov.visible = not on
 
 func _show_bed() -> void:
 	var s: Sprite2D = occluders.bed.sprite
@@ -603,10 +639,9 @@ func _screen(p: Vector2) -> Vector2:
 func hints() -> Array:
 	var out := []
 	var anchors := {"scrap": Vector2(1104, 430), "workbench": Vector2(1018, 300), "purifier": Vector2(958, 476), "basin": Vector2(1112, 586),
-		"bed": Vector2(948, 650), "storage": Vector2(462, 600), "pavlo": Vector2(1290, 580)}
+		"bed": Vector2(948, 650), "storage": Vector2(462, 604), "pavlo": Vector2(1286, 606)}
 	var here := _spot_here()
-	# The workshop master (the workbench) always shows his talk mark; a repaired purifier shows what it has made.
-	out.append({"p": _screen(Vector2(1130, 262)), "kind": "talk"})
+	# A repaired purifier shows what it has made.
 	if S.flags.get("repaired", false):
 		out.append({"p": _screen(anchors.purifier), "kind": "need", "items": [{"icon": "water", "text": "%d/%d" % [int(S.tank), TANK_MAX], "ok": true}]})
 	for id in anchors:
@@ -721,7 +756,7 @@ func _demo() -> void:
 	await _talk()
 	await _go([Vector2(740, 560), Vector2(800, 500), Vector2(1000, 510), Vector2(1104, 528)])
 	await _use(2.4)
-	await _go([Vector2(1000, 510), Vector2(800, 500), Vector2(620, 560), Vector2(590, 690), Vector2(450, 738)])
+	await _go([Vector2(1000, 510), Vector2(800, 500), Vector2(620, 560), Vector2(590, 700), Vector2(502, 744)])
 	await _use(0.5)
 	await _shot(dir, "03-storage")
 	_storage_take()

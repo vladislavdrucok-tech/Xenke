@@ -57,7 +57,7 @@ OBSTACLES = {   # collision footprints (bases)
     'planter': [(598, 470), (640, 440), (748, 452), (750, 470), (700, 478)],
 }
 SPOTS = {   # interaction points: where the hero stands, what it is
-    'pavlo': (1150, 600), 'workbench': (1010, 394), 'scrap': (1104, 528), 'storage': (450, 738), 'purifier': (790, 640),
+    'pavlo': (1150, 600), 'workbench': (1010, 394), 'scrap': (1104, 528), 'storage': (502, 744), 'purifier': (790, 640),
     'basin': (1124, 676), 'bed': (796, 762), 'shelter': (470, 530)}
 
 def tiled_fill(a, mask, patch):
@@ -283,19 +283,105 @@ def legs(im):
         return round(h * 0.72), round(w / 2.0, 1)
     return int(top) - 1, round(float(np.mean(centres)), 1)
 
+# ---------------------------------------------------------------- the owner's art for the start (docs/START_ART_UK.md)
+START = root / 'art/start'
+NPCS = {'pavlo': (1236, 576, 1346, 704), 'keeper': (412, 600, 508, 732)}   # painted people kept as living background
+WHEEL_AREA = [(800, 600), (880, 618), (884, 676), (820, 680), (796, 640)]   # where S2a drops the purifier's valve wheel
+
+def diff_cut(con, s1, box, thr=70):
+    """A painted figure as what the concept has and the clean yard S1 does not: the difference of the two (slightly
+    blurred, so the small generative drift between them does not count), without the figure's painted shadow."""
+    cb = np.asarray(con.filter(ImageFilter.GaussianBlur(1.5))).astype(int)
+    sb = np.asarray(s1.filter(ImageFilter.GaussianBlur(1.5))).astype(int)
+    x0, y0, x1, y1 = box
+    m = np.abs(cb - sb).sum(2)[y0:y1, x0:x1] > thr
+    c = np.asarray(con).astype(float)[y0:y1, x0:x1]
+    s = np.asarray(s1).astype(float)[y0:y1, x0:x1]
+    ratio = c / np.maximum(s, 1.0)
+    shadow = (ratio.max(2) < 0.92) & (ratio.min(2) > 0.3) & ((ratio.max(2) - ratio.min(2)) < 0.12)
+    # The painted shadow differs from S1 too: keep what the figure's dark outline encloses (flood from the box edges
+    # through everything that is not outline), and drop pale shadow-only pixels outside it.
+    enclosed = ndimage.binary_dilation(cc._flood_fg(np.asarray(con)[y0:y1, x0:x1].astype(int), 58), iterations=1)
+    m &= enclosed | ~shadow
+    m = ndimage.binary_opening(m, iterations=1)
+
+    m = ndimage.binary_fill_holes(ndimage.binary_closing(m, iterations=2))
+    lab, n = ndimage.label(m)
+    if n > 1:
+        sizes = ndimage.sum(m, lab, range(1, n + 1)); m = lab == (1 + int(np.argmax(sizes)))
+    rgba = np.dstack([np.asarray(con)[y0:y1, x0:x1], np.where(m, 255, 0)]).astype(np.uint8)
+    im = Image.fromarray(rgba, 'RGBA')
+    bb = im.getbbox()
+    return im.crop(bb), (x0 + bb[0], y0 + bb[1])
+
+def walk_frames(src, cols, height):
+    """A strip of walking frames (S3a...): each cell trimmed, scaled so the figure is `height` px tall, and all put on
+    one canvas with the point between the feet at the bottom centre, so swapping frames never shifts the character."""
+    im = Image.open(src).convert('RGBA')
+    cw = im.width // cols
+    parts = []
+    for i in range(cols):
+        c = im.crop((i * cw, 0, (i + 1) * cw, im.height))
+        a = np.asarray(c)[..., 3] > 110
+        ys, xs = np.nonzero(a)
+        top, bot = ys.min(), ys.max()
+        upper = a[top:top + int((bot - top) * 0.55)]
+        ax = float(np.nonzero(upper)[1].mean())                   # body centre (head and torso), not the swinging legs
+        parts.append((c, ax, bot, bot - top))
+    k = height / float(np.mean([p[3] for p in parts]))
+    out = []
+    for c, ax, bot, h in parts:
+        bb = c.getbbox()
+        c = c.crop(bb)
+        ax -= bb[0]; bot -= bb[1]
+        s = c.resize((max(1, round(c.width * k)), max(1, round(c.height * k))), Image.Resampling.LANCZOS)
+        s.putalpha(s.getchannel('A').point(lambda v: 255 if v > 110 else 0))
+        out.append((s, ax * k, (bot + 1) * k))
+    half = int(max(max(ax, s.width - ax) for s, ax, f in out)) + 2
+    up = int(max(f for s, ax, f in out)) + 2
+    frames = []
+    for s, ax, f in out:
+        cv = Image.new('RGBA', (half * 2, up))
+        cv.alpha_composite(s, (round(half - ax), round(up - f)))
+        frames.append(cv)
+    return frames
+
 def main(debug=False):
     OUT.mkdir(parents=True, exist_ok=True)
     img = Image.open(SRC).convert('RGB')
-    bg = clean(img)
+    s1_path, s2a_path, s3a_path = START / 'S1_yard_clean.png', START / 'S2a_purifier_broken.png', START / 'S3a_mira_walk_SE.png'
+    have_s1 = s1_path.exists()
+    # S1 (the owner's clean yard) when it is there; otherwise the concept cleaned here.
+    bg = Image.open(s1_path).convert('RGB') if have_s1 else clean(img)
     bg.save(OUT / 'background.png')
-    data = {'size': list(img.size), 'walk': WALK, 'obstacles': OBSTACLES, 'spots': SPOTS, 'occluders': {}, 'chars': {}}
+    data = {'size': list(img.size), 'walk': WALK, 'obstacles': dict(OBSTACLES), 'spots': SPOTS, 'occluders': {}, 'chars': {},
+            'overlays': {}, 'npcs': {}}
     for name, (poly, base) in OCCLUDERS.items():
         piece, bb = cut_poly(bg, poly)
         piece.save(OUT / f'{name}.png')
         data['occluders'][name] = {'x': bb[0], 'y': bb[1], 'base': base, 'tex': f'res://assets/yard/{name}.png'}
     # States.
     pur = Image.open(OUT / 'purifier.png')
-    purifier_broken(pur).save(OUT / 'purifier_broken.png')
+    if s2a_path.exists():
+        # S2a: the broken purifier as the owner's picture. The piece the hero can walk behind, and under it a wider
+        # patch of S2a (purifier, dropped wheel, dry basin) on the ground layer with a soft edge, so where S2a's
+        # generative drift differs from S1 no seam shows.
+        s2a = Image.open(s2a_path).convert('RGB')
+        piece, bb = cut_poly(s2a, OCCLUDERS['purifier'][0])
+        piece.save(OUT / 'purifier_broken.png')
+        m = Image.new('L', s2a.size, 0)
+        dm = ImageDraw.Draw(m)
+        dm.polygon(OCCLUDERS['purifier'][0], fill=255)
+        dm.polygon(WHEEL_AREA, fill=255)
+        hard = ndimage.binary_dilation(np.asarray(m) > 0, iterations=8)
+        soft = ndimage.gaussian_filter(hard.astype(float), 3.0)
+        alpha = np.clip(soft * 1.6, 0, 1) * 255
+        ov = Image.fromarray(np.dstack([np.asarray(s2a), alpha]).astype(np.uint8), 'RGBA')
+        obb = Image.fromarray(alpha.astype(np.uint8)).getbbox()
+        ov.crop(obb).save(OUT / 'purifier_broken_bg.png')
+        data['overlays']['purifier_broken'] = {'x': obb[0], 'y': obb[1], 'tex': 'res://assets/yard/purifier_broken_bg.png'}
+    else:
+        purifier_broken(pur).save(OUT / 'purifier_broken.png')
     bed = Image.open(OUT / 'bed.png')
     bx, by = data['occluders']['bed']['x'], data['occluders']['bed']['y']
     inner = [(x - bx, y - by) for x, y in [(840, 700), (912, 660), (1058, 696), (986, 736)]]
@@ -304,15 +390,31 @@ def main(debug=False):
     # The background must not show the grown bed or the working purifier under their other states: paint the
     # broken purifier and the dry bed into the background too (the live sprites sit exactly on top).
     bgr = bg.convert('RGBA')
-    bgr.alpha_composite(purifier_broken(pur), (data['occluders']['purifier']['x'], data['occluders']['purifier']['y']))
+    if not s2a_path.exists():
+        bgr.alpha_composite(purifier_broken(pur), (data['occluders']['purifier']['x'], data['occluders']['purifier']['y']))
     bgr.alpha_composite(Image.open(OUT / 'bed_0.png'), (bx, by))
     bgr.convert('RGB').save(OUT / 'background.png')
-    # Characters (placeholders).
+    # Characters. Mira walks with the owner's S3a frames; the researcher is still the figure from the concept
+    # (cut by its difference from S1 when S1 is there), walking with split legs until his sheet arrives.
     for name in ('mira', 'einstein'):
         c = cc.union_cut(img, FIGURES[name])
         c.save(OUT / f'{name}.png')
         hip, split = legs(c)
         data['chars'][name] = {'tex': f'res://assets/yard/{name}.png', 'w': c.width, 'h': c.height, 'hip': hip, 'split': split}
+    if s3a_path.exists():
+        fr = walk_frames(s3a_path, 4, 104)
+        for i, f in enumerate(fr):
+            f.save(OUT / f'mira_walk_{i}.png')
+        data['chars']['mira']['walk'] = [f'res://assets/yard/mira_walk_{i}.png' for i in range(len(fr))]
+        data['chars']['mira']['idle_frame'] = 1
+    # People of the yard kept from the concept until their own sheets come (S5): Pavlo in the greenhouse, the storekeeper.
+    if have_s1:
+        for name, box in NPCS.items():
+            c, (x, y) = diff_cut(img, bg, box)
+            c.save(OUT / f'npc_{name}.png')
+            data['npcs'][name] = {'tex': f'res://assets/yard/npc_{name}.png', 'x': x + c.width / 2.0, 'y': y + c.height}
+        k = data['npcs']['keeper']
+        data['obstacles']['keeper'] = [(k['x'] - 22, k['y'] - 6), (k['x'], k['y'] - 16), (k['x'] + 22, k['y'] - 6), (k['x'], k['y'] + 6)]
     DATA.write_text(json.dumps(data, indent=1))
     if debug:
         dbg = bgr.convert('RGB')

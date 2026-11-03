@@ -55,6 +55,32 @@ func _part(region: Rect2, origin: Vector2) -> Sprite2D:
 	rig.add_child(s)
 	return s
 
+## Real walking frames (the owner's sheets, S3...): all on one canvas with the feet at the bottom centre.
+var walk: Array[Texture2D] = []
+var idle_frame := 0
+var dist := 0.0
+var _frame := -1
+
+func setup_frames(frames: Array, faces_right: bool, idle: int) -> void:
+	for f in frames:
+		walk.append(f)
+	idle_frame = idle
+	tex = walk[idle]
+	art_faces_right = faces_right
+	facing_right = faces_right
+	shadow = Sprite2D.new()
+	shadow.texture = shadow_tex()
+	shadow.scale = Vector2(0.9, 0.32)
+	shadow.position = Vector2(0, -2)
+	add_child(shadow)
+	rig = Node2D.new()
+	add_child(rig)
+	body = Sprite2D.new()
+	body.texture = tex
+	body.centered = false
+	body.offset = Vector2(-tex.get_width() / 2.0, -tex.get_height() + 2)
+	rig.add_child(body)
+
 ## hip_y / split_x: where the legs start and where they part, in pixels of the frame.
 func setup(t: Texture2D, faces_right: bool, hip_y: float, split_x: float) -> void:
 	tex = t
@@ -77,6 +103,9 @@ func setup(t: Texture2D, faces_right: bool, hip_y: float, split_x: float) -> voi
 	body = _part(Rect2(0, 0, w, hip + 1.0), Vector2(w / 2.0, hip))
 
 func animate(delta: float) -> void:
+	if not walk.is_empty():
+		_animate_frames(delta)
+		return
 	var speed := vel.length()
 	moving = speed > 6.0
 	working = maxf(0.0, working - delta)
@@ -123,6 +152,42 @@ func animate(delta: float) -> void:
 			body.rotation = 0.0
 			body.scale = Vector2(1.0, 1.0 + sin(t * 2.2 + position.x) * 0.015)
 	shadow.scale = Vector2(0.9 - (0.06 if moving and absf(sin(phase)) > 0.7 else 0.0), 0.32)
+
+## With real frames: the frame follows the distance walked (one frame per 15 px), so the feet never slide;
+## standing, the idle frame breathes; working, it bobs over the job.
+func _animate_frames(delta: float) -> void:
+	var speed := vel.length()
+	moving = speed > 6.0
+	working = maxf(0.0, working - delta)
+	if absf(vel.x) > 10.0:
+		facing_right = vel.x > 0.0
+	elif absf(dir.x) > 0.2 and not moving:
+		facing_right = dir.x > 0.0
+	rig.scale.x = 1.0 if facing_right == art_faces_right else -1.0
+	var t := Time.get_ticks_msec() / 1000.0
+	var f := idle_frame
+	if moving:
+		dist += speed * delta
+		f = floori(dist / 15.0) % walk.size()
+		if f != _frame and f % 2 == 0:
+			stepped.emit(global_position + Vector2(-5.0 if f == 0 else 5.0, 0))
+		body.position = Vector2(0, -absf(sin(dist / 15.0 * PI)) * 1.0)
+		body.rotation = 0.0
+		body.scale = Vector2.ONE
+	elif working > 0.0:
+		var k := absf(sin(t * 9.0))
+		body.position = Vector2(1.5 * k, 1.5 * k)
+		body.rotation = 0.1 * k
+		body.scale = Vector2(1.0, 1.0 - 0.03 * k)
+	else:
+		dist = 0.0
+		body.position = Vector2.ZERO
+		body.rotation = 0.0
+		body.scale = Vector2(1.0, 1.0 + sin(t * 2.2 + position.x) * 0.015)
+	if f != _frame:
+		_frame = f
+		body.texture = walk[f]
+	shadow.scale = Vector2(0.8, 0.3)
 
 ## Rectangle the sprite covers on screen (for fading what stands in front of it).
 func rect() -> Rect2:

@@ -194,3 +194,4 @@ func _animate() -> void:
 	elif land_t > 0.0:
 		f = body.pose("land", 6)
 	body.frame = f
+	body.shadow = 1.0 if is_on_floor() or not climb.is_empty() else 0.35

@@ -3,6 +3,7 @@ extends CanvasLayer
 ## health, journal (what changed in the world and why), touch controls, the mission-complete card.
 
 signal restart_requested
+signal light_toggled
 
 var font: FontFile
 var goal_title: Label
@@ -131,6 +132,18 @@ func _build() -> void:
 	journal_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	journal_scroll.add_child(journal_list)
 	jv.add_child(journal_scroll)
+	var light := Button.new()
+	light.name = "LightBtn"
+	light.add_theme_font_override("font", font)
+	light.add_theme_font_size_override("font_size", 9)
+	light.focus_mode = Control.FOCUS_NONE
+	light.text = _light_text()
+	light.pressed.connect(func():
+		Game.fancy_light = not Game.fancy_light
+		Game.save_settings()
+		light.text = _light_text()
+		light_toggled.emit())
+	jv.add_child(light)
 	jv.add_child(restart)
 	journal.add_child(jv)
 	add_child(journal)
@@ -189,6 +202,9 @@ func _build() -> void:
 	end_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	end_card.add_child(end_text)
 	add_child(end_card)
+
+func _light_text() -> String:
+	return "Об'ємне світло: %s" % ("увімк." if Game.fancy_light else "вимк. (швидше)")
 
 func layout() -> void:
 	var vs := get_viewport().get_visible_rect().size

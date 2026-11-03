@@ -17,12 +17,28 @@ var checkpoint := "start"
 var journal: Array[String] = []
 var started_ms := 0
 var play_time := 0.0
+## Version of the save that was loaded (1 = the short laundry of builds 0.2-0.3, 2 = the six-stage one).
+var loaded_version := 2
 
 func _ready() -> void:
 	started_ms = Time.get_ticks_msec()
+	load_settings()
 
 func _process(delta: float) -> void:
 	play_time += delta
+
+## Volumetric light (normal maps, lamps, light shafts). Kept apart from the mission save so a restart keeps it.
+var fancy_light := true
+
+func load_settings() -> void:
+	var c := ConfigFile.new()
+	if c.load("user://settings.cfg") == OK:
+		fancy_light = c.get_value("video", "fancy_light", true)
+
+func save_settings() -> void:
+	var c := ConfigFile.new()
+	c.set_value("video", "fancy_light", fancy_light)
+	c.save("user://settings.cfg")
 
 func has(flag: String) -> bool:
 	return flags.get(flag, false)
@@ -59,14 +75,15 @@ func reach_checkpoint(id: String) -> void:
 func save() -> void:
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify({"version": 1, "flags": flags, "inv": inv, "hp": hp, "checkpoint": checkpoint, "journal": journal, "time": play_time}))
+		f.store_string(JSON.stringify({"version": 2, "flags": flags, "inv": inv, "hp": hp, "checkpoint": checkpoint, "journal": journal, "time": play_time}))
 
 func load_save() -> bool:
 	if not FileAccess.file_exists(SAVE_PATH):
 		return false
 	var d = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
-	if typeof(d) != TYPE_DICTIONARY or d.get("version", 0) != 1:
+	if typeof(d) != TYPE_DICTIONARY or not int(d.get("version", 0)) in [1, 2]:
 		return false
+	loaded_version = int(d.version)
 	flags = d.get("flags", {})
 	inv = {}
 	for k in d.get("inv", {}):

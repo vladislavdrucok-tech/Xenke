@@ -28,6 +28,12 @@ var held_angle := 0.0:
 	set(v):
 		held_angle = v
 		queue_redraw()
+## Contact shadow under the feet (0 = none); the hero fades it while in the air.
+var shadow := 1.0:
+	set(v):
+		if not is_equal_approx(v, shadow):
+			shadow = v
+			queue_redraw()
 var tint := Color.WHITE:
 	set(v):
 		tint = v
@@ -58,16 +64,16 @@ func _load() -> void:
 	if _data.has(char_name):
 		_frames = _data[char_name].frames.duplicate()
 		_unit = _data[char_name].unit
-		_tex = load("res://assets/rest/%s.png" % char_name)
+		_tex = Art.tex("res://assets/rest/%s.png" % char_name)
 	elif extra.has("atlas") and ResourceLoader.exists(extra.atlas):
 		_frames = extra.frames.duplicate()
 		_unit = extra.unit
-		_tex = load(extra.atlas)
+		_tex = Art.tex(extra.atlas)
 		_names = extra.names
 	else:
 		return
 	if extra.has("extra") and ResourceLoader.exists(extra.extra):
-		_tex_extra = load(extra.extra)
+		_tex_extra = Art.tex(extra.extra)
 		var base := _frames.size()
 		for f in extra.frames:
 			var g: Dictionary = f.duplicate()
@@ -75,7 +81,7 @@ func _load() -> void:
 			_frames.append(g)
 		for n in extra.names:
 			_names[n] = base + int(extra.names[n])
-	_wrench = load("res://assets/rest/wrench_0.png")
+	_wrench = Art.tex("res://assets/rest/wrench_0.png")
 	queue_redraw()
 
 ## Index of a named frame ("jump_up", "climb_1", "sleep"...), or `fallback` when that picture has not arrived yet.
@@ -93,6 +99,9 @@ func _draw() -> void:
 		return
 	var f: Dictionary = _frames[frame]
 	var k := height / _unit
+	if shadow > 0.0:
+		var sw: float = clampf(f.w * k * 0.62, height * 0.35, height * 1.4)
+		draw_texture_rect(Art.shadow_tex(), Rect2(-sw / 2.0, -3.0, sw, 6.0), false, Color(1, 1, 1, shadow))
 	var sx := face * (-1 if art_faces_left else 1)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(sx * k, k))
 	var t: Texture2D = _tex_extra if f.get("extra", false) else _tex

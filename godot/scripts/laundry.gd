@@ -70,6 +70,7 @@ var cam_y := 250.0
 var tex := {}
 var layers: Array[Node2D] = []
 var facade_layer: Node2D
+var floor_band: Node2D
 var inside := false
 var last_safe := Vector2(-1930, GROUND)
 var fade: ColorRect
@@ -84,15 +85,17 @@ func _ready() -> void:
 		demo = demo or a.begins_with("--demo") or a == "--selftest"
 	if demo:
 		Game.reset()
-	else:
-		Game.load_save()
+	elif Game.load_save():
+		_migrate()
 	for n in ["bg_street.jpg", "bg_laundry.jpg", "bg_yard.jpg", "bg_court.jpg", "bg_station.jpg", "bg_workshop.jpg", "floor_bunker_0.png", "walkway_0.png", "ladder_0.png"]:
-		tex[n] = load("res://assets/rest/" + n)
+		tex[n] = Art.tex("res://assets/rest/" + n)
 	_build_world()
 	_build_hero()
+	_build_depth()
 	hud = preload("res://scripts/hud.gd").new()
 	add_child(hud)
 	hud.restart_requested.connect(_restart)
+	hud.light_toggled.connect(_apply_light)
 	hero.message.connect(func(t): hud.show_hint(t, 3.0))
 	hero.job_finished.connect(func(_i): Game.save())
 	hero.died.connect(_on_died)
@@ -107,6 +110,7 @@ func _ready() -> void:
 	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	fl.add_child(fade)
 	_apply_flags()
+	_apply_light()
 	_respawn()
 	_refresh()
 	if Game.checkpoint == "start":
@@ -117,6 +121,35 @@ func _ready() -> void:
 		_selftest()
 	elif demo:
 		_demo()
+
+## A save from an older build lacks the flags of stages added later: whatever the player already got past implies them.
+## Applied after every load, so it also repairs a half-migrated save.
+func _migrate() -> void:
+	if Game.loaded_version < 2 and Game.has("crawler2_gone"):
+		Game.flags.erase("crawler2_gone")      # the yard crawler was #2, it is #3 now
+		Game.flags["crawler3_gone"] = true
+	var implies := {
+		"entered": ["ladder_down", "em_bridge", "court"],
+		"drained": ["entered", "plan_known", "drain_clear", "pipe_fixed", "power"],
+		"rescued": ["drained", "talked", "supported", "rubble"],
+		"route": ["rescued"],
+		"gate": ["route", "loaded", "secured"],
+		"delivered": ["gate", "debris"],
+		"station": ["delivered"],
+	}
+	var changed := true
+	while changed:
+		changed = false
+		for f in implies:
+			if Game.has(f):
+				for g in implies[f]:
+					if not Game.has(g):
+						Game.flags[g] = true
+						changed = true
+	if Game.loaded_version < 2 and Game.has("loaded") and not Game.has("secured"):
+		Game.flags["secured"] = true             # there were no straps before; a loaded cart counts as strapped
+	Game.loaded_version = 2
+	Game.save()
 
 func _input_map() -> void:
 	var keys := {"move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT], "jump": [KEY_SPACE, KEY_W, KEY_UP], "act": [KEY_E]}
@@ -217,6 +250,7 @@ func _npc(char_name: String, x: float, height := 68.0) -> Npc:
 func _build_world() -> void:
 	_layer(-10, _draw_back)
 	_layer(-5, _draw_floor)
+	floor_band = _layer(-5, _draw_floor_band)
 	_layer(-4, _draw_mid)
 	facade_layer = _layer(-4, _draw_facade)
 	_layer(-3, _draw_decks)
@@ -256,13 +290,16 @@ func _build_world() -> void:
 	# ---- 2-3. laundry hall.
 	_deco("pump", 905, DECK, 0, -2).name = "Pump"
 	_deco("gauge", 1092, DECK - 22, 2, -2).name = "Gauge"
+	get_node("Gauge").ground_shadow = false
 	_deco("barrel", 1820, GROUND, 1)
 	_deco("tap", 2010, GROUND, 0)
 	_deco("pipe", JET_X, DECK - 44, 0, -4).name = "JetPipe"
+	get_node("JetPipe").ground_shadow = false
 	_deco("barrel", 2710, GROUND, 0)
 	_deco("crate", 2930, GROUND, 1)
 	if not Art.prop("winch").is_empty():
 		_deco("winch", 2378, GROUND - 16.0, 0, -1).name = "Winch"
+		get_node("Winch").ground_shadow = false
 	var jack := _deco("jack", 1290, GROUND, 1, 0)
 	jack.name = "Jack"
 	jack.visible = false
@@ -272,11 +309,11 @@ func _build_world() -> void:
 	_ladder(700)
 	_deck(680, 1200)
 	_body_rect(Vector2(1203, DECK - 20), Vector2(4, 40))
-	_prop("pipe", "pipe", 990, DECK - 28.0, 46)
+	_prop("pipe", "pipe", 990, DECK - 28.0, 46).ground_shadow = false
 	_prop("valve", "valve", 1060, DECK, 46)
 	_prop("crate", "crate", 1150, DECK, 40)
 	_ladder(1188, func(): return "Внизу ще глибоко. Спершу злий воду." if water.is_deep() else "")
-	_prop("vent", "vent", 1232, GROUND - 12.0, 40)
+	_prop("vent", "vent", 1232, GROUND - 12.0, 40).ground_shadow = false
 	_prop("beam", "", 1290, GROUND, 50)
 	_prop("rubble", "rubble", 1370, GROUND, 80, -10)
 	blockers.rubble = _body_rect(Vector2(1372, GROUND - 28), Vector2(46, 56))
@@ -973,6 +1010,7 @@ func _process(delta: float) -> void:
 	_nazar_knock(delta)
 	_cart(delta)
 	_pump_and_fx(delta)
+	_depth(delta)
 	washer_t = maxf(0.0, washer_t - delta)
 	var winch := get_node_or_null("Winch")
 	if winch:
@@ -1131,6 +1169,211 @@ func _pump_and_fx(delta: float) -> void:
 	drops = drops.filter(func(d): return d.t > 0.0)
 	fx.queue_redraw()
 
+# ======================================================================= light and depth
+## The level is flat pictures; this gives it room: an ambient tone per area (sunset street, dim laundry, warm Station),
+## lamps and windows that light the normal-mapped pictures from where they hang, the sun outside, a soft light that
+## goes with the hero, shadows where walls meet the floor and under the walkways, light shafts with dust from the
+## laundry windows, and a dark foreground (pipes, chains, leaves) that slides past faster than the camera.
+const AMBIENT := {"out": Color(0.78, 0.72, 0.78), "in": Color(0.46, 0.5, 0.58), "station": Color(0.7, 0.66, 0.66)}
+var ambient: CanvasModulate
+var sun: DirectionalLight2D
+var hero_light: PointLight2D
+var lamps: Array[PointLight2D] = []
+var rays: Node2D
+var front: Node2D
+var area := "out"
+var light_tex: Texture2D
+
+func _light_tex() -> Texture2D:
+	if light_tex == null:
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 1))
+		g.add_point(0.45, Color(1, 1, 1, 0.45))
+		g.set_color(g.get_point_count() - 1, Color(1, 1, 1, 0))
+		var gt := GradientTexture2D.new()
+		gt.gradient = g
+		gt.fill = GradientTexture2D.FILL_RADIAL
+		gt.fill_from = Vector2(0.5, 0.5)
+		gt.fill_to = Vector2(1.0, 0.5)
+		gt.width = 256
+		gt.height = 256
+		light_tex = gt
+	return light_tex
+
+func _lamp(pos: Vector2, color: Color, energy: float, radius: float, height := 50.0, flicker := true) -> PointLight2D:
+	var l := PointLight2D.new()
+	l.texture = _light_tex()
+	l.texture_scale = radius / 128.0
+	l.color = color
+	l.energy = energy
+	l.height = height
+	l.position = pos
+	l.set_meta("energy", energy)
+	l.set_meta("flicker", flicker)
+	add_child(l)
+	lamps.append(l)
+	return l
+
+func _build_depth() -> void:
+	ambient = CanvasModulate.new()
+	ambient.color = AMBIENT.out
+	add_child(ambient)
+	sun = DirectionalLight2D.new()
+	sun.color = Color(1.0, 0.78, 0.56)
+	sun.energy = 0.55
+	sun.height = 0.3
+	sun.rotation_degrees = -35.0          # low evening sun from the left
+	add_child(sun)
+	hero_light = PointLight2D.new()
+	hero_light.texture = _light_tex()
+	hero_light.texture_scale = 150.0 / 128.0
+	hero_light.color = Color(1.0, 0.86, 0.68)
+	hero_light.energy = 0.38
+	hero_light.height = 26.0
+	hero_light.position = Vector2(-26, -52)
+	hero.add_child(hero_light)
+	# Laundry: one lamp per wall tile (where the picture has it), cold light from the windows.
+	for k in 4:
+		var x := 600.0 + 450.0 * k
+		_lamp(Vector2(x + 75, 142), Color(1.0, 0.72, 0.42), 1.05, 200.0, 22.0)
+		_lamp(Vector2(x + 205, 105), Color(0.62, 0.78, 1.0), 0.45, 260.0, 55.0, false)
+	# The machine hall is darker; the generator and the pump glow a little once running.
+	_lamp(Vector2(652, GROUND - 30), Color(1.0, 0.55, 0.25), 0.0, 70.0, 20.0).name = "GenGlow"
+	# Station: the yard lamps and the workshop lamps, warm.
+	for p in [Vector2(5027, 134), Vector2(5414, 134), Vector2(5480, 62), Vector2(5755, 60)]:
+		_lamp(p, Color(1.0, 0.74, 0.46), 1.0, 200.0, 22.0)
+	_lamp(Vector2(5880, 150), Color(0.9, 0.82, 0.75), 0.5, 220.0, 80.0, false)
+	# Exterior: lit windows of the street and the yard pictures.
+	for p in [Vector2(-1960, 210), Vector2(-1740, 160), Vector2(-260, 200), Vector2(2560, 230), Vector2(2760, 230)]:
+		_lamp(p, Color(1.0, 0.7, 0.4), 0.55, 150.0, 22.0)
+	rays = _layer(4, _draw_rays)
+	var add := CanvasItemMaterial.new()
+	add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	add.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	rays.material = add
+	var dust := CPUParticles2D.new()
+	dust.amount = 40
+	dust.lifetime = 9.0
+	dust.preprocess = 9.0
+	dust.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	dust.emission_rect_extents = Vector2(900, 120)
+	dust.position = Vector2(1500, 190)
+	dust.direction = Vector2(0.3, 1)
+	dust.spread = 60.0
+	dust.gravity = Vector2(0, 2)
+	dust.initial_velocity_min = 1.0
+	dust.initial_velocity_max = 4.0
+	dust.scale_amount_min = 0.6
+	dust.scale_amount_max = 1.3
+	dust.color = Color(1.0, 0.92, 0.75, 0.35)
+	dust.z_index = 4
+	dust.material = add
+	add_child(dust)
+	front = _layer(7, _draw_front)
+	var flat := CanvasItemMaterial.new()
+	flat.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	front.material = flat
+	layers.erase(front)
+	layers.erase(rays)
+	layers.erase(floor_band)
+	# The back of every scene a touch cooler and darker than what stands in front of it.
+	layers[0].self_modulate = Color(0.86, 0.88, 0.95)
+
+## Volumetric light on or off (the journal has the switch): without it the scene keeps its tone and contact shadows,
+## but no lamp passes, shafts or dust, which is the cheap way for weak phones.
+func _apply_light() -> void:
+	var on := Game.fancy_light
+	sun.visible = on
+	hero_light.visible = on
+	rays.visible = on
+	for c in get_children():
+		if c is CPUParticles2D:
+			c.emitting = on
+			c.visible = on
+	for l in lamps:
+		l.set_meta("off", not on)
+		l.visible = on
+
+func _depth(delta: float) -> void:
+	var x := hero.global_position.x
+	area = "station" if x > 4000.0 else ("in" if x > 612.0 and x < 2400.0 else "out")
+	ambient.color = ambient.color.lerp(AMBIENT[area], minf(1.0, delta * 2.5))
+	sun.energy = lerpf(sun.energy, 0.55 if area == "out" else 0.0, minf(1.0, delta * 2.5))
+	var t := Time.get_ticks_msec() / 1000.0
+	for i in lamps.size():
+		var l := lamps[i]
+		if l.get_meta("off", false):
+			continue
+		var e: float = l.get_meta("energy")
+		if l.get_meta("flicker"):
+			e *= 0.92 + 0.08 * sin(t * 7.0 + i * 1.7) * sin(t * 2.3 + i)
+		l.energy = e
+		l.visible = absf(l.position.x - x) < 480.0      # only lights near the screen cost anything
+	var glow: PointLight2D = get_node("GenGlow")
+	glow.energy = (0.6 + 0.1 * sin(t * 30.0)) if Game.has("power") else 0.0
+	glow.visible = absf(652.0 - x) < 480.0 and Game.fancy_light
+	front.queue_redraw()
+	floor_band.queue_redraw()
+	if Engine.get_process_frames() % 3 == 0:
+		rays.queue_redraw()
+
+## Light shafts from the laundry windows, falling to the right (the sun is low on the left).
+func _draw_rays(n: Node2D) -> void:
+	var cx := hero.global_position.x
+	if cx < 200.0 or cx > 2800.0:
+		return
+	var t := Time.get_ticks_msec() / 1000.0
+	for k in 4:
+		var x := 600.0 + 450.0 * k
+		for i in 3:
+			var wx: float = [70.0, 150.0, 260.0][i]
+			var ww: float = [62.0, 90.0, 90.0][i]
+			var a := 0.07 + 0.025 * sin(t * 0.6 + k * 1.3 + i)
+			var top := 112.0
+			var pts := PackedVector2Array([Vector2(x + wx, top), Vector2(x + wx + ww, top), Vector2(x + wx + ww + 110, GROUND), Vector2(x + wx + 60, GROUND)])
+			var cols := PackedColorArray([Color(1, 0.95, 0.85, a), Color(1, 0.95, 0.85, a), Color(1, 0.9, 0.8, 0.0), Color(1, 0.9, 0.8, 0.0)])
+			n.draw_polygon(pts, cols)
+
+## Dark things close to the camera that slide past faster than the scene (parallax 1.35): pipes and hanging chains in
+## the laundry, foliage and posts outside, columns at the Station. Drawn as silhouettes with a faint warm rim.
+const FRONT := [
+	["barrel", -1880.0], ["post", -1520.0], ["crate", -1180.0], ["barrel", -760.0], ["crate", -380.0], ["post", -60.0], ["barrel", 300.0],
+	["pipe", 760.0], ["chain", 1010.0], ["pipe", 1260.0], ["chain", 1530.0], ["pipe", 1720.0], ["chain", 1900.0], ["pipe", 2180.0],
+	["crate", 2520.0], ["post", 2700.0], ["barrel", 2900.0],
+	["pipe", 5380.0], ["chain", 5520.0], ["pipe", 5900.0]]
+
+func _draw_front(n: Node2D) -> void:
+	var cam := camera.get_screen_center_position()
+	var dark := Color(0.035, 0.045, 0.055, 0.88)
+	var rim := Color(0.45, 0.33, 0.22, 0.55)
+	for e in FRONT:
+		var wx: float = e[1]
+		if absf(wx - cam.x) > 700.0:
+			continue
+		var x: float = cam.x + (wx - cam.x) * 1.35
+		match e[0]:
+			"pipe":
+				n.draw_rect(Rect2(x - 9, -60, 18, 500), dark)
+				n.draw_rect(Rect2(x - 9, -60, 2, 500), rim)
+				for y in [60.0, 190.0, 300.0]:
+					n.draw_rect(Rect2(x - 12, y, 24, 8), dark)
+					n.draw_rect(Rect2(x - 12, y, 24, 1), rim)
+			"chain":
+				for i in 14:
+					var y := -20.0 + i * 11.0
+					n.draw_rect(Rect2(x - 3 + (i % 2) * 1.0, y, 6 - (i % 2) * 2.0, 9), dark)
+				n.draw_rect(Rect2(x - 8, 134, 16, 10), dark)
+			"post":
+				n.draw_rect(Rect2(x - 4, 90, 8, 260), dark)
+				n.draw_rect(Rect2(x - 4, 90, 1, 260), rim)
+				n.draw_rect(Rect2(x - 4, 90, 26, 5), dark)
+				n.draw_circle(Vector2(x + 20, 100), 5.0, Color(1.0, 0.75, 0.4, 0.5))
+			"barrel", "crate":
+				# A real prop, big and dark, standing below the walk line close to the camera.
+				var t: Texture2D = Art.tex("res://assets/rest/%s_0.png" % e[0])
+				var sz := Vector2(t.get_width(), t.get_height()) / 3.0 * 2.1
+				n.draw_texture_rect(t, Rect2(x - sz.x / 2.0, GROUND + 58 - sz.y, sz.x, sz.y), false, Color(0.07, 0.075, 0.085, 0.95))
+
 # ======================================================================= drawing
 func _tile(n: CanvasItem, t: Texture2D, x0: float, x1: float, top: float, w: float, h: float) -> void:
 	var x := x0
@@ -1210,6 +1453,55 @@ func _draw_facade(n: Node2D) -> void:
 func _draw_floor(n: Node2D) -> void:
 	_tile(n, tex["floor_bunker_0.png"], 600, 2402, GROUND - 4, 420, 73.3)
 	_tile(n, tex["floor_bunker_0.png"], STATION_X0, STATION_X1, GROUND - 4, 420, 73.3)
+	# Where wall meets floor, and under each walkway: soft shadow, so the room has a back and a front.
+	for span in [[600.0, 2400.0], [STATION_X0, STATION_X1]]:
+		_shade(n, span[0], span[1], GROUND - 4.0, 46.0, 0.5)
+	for span in [[680.0, 1205.0], [1530.0, 2080.0], [-1640.0, -1030.0], [-820.0, -660.0]]:
+		_shade(n, span[0], span[1], DECK + 60.0, 60.0, 0.32)
+	# The front edge of the floor falls into shadow towards the bottom of the screen.
+	for span in [[600.0, 2402.0], [STATION_X0, STATION_X1]]:
+		n.draw_polygon(PackedVector2Array([Vector2(span[0], GROUND + 20), Vector2(span[1], GROUND + 20), Vector2(span[1], GROUND + 72), Vector2(span[0], GROUND + 72)]),
+			PackedColorArray([Color(0, 0, 0, 0), Color(0, 0, 0, 0), Color(0, 0, 0, 0.55), Color(0, 0, 0, 0.55)]))
+
+## The floor seen from slightly above: a strip from the foot of the wall (back) to where everyone walks (front), its
+## tile seams converging towards the middle of the screen, so the wall stands behind the floor instead of on it.
+const BAND_BACK := 20.0
+func _draw_floor_band(n: Node2D) -> void:
+	var cam := camera.get_screen_center_position()
+	for span in [[600.0, 2402.0], [STATION_X0, STATION_X1]]:
+		var x0: float = maxf(span[0], cam.x - 420.0)
+		var x1: float = minf(span[1], cam.x + 420.0)
+		if x1 <= x0:
+			continue
+		var yb := GROUND - BAND_BACK
+		var yf := GROUND - 3.0
+		var k := 0.84            # how much narrower the back edge is: the perspective
+		var bx0 := cam.x + (x0 - cam.x) * k
+		var bx1 := cam.x + (x1 - cam.x) * k
+		# Fill: the strip, darker at the back.
+		n.draw_polygon(PackedVector2Array([Vector2(x0, yb), Vector2(x1, yb), Vector2(x1, yf), Vector2(x0, yf)]),
+			PackedColorArray([Color(0.11, 0.12, 0.13), Color(0.11, 0.12, 0.13), Color(0.27, 0.26, 0.24), Color(0.27, 0.26, 0.24)]))
+		# Seams running into the depth, every 30 units of the front edge.
+		var sx := floorf(x0 / 30.0) * 30.0
+		while sx <= x1:
+			if sx >= x0:
+				n.draw_line(Vector2(cam.x + (sx - cam.x) * k, yb), Vector2(sx, yf), Color(0, 0, 0, 0.35), 1.0)
+			sx += 30.0
+		# Seams across, closer together at the back.
+		for f in [0.18, 0.42, 0.72]:
+			var y: float = yb + (yf - yb) * f
+			n.draw_line(Vector2(x0, y), Vector2(x1, y), Color(0, 0, 0, 0.22), 1.0)
+		# Wet sheen near the front, the dark corner at the back, the lit front lip.
+		n.draw_polygon(PackedVector2Array([Vector2(x0, yb), Vector2(x1, yb), Vector2(x1, yb + 5), Vector2(x0, yb + 5)]),
+			PackedColorArray([Color(0, 0, 0, 0.6), Color(0, 0, 0, 0.6), Color(0, 0, 0, 0), Color(0, 0, 0, 0)]))
+		n.draw_line(Vector2(x0, yf), Vector2(x1, yf), Color(0.55, 0.5, 0.42, 0.55), 1.0)
+		if bx1 > bx0:
+			pass
+
+## A shadow band whose bottom edge (y_bottom) is darkest, fading upwards over h.
+func _shade(n: CanvasItem, x0: float, x1: float, y_bottom: float, h: float, a: float) -> void:
+	n.draw_polygon(PackedVector2Array([Vector2(x0, y_bottom - h), Vector2(x1, y_bottom - h), Vector2(x1, y_bottom), Vector2(x0, y_bottom)]),
+		PackedColorArray([Color(0, 0, 0, 0), Color(0, 0, 0, 0), Color(0, 0, 0, a), Color(0, 0, 0, a)]))
 
 func _draw_decks(n: Node2D) -> void:
 	var w: Texture2D = tex["walkway_0.png"]
@@ -1306,6 +1598,9 @@ func _demo() -> void:
 			low = true
 	DirAccess.make_dir_recursive_absolute(dir)
 	var perf := OS.get_cmdline_user_args().has("--perf")
+	if OS.get_cmdline_user_args().has("--flat"):
+		Game.fancy_light = false
+		_apply_light()
 	var t0 := Time.get_ticks_msec()
 	var stage := func(name: String):
 		print("stage %-12s at %5.1f s (game clock %5.1f)" % [name, (Time.get_ticks_msec() - t0) / 1000.0, Game.play_time])
@@ -1624,6 +1919,13 @@ func _selftest() -> void:
 	check.call("hp back to 100", Game.hp == 100)
 	check.call("controls back", hero.controls)
 	check.call("crawlers reset asleep", crawlers[0].st == "sleep" and crawlers[0].position.x == crawlers[0].home)
+	# An old save (build 0.3): rescued, no approach flags, the yard crawler under its old number.
+	Game.flags = {"entered": true, "drained": true, "crate_open": true, "supported": true, "rubble": true, "rescued": true, "crawler2_gone": true}
+	Game.loaded_version = 1
+	_migrate()
+	check.call("old save: approach and plan flags implied", Game.has("ladder_down") and Game.has("court") and Game.has("power") and Game.has("talked"))
+	check.call("old save: yard crawler renumbered", Game.has("crawler3_gone") and not Game.has("crawler2_gone"))
+	check.call("old save: goal is the route, not the street", _goal()[0] == "Дістанься корпусу фільтра")
 	print("selftest: %s" % ("PASS" if fails.is_empty() else "FAIL " + str(fails)))
 	Game.reset()
 	get_tree().quit(0 if fails.is_empty() else 1)

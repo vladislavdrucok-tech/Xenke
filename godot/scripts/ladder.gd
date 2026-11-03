@@ -9,7 +9,7 @@ var gate: Callable
 var _tex: Texture2D
 
 func _ready() -> void:
-	_tex = load("res://assets/rest/ladder_0.png")
+	_tex = Art.tex("res://assets/rest/ladder_0.png")
 	var cs := CollisionShape2D.new()
 	var r := RectangleShape2D.new()
 	r.size = Vector2(26, bottom - top + 40)

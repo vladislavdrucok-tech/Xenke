@@ -16,6 +16,8 @@ extends Interactable
 var mission: Node
 var art_scale := 1.0
 var flip := false
+## A soft shadow where the object meets the floor (off for things on a wall).
+var ground_shadow := true
 var pulse_fx: Callable
 
 static var _meta := {}
@@ -28,7 +30,7 @@ func _ready() -> void:
 	if art != "" and _meta.has(art):
 		var m: Dictionary = _meta[art]
 		for i in int(m.states):
-			_tex.append(load("res://assets/rest/%s_%d.png" % [art, i]))
+			_tex.append(Art.tex("res://assets/rest/%s_%d.png" % [art, i]))
 		_size = Vector2(m.w, m.h) * art_scale
 	elif art != "" and not Art.prop(art).is_empty():
 		# A prop from the new sheets (M, C): same layout, other folder.
@@ -89,6 +91,8 @@ func _draw() -> void:
 	if state < _tex.size() and _tex[state]:
 		var t := _tex[state]
 		var r := Rect2(-_size.x / 2.0, -_size.y, _size.x, _size.y)
+		if ground_shadow:
+			draw_texture_rect(Art.shadow_tex(), Rect2(-_size.x * 0.55, -3.0, _size.x * 1.1, 7.0), false)
 		if flip:
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1, 1))
 		draw_texture_rect(t, r, false)

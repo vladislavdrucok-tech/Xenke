@@ -1,3 +1,4 @@
+@tool
 class_name Art
 extends RefCounted
 ## Art that arrives after the 'Remaining' pack (blocks M, P, I, C), cut by tools/import_new.py into assets/new and
@@ -17,12 +18,37 @@ static func data() -> Dictionary:
 				_data = d
 	return _data
 
+## A picture ready for 2D lighting: when tools/make_normals.py made <name>_n.png next to it, the two go together in a
+## CanvasTexture, so lamps and the sun shade it as if it had volume. Otherwise the plain picture.
 static func tex(path: String) -> Texture2D:
 	if _cache.has(path):
 		return _cache[path]
 	var t: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	var n_path := path.get_basename() + "_n.png"
+	if t and ResourceLoader.exists(n_path):
+		var ct := CanvasTexture.new()
+		ct.diffuse_texture = t
+		ct.normal_texture = load(n_path)
+		t = ct
 	_cache[path] = t
 	return t
+
+static var _shadow: Texture2D
+## A soft dark ellipse for contact shadows under feet and objects (drawn squashed).
+static func shadow_tex() -> Texture2D:
+	if _shadow == null:
+		var g := Gradient.new()
+		g.set_color(0, Color(0, 0, 0, 0.55))
+		g.set_color(1, Color(0, 0, 0, 0))
+		var gt := GradientTexture2D.new()
+		gt.gradient = g
+		gt.fill = GradientTexture2D.FILL_RADIAL
+		gt.fill_from = Vector2(0.5, 0.5)
+		gt.fill_to = Vector2(1.0, 0.5)
+		gt.width = 64
+		gt.height = 64
+		_shadow = gt
+	return _shadow
 
 ## A prop from the new sheets: {states, w, h, anchor, ...} or {} when it has not arrived.
 static func prop(name: String) -> Dictionary:

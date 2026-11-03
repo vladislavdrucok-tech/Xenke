@@ -1,0 +1,29 @@
+; Afterfall — squad prototype (new direction: top-down camera at an angle, free movement, a small squad).
+; The old side-view platformer stays in ../godot as the archive.
+config_version=5
+
+[application]
+config/name="Afterfall — Загін (прототип)"
+run/main_scene="res://main.tscn"
+config/icon="res://icon.png"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+
+[display]
+window/size/viewport_width=854
+window/size/viewport_height=394
+window/size/window_width_override=1280
+window/size/window_height_override=590
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=4
+
+[input_devices]
+pointing/emulate_touch_from_mouse=true
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
+anti_aliasing/quality/msaa_3d=1
+lights_and_shadows/directional_shadow/size=2048
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=1

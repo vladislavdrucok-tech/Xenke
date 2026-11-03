@@ -1,0 +1,17 @@
+fc8a56933c4b1c8d796fdb8f7a9f9475
+::res://::1793698560
+export_presets.cfg::TextFile::-1::1793698552::0::1::::<><>::
+icon.png::CompressedTexture2D::1156314043167760468::1793698115::1793698560::1::::<><>::
+main.tscn::PackedScene::-1::1793698552::0::1::::<><>::res://scripts/main.gd
+::res://assets/::1793698560
+DejaVuSans-Bold.ttf::FontFile::3025439494912753231::1793698115::1793698560::1::::<><>::
+DejaVuSans.ttf::FontFile::962001285567409667::1793698115::1793698560::1::::<><>::
+portrait-einstein.webp::CompressedTexture2D::1132001526900586092::1793698115::1793698560::1::::<><>::
+portrait-mira.webp::CompressedTexture2D::4836311444927220020::1793698115::1793698560::1::::<><>::
+::res://scripts/::1793698540
+enemy.gd::GDScript::-1::1793698223::0::1::::Enemy<>Unit<>::
+hero.gd::GDScript::-1::1793698208::0::1::::Hero<>Unit<>::
+hud.gd::GDScript::-1::1793698567::0::1::::<>CanvasLayer<>::
+main.gd::GDScript::-1::1793698746::0::1::::<>Node3D<>::
+models.gd::GDScript::-1::1793698180::0::1::::Models<>RefCounted<>::
+unit.gd::GDScript::-1::1793698552::0::1::::Unit<>CharacterBody3D<>::

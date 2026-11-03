@@ -258,12 +258,12 @@ static func fence(parent: Node3D, a: Vector3, b: Vector3) -> void:
 	for i in n:
 		var p := a + d * ((i + 0.5) / n)
 		var tall := 1.0 + 0.18 * sin(i * 2.3)
-		var c := Color("#7a5236") if i % 5 != 3 else Color("#8a5a3a").darkened(0.1)
+		var c := Color("#4a3424") if i % 5 != 3 else Color("#5a3e2a")
 		if i % 9 == 4:
-			c = Color("#9a5a2e")   # a rusty sheet
+			c = Color("#6a4028")   # a rusty sheet
 		add(parent, box(0.36, tall, 0.12), c, p + Vector3(0, tall / 2.0, 0), Vector3(0, ang + 90, sin(i * 1.7) * 4.0))
 	for h in [0.35, 0.8]:
-		var m := add(parent, box(0.06, 0.08, len), Color("#5c3d27"), (a + b) / 2.0 + Vector3(0, h, 0), Vector3(0, ang, 0))
+		var m := add(parent, box(0.06, 0.08, len), Color("#3a281b"), (a + b) / 2.0 + Vector3(0, h, 0), Vector3(0, ang, 0))
 		m.position += Vector3(cos(deg_to_rad(ang)), 0, -sin(deg_to_rad(ang))) * 0.09
 
 static func crate(parent: Node3D, pos: Vector3, s := 0.6, rot := 0.0) -> Node3D:

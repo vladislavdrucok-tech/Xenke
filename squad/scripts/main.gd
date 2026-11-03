@@ -31,15 +31,11 @@ var hud
 var fx: Array = []             # transient effects: {node, t, life, kind, ...}
 var tokens: Array = []
 var projectiles: Array = []
-var scaffold: Node3D
+var scaffold: Spr
 var pump: Node3D
 var pool_water: MeshInstance3D
 var pool_body: CollisionShape3D
-var plants: Array[Node3D] = []
-var tank_water: MeshInstance3D
-var stream: MeshInstance3D
-var lamp_bad: MeshInstance3D
-var lamp_ok: MeshInstance3D
+var plants: Array = []
 var ability_cd := 0.0
 var calm_t := 0.0
 var save_t := 0.0
@@ -54,7 +50,7 @@ var font: Font
 # ======================================================================= setup
 func _ready() -> void:
 	randomize()
-	font = load("res://assets/DejaVuSans-Bold.ttf")
+	font = load("res://assets/PixelifySans.ttf")
 	_keys()
 	var args := OS.get_cmdline_user_args()
 	bot = args.has("--selftest")
@@ -98,22 +94,25 @@ func _keys() -> void:
 func _build_env() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color("#6f8f7a")
+	env.background_color = Color("#1c2420")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("#c9d6e0")
-	env.ambient_light_energy = 0.42
+	env.ambient_light_color = Color("#9fb0c4")
+	env.ambient_light_energy = 0.45
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-	env.tonemap_exposure = 0.92
+	env.fog_enabled = true
+	env.fog_light_color = Color("#3a4250")
+	env.fog_density = 0.012
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
+	# Evening sun: low, warm, from the left (as in the earlier versions).
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-58, -35, 0)
-	sun.light_color = Color("#fff1d8")
-	sun.light_energy = 0.95
+	sun.rotation_degrees = Vector3(-42, -62, 0)
+	sun.light_color = Color("#ffc58a")
+	sun.light_energy = 0.85
 	sun.shadow_enabled = true
-	sun.shadow_opacity = 0.55
-	sun.directional_shadow_max_distance = 32.0
+	sun.shadow_opacity = 0.6
+	sun.directional_shadow_max_distance = 30.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	add_child(sun)
 	camera = Camera3D.new()
@@ -135,6 +134,24 @@ func solid(pos: Vector3, size: Vector3, rot := 0.0) -> CollisionShape3D:
 	sb.add_child(cs)
 	return cs
 
+## Ground with a tiling pixel texture (2 world units per 64-pixel tile, sharp pixels).
+func _ground(size: Vector2, pos: Vector3, tex_name: String, tile := 2.0, tint := Color.WHITE) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var p := PlaneMesh.new()
+	p.size = size
+	mi.mesh = p
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = Spr.tex("res://assets/ground/%s.png" % tex_name)
+	m.albedo_color = tint
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
+	m.uv1_scale = Vector3(size.x / tile, size.y / tile, 1)
+	m.roughness = 1.0
+	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	mi.material_override = m
+	mi.position = pos
+	add_child(mi)
+	return mi
+
 func _plane(size: Vector2, pos: Vector3, c: Color, rot := 0.0) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	var p := PlaneMesh.new()
@@ -146,36 +163,36 @@ func _plane(size: Vector2, pos: Vector3, c: Color, rot := 0.0) -> MeshInstance3D
 	add_child(mi)
 	return mi
 
+## A prop sprite that blocks movement (and fades when a hero is behind it, if `fade`).
+func _sprop(name: String, pos: Vector3, st := 0, k := 1.0, block := Vector3.ZERO, fade := false) -> Spr:
+	var s := Spr.prop(self, name, pos, st, k)
+	if block != Vector3.ZERO:
+		solid(pos, block)
+	if fade:
+		fades.append({"spr": s, "pos": pos, "w": maxf(0.8, s.sprite.texture.get_width() * s.px * 0.45), "a": 1.0})
+	return s
+
 func _build_ground() -> void:
-	_plane(Vector2(110, 60), Vector3(17, 0, 2), Color("#4e7d36"))
-	# Darker, wilder ground beyond the walkable strip.
-	_plane(Vector2(110, 16), Vector3(17, 0.003, -18), Color("#4b7a3a"))
-	_plane(Vector2(110, 14), Vector3(17, 0.003, 21), Color("#557f3f"))
-	# The cracked road and dirt paths.
-	_plane(Vector2(56, 3.0), Vector3(16, 0.01, 0.5), Color("#8f7350"))
-	for i in 18:
-		var x := -10.0 + i * 3.1
-		_plane(Vector2(1.6, 0.18), Vector3(x, 0.015, 0.5 + sin(i * 1.7) * 0.6), Color("#7d6748"), 20.0 * sin(i))
-	_plane(Vector2(12, 9), Vector3(-5, 0.008, -2), Color("#7d786b"))     # the Station's yard (concrete)
-	for i in 6:
-		_plane(Vector2(0.06, 9), Vector3(-10.5 + i * 2.0, 0.012, -2), Color("#76726a"))
-	# Grass tufts and flowers (one multimesh: cheap).
+	_ground(Vector2(110, 60), Vector3(17, 0, 2), "grass", 2.0)
+	_ground(Vector2(56, 3.2), Vector3(16, 0.01, 0.5), "road", 2.0)
+	_ground(Vector2(13, 9.5), Vector3(-5, 0.008, -2.5), "concrete", 2.0)
+	for p in [Vector3(9, 0.006, 4.5), Vector3(24, 0.006, -4), Vector3(37, 0.006, 3.5), Vector3(-9, 0.006, 4.5)]:
+		_ground(Vector2(4.5, 3.0), p, "mud", 2.0)
+	# Grass tufts (one multimesh: cheap), muted moss colours.
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
-	mm.mesh = Models.cyl(0.0, 0.12, 0.3, 5)
-	var n := 520
+	mm.mesh = Models.cyl(0.0, 0.1, 0.24, 4)
+	var n := 420
 	mm.instance_count = n
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
 	for i in n:
-		var p := Vector3(rng.randf_range(-14, 48), 0.12, rng.randf_range(-12, 16))
-		if absf(p.z - 0.5) < 1.8 or (p.x < 1.0 and p.x > -11.0 and p.z > -7.0 and p.z < 3.0):
-			p.z += 4.0 if p.z > 0.5 else -4.0
-		var t := Transform3D(Basis().scaled(Vector3.ONE * rng.randf_range(0.7, 1.5)), p)
-		mm.set_instance_transform(i, t)
-		var flower := rng.randf() < 0.08
-		mm.set_instance_color(i, Color("#e8c64a") if flower else Color("#4f8a3a").lightened(rng.randf_range(-0.1, 0.15)))
+		var p := Vector3(rng.randf_range(-14, 48), 0.1, rng.randf_range(-12, 16))
+		if absf(p.z - 0.5) < 2.0 or (p.x < 2.0 and p.x > -12.0 and p.z > -8.0 and p.z < 3.0):
+			p.z += 4.5 if p.z > 0.5 else -4.5
+		mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ONE * rng.randf_range(0.7, 1.4)), p))
+		mm.set_instance_color(i, Color("#a08a3a") if rng.randf() < 0.06 else Color("#3f5a2c").lightened(rng.randf_range(-0.1, 0.18)))
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	var gm := StandardMaterial3D.new()
@@ -184,193 +201,117 @@ func _build_ground() -> void:
 	mmi.material_override = gm
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mmi)
-	# Edges of the land: a fence and pines to the north, ruins and pines to the south, cliffs at the ends.
+	# North edge: a patched wooden fence with young trees behind; south edge: rubble and trees; rocks at the ends.
 	Models.fence(self, Vector3(-13, 0, -9.5), Vector3(47, 0, -9.5))
 	solid(Vector3(17, 0, -9.6), Vector3(62, 1.4, 0.4))
-	for i in 22:
-		_tree(Vector3(-13.0 + i * 2.9 + sin(i) * 0.8, 0, -11.5 - absf(sin(i * 2.1)) * 2.0), 3.2 + sin(i) * 0.4, false)
-	for i in 16:
-		var x := -12.0 + i * 3.9
-		if absf(x - (-4.0)) < 3.0:
+	for i in 20:
+		_sprop("trees", Vector3(-13.0 + i * 3.1 + sin(i) * 0.8, 0, -11.0 - absf(sin(i * 2.1)) * 1.5), 0, 1.0 + 0.15 * sin(i * 1.3))
+	for i in 15:
+		var x := -12.0 + i * 4.1
+		if absf(x - (-4.0)) < 3.5:
 			continue
-		_tree(Vector3(x + sin(i * 3.0), 0, 13.5 + absf(sin(i)) * 1.5), 3.0, i % 4 == 0)
+		_sprop("trees" if i % 3 != 1 else "stump", Vector3(x + sin(i * 3.0), 0, 13.6 + absf(sin(i)) * 1.2), 0, 1.0, Vector3.ZERO, true)
+	for x in range(-12, 48, 3):
+		if absf(x - (-4)) < 3:
+			continue
+		_sprop("rubble", Vector3(x + 0.5 * sin(x), 0, 11.8), 1 if x % 2 == 0 else 0, 0.55, Vector3.ZERO)
+	solid(Vector3(-9.0, 0, 11.9), Vector3(6.5, 1.4, 0.8))
+	solid(Vector3(22.5, 0, 11.9), Vector3(50, 1.4, 0.8))
 	solid(Vector3(-15, 0, 2), Vector3(1, 3, 30))
 	solid(Vector3(49, 0, 2), Vector3(1, 3, 30))
-	for z in [-7.0, -3.0, 2.0, 7.0, 11.0]:
-		Models.rock(self, Vector3(-14.5, 0, z), 1.6)
-		Models.rock(self, Vector3(48.5, 0, z), 1.6)
-	# The southern edge: broken wall with a gap at the underpass.
-	for seg in [[-11.0, 7.0], [3.0, 11.0], [16.0, 6.0], [27.0, 8.0], [40.0, 8.0]]:
-		Models.ruin(self, Vector3(seg[0] + seg[1] / 2.0, 0, 12.0), seg[1])
-		solid(Vector3(seg[0] + seg[1] / 2.0, 0, 12.0), Vector3(seg[1], 1.4, 0.5))
 	solid(Vector3(-4.0, 0, 15.5), Vector3(8, 2, 1))
+	for z in [-7.0, -3.0, 2.0, 7.0]:
+		_sprop("rubble", Vector3(-14.2, 0, z), 0, 0.8)
+		_sprop("rubble", Vector3(48.2, 0, z), 0, 0.8)
 
-func _tree(p: Vector3, h := 3.2, dead := false, block := true) -> void:
-	var r: Array = Models.pine(self, p, h, dead)
-	fades.append({"meshes": r[1], "pos": p, "w": 1.1, "a": 1.0})
-	if block:
-		solid(p, Vector3(0.5, 2.0, 0.5))
+func _tree(p: Vector3, k := 1.0) -> void:
+	_sprop("trees", p, 0, k, Vector3(0.6, 2.0, 0.6), true)
 
 # ======================================================================= the Station
 func _build_station() -> void:
-	# Workshop shed with a blue tarp roof.
-	var shed := Node3D.new()
-	shed.position = Vector3(-8.5, 0, -5.5)
-	add_child(shed)
-	var sm: Array = []
-	sm.append(_fadeable(shed, Models.box(5.0, 2.4, 3.2), Color("#a9a08f"), Vector3(0, 1.2, 0)))
-	sm.append(_fadeable(shed, Models.box(5.6, 0.2, 3.9), Color("#3f73a3"), Vector3(0, 2.75, 0.1), Vector3(-12, 0, 0)))
-	sm.append(_fadeable(shed, Models.box(5.6, 0.12, 0.5), Color("#2f5a82"), Vector3(0, 2.4, 1.9)))
-	sm.append(_fadeable(shed, Models.box(1.1, 1.7, 0.08), Color("#3b2a1f"), Vector3(-1.2, 0.85, 1.62)))
-	sm.append(_fadeable(shed, Models.box(1.0, 0.7, 0.08), Color("#ffd58a"), Vector3(1.0, 1.4, 1.62), Vector3.ZERO, 1.6))
-	fades.append({"meshes": sm, "pos": shed.position + Vector3(0, 0, 1.6), "w": 2.8, "a": 1.0})
-	solid(shed.position, Vector3(5.0, 2.4, 3.2))
-	var light := OmniLight3D.new()
-	light.position = shed.position + Vector3(1.0, 1.6, 2.4)
-	light.light_color = Color("#ffc27a")
-	light.light_energy = 1.4
-	light.omni_range = 5.0
-	add_child(light)
-	Models.crate(self, Vector3(-11.4, 0, -3.2), 0.7, 15)
-	Models.crate(self, Vector3(-10.8, 0, -2.6), 0.5, -10)
-	Models.barrel(self, Vector3(-5.6, 0, -3.6))
-	Models.barrel(self, Vector3(-5.1, 0, -3.1), Color("#8a4b2a"))
-	solid(Vector3(-11.1, 0, -2.9), Vector3(1.3, 0.8, 1.2))
-	Models.lamp_post(self, Vector3(-6.5, 0, 3.0))
-	# The water pump and filter: broken (red lamp, dry pipe) until repaired.
+	# The old metro entrance the settlement lives around, the workbench, crates and barrels, a lantern.
+	_sprop("metro", Vector3(-9.0, 0, -6.2), 0, 1.0, Vector3(4.0, 3.0, 2.0), true)
+	_sprop("bench", Vector3(-5.6, 0, -6.4), 0, 1.0, Vector3(1.8, 1.0, 0.8))
+	_sprop("radio", Vector3(-5.2, 1.05, -6.35), 1, 1.0, Vector3.ZERO)
+	_sprop("crate", Vector3(-11.6, 0, -3.0), 1, 1.0, Vector3(0.9, 0.7, 0.8))
+	_sprop("crate", Vector3(-11.0, 0, -2.2), 0, 0.8)
+	_sprop("barrel", Vector3(-6.2, 0, -3.4), 0, 1.0, Vector3(0.6, 0.8, 0.6))
+	_sprop("barrel", Vector3(-5.6, 0, -2.9), 1, 1.0)
+	_sprop("genset", Vector3(-12.0, 0, -0.6), 0, 1.0, Vector3(1.4, 1.0, 0.9))
+	_sprop("lantern", Vector3(-7.0, 0, 2.8), 1, 1.6)
+	_lamp(Vector3(-7.0, 1.2, 2.8), 4.0)
+	_lamp(Vector3(-8.2, 2.6, -4.6), 6.0)
+	# The water purifier (three states: broken -> working), the clean-water tank, garden beds.
 	pump = Node3D.new()
 	pump.position = Vector3(-2.0, 0, -5.0)
 	add_child(pump)
-	Models.add(pump, Models.box(2.6, 0.3, 1.8), Color("#8f8a7c"), Vector3(0, 0.15, 0))
-	Models.add(pump, Models.cyl(0.5, 0.55, 1.6, 14), Color("#3f73a3"), Vector3(-0.6, 1.1, 0))
-	Models.add(pump, Models.cyl(0.4, 0.45, 1.3, 14), Color("#356694"), Vector3(0.65, 0.95, 0.1))
-	Models.add(pump, Models.cyl(0.08, 0.08, 1.6), Color("#8b9196"), Vector3(0, 1.6, 0), Vector3(0, 0, 90))
-	Models.add(pump, Models.cyl(0.08, 0.08, 1.6), Color("#8b9196"), Vector3(0.9, 0.6, 0.9), Vector3(90, 0, 0))
-	Models.add(pump, Models.box(0.5, 0.5, 0.2), Color("#2b3338"), Vector3(-0.6, 1.2, 0.5))
-	lamp_bad = Models.add(pump, Models.ball(0.11), Color("#ff4a2a"), Vector3(-0.6, 1.98, 0.3), Vector3.ZERO, Vector3.ONE, 3.0)
-	lamp_ok = Models.add(pump, Models.ball(0.11), Color("#5fff7a"), Vector3(-0.6, 1.98, 0.3), Vector3.ZERO, Vector3.ONE, 3.0)
-	# Broken bits lying around until repaired.
-	var broken := Node3D.new()
-	broken.name = "Broken"
-	pump.add_child(broken)
-	Models.add(broken, Models.box(0.4, 0.06, 0.3), Color("#8a4b2a"), Vector3(1.3, 0.33, 0.6), Vector3(0, 30, 10))
-	Models.add(broken, Models.cyl(0.08, 0.08, 0.7), Color("#8b9196"), Vector3(1.4, 0.35, -0.6), Vector3(0, 40, 90))
-	Models.blob(pump, 3.2, 2.4)
-	solid(pump.position, Vector3(2.6, 2.0, 1.8))
-	# A tank fed by the pump, and its water.
-	Models.add(self, Models.cyl(0.9, 0.9, 0.9, 18), Color("#7c8287"), Vector3(1.2, 0.45, -4.6))
-	tank_water = Models.add(self, Models.cyl(0.8, 0.8, 0.05, 18), Color(0.35, 0.75, 0.95, 0.9), Vector3(1.2, 0.2, -4.6), Vector3.ZERO, Vector3.ONE, 0.4)
-	solid(Vector3(1.2, 0, -4.6), Vector3(1.7, 0.9, 1.7))
-	stream = Models.add(self, Models.cyl(0.07, 0.07, 1.0), Color(0.5, 0.85, 1.0, 0.8), Vector3(0.6, 1.1, -4.8), Vector3(0, 0, 60), Vector3.ONE, 0.6)
-	# Garden plots that sprout once there is clean water.
+	var pur := Spr.prop(pump, "purifier", Vector3.ZERO, 0, 1.7)
+	pur.name = "Purifier"
+	solid(pump.position, Vector3(2.4, 2.0, 1.2))
+	var tank := Spr.prop(self, "tank", Vector3(1.4, 0, -4.8), 0, 1.0)
+	tank.name = "Tank"
+	solid(Vector3(1.4, 0, -4.8), Vector3(1.4, 1.2, 1.0))
+	_sprop("pipe", Vector3(0.2, 0.55, -4.9), 0, 1.2)
 	for i in 3:
-		var p := Vector3(-10.0 + i * 1.6, 0, 1.5)
-		Models.add(self, Models.box(1.3, 0.25, 1.0), Color("#5a3c26"), p + Vector3(0, 0.12, 0))
-		for j in 3:
-			var sp := Node3D.new()
-			sp.position = p + Vector3(-0.4 + j * 0.4, 0.25, 0)
-			add_child(sp)
-			Models.add(sp, Models.ball(0.16), Color("#67b84a"), Vector3(0, 0.12, 0))
-			Models.add(sp, Models.cyl(0.02, 0.02, 0.2), Color("#3f7a2e"), Vector3(0, 0.0, 0))
-			sp.scale = Vector3.ONE * 0.01
-			plants.append(sp)
-	solid(Vector3(-8.4, 0, 1.5), Vector3(4.6, 0.3, 1.0))
-	# The flooded underpass to the south: water stands until the pump runs.
-	Models.add(self, Models.box(5.0, 0.2, 4.0), Color("#6f6a5e"), Vector3(-4.0, -0.15, 13.0))
-	pool_water = Models.add(self, Models.box(4.6, 0.1, 3.6), Color(0.22, 0.45, 0.5, 0.92), Vector3(-4.0, 0.06, 13.0), Vector3.ZERO, Vector3.ONE, 0.15)
+		var b := Spr.prop(self, "bed", Vector3(-10.0 + i * 1.7, 0, 1.6), 0, 1.6)
+		plants.append(b)
+	solid(Vector3(-8.3, 0, 1.6), Vector3(5.0, 0.4, 0.8))
+	# The flooded underpass to the south: water stands until the purifier's pump runs. The laundry beyond it.
+	_plane(Vector2(5.0, 4.0), Vector3(-4.0, -0.1, 13.0), Color("#3b3a34"))
+	pool_water = Models.add(self, Models.box(4.6, 0.1, 3.6), Color(0.16, 0.32, 0.36, 0.95), Vector3(-4.0, 0.06, 13.0), Vector3.ZERO, Vector3.ONE, 0.1)
 	pool_body = solid(Vector3(-4.0, 0, 11.6), Vector3(4.4, 1.0, 0.6))
-	var sign := Node3D.new()
-	sign.position = Vector3(-1.2, 0, 12.6)
-	add_child(sign)
-	Models.add(sign, Models.cyl(0.05, 0.05, 1.6), Color("#5c3d27"), Vector3(0, 0.8, 0))
-	Models.add(sign, Models.box(1.3, 0.4, 0.06), Color("#2f5a82"), Vector3(0.2, 1.4, 0))
-	var lab := Label3D.new()
-	lab.text = "ПРАЛЬНЯ"
-	lab.font = font
-	lab.font_size = 40
-	lab.pixel_size = 0.006
-	lab.position = Vector3(0.2, 1.4, 0.05)
-	lab.modulate = Color("#f6e7c1")
-	sign.add_child(lab)
-	spots.append({"id": "pump", "pos": pump.position + Vector3(0, 0, 1.6), "radius": 2.6, "needs": REPAIR_NEED, "title": "Насос", "action": "Полагодити", "flag": "pump_fixed", "anchor": pump.position + Vector3(0, 2.6, 0)})
+	_sprop("laundry_facade", Vector3(-4.6, 0, 17.6), 0, 0.55)
+	_sprop("sign_station", Vector3(-1.4, 0, 11.4), 0, 0.9)
+	spots.append({"id": "pump", "pos": pump.position + Vector3(0, 0, 1.6), "radius": 2.6, "needs": REPAIR_NEED, "title": "Очисник води", "action": "Полагодити", "flag": "pump_fixed", "anchor": pump.position + Vector3(0, 2.6, 0)})
 
-func _fadeable(parent: Node3D, mesh: Mesh, c: Color, pos: Vector3, rot := Vector3.ZERO, emis := 0.0) -> MeshInstance3D:
-	var mi := MeshInstance3D.new()
-	mi.mesh = mesh
-	mi.material_override = Models.mat(c, emis, true)
-	mi.position = pos
-	mi.rotation_degrees = rot
-	parent.add_child(mi)
-	return mi
+func _lamp(p: Vector3, r: float) -> void:
+	var l := OmniLight3D.new()
+	l.position = p
+	l.light_color = Color("#ffb86a")
+	l.light_energy = 1.6
+	l.omni_range = r
+	add_child(l)
 
 # ======================================================================= the road east
 func _build_route() -> void:
-	_tree(Vector3(4.5, 0, -3.5))
-	_tree(Vector3(7.0, 0, 4.2), 3.0)
-	_tree(Vector3(14.5, 0, 3.8), 3.4)
-	_tree(Vector3(17.0, 0, -6.5), 3.0, true)
-	_tree(Vector3(25.5, 0, -2.0), 3.2)
-	_tree(Vector3(31.0, 0, 5.5), 3.4)
-	_tree(Vector3(34.0, 0, -6.0), 3.0)
-	_tree(Vector3(43.5, 0, 5.0), 3.2, true)
-	Models.wreck(self, Vector3(10.5, 0, 6.5), 70)
-	solid(Vector3(10.5, 0, 6.5), Vector3(2.6, 1.3, 1.4), 0)
-	Models.wreck(self, Vector3(29.0, 0, -5.8), -20)
-	solid(Vector3(29.0, 0, -5.8), Vector3(1.6, 1.3, 2.6), -20)
-	Models.ruin(self, Vector3(21.0, 0, 6.5), 4.0, 10)
-	solid(Vector3(21.0, 0, 6.5), Vector3(4.0, 1.4, 0.5), 10)
-	Models.rock(self, Vector3(36.5, 0, 4.0), 1.2)
-	solid(Vector3(36.5, 0, 4.0), Vector3(1.2, 1, 1))
+	for p in [Vector3(4.5, 0, -3.5), Vector3(7.0, 0, 4.4), Vector3(14.5, 0, 4.0), Vector3(17.0, 0, -6.5), Vector3(25.5, 0, -2.0),
+			Vector3(31.0, 0, 5.5), Vector3(34.0, 0, -6.0), Vector3(43.5, 0, 5.0)]:
+		_tree(p, 1.1)
+	_sprop("minecart", Vector3(10.5, 0, 6.5), 0, 1.4, Vector3(2.0, 1.2, 1.0))
+	_sprop("washer", Vector3(29.0, 0, -5.8), 1, 1.4, Vector3(1.2, 1.2, 1.0))
+	_sprop("cabinet", Vector3(21.0, 0, 6.5), 0, 1.0, Vector3(1.0, 1.6, 0.6))
+	_sprop("crate", Vector3(22.2, 0, 6.6), 0, 1.0, Vector3(0.7, 0.7, 0.7))
+	_sprop("rubble", Vector3(36.5, 0, 4.0), 0, 0.8, Vector3(1.2, 1.0, 0.9))
 	for p in [Vector3(12.0, 0, -6.0), Vector3(39.5, 0, -5.5)]:
-		Models.barrel(self, p, Color("#8a4b2a"))
-	Models.lamp_post(self, Vector3(18.5, 0, -2.4), false)
-	Models.lamp_post(self, Vector3(33.0, 0, 3.0), false)
-	# Gatherable: log piles and scrap heaps.
+		_sprop("barrel", p, 1, 1.0, Vector3(0.6, 0.8, 0.6))
+	_sprop("lantern", Vector3(18.5, 0, -2.6), 0, 1.5)
+	_sprop("lantern", Vector3(33.0, 0, 3.0), 0, 1.5)
+	_sprop("rag_pile", Vector3(27.0, 0, 2.0), 0, 1.4)
+	_sprop("puddle", Vector3(15.0, 0.01, 1.4), 0, 2.0)
+	_sprop("puddle", Vector3(33.0, 0.01, -0.6), 0, 2.4)
+	# Gatherable: stumps with cut logs, scrap heaps.
 	_node("wood_a", "wood", 2, Vector3(1.5, 0, 4.8))
 	_node("wood_b", "wood", 2, Vector3(26.5, 0, 4.0))
 	_node("wood_c", "wood", 2, Vector3(41.0, 0, -4.0))
+	_node("wood_d", "wood", 2, Vector3(16.0, 0, 5.2))
 	_node("scrap_a", "parts", 2, Vector3(23.5, 0, -5.0))
 	_node("scrap_b", "parts", 2, Vector3(31.5, 0, -3.0))
-	_node("wood_d", "wood", 2, Vector3(16.0, 0, 5.2))
-	# The researcher, pinned under a fallen scaffold by a dead radio mast.
-	var mast := Node3D.new()
-	mast.position = Vector3(19.5, 0, -5.8)
-	add_child(mast)
-	Models.add(mast, Models.cyl(0.08, 0.14, 4.2), Color("#6b7378"), Vector3(0, 2.1, 0))
-	Models.add(mast, Models.cyl(0.5, 0.5, 0.06, 12), Color("#9aa3a8"), Vector3(0.3, 3.6, 0.2), Vector3(60, 0, 20))
-	Models.add(mast, Models.box(0.8, 0.9, 0.5), Color("#2b3338"), Vector3(0.7, 0.45, 0.6))
-	Models.add(mast, Models.box(0.5, 0.3, 0.05), Color("#5fe3ff"), Vector3(0.7, 0.7, 0.86), Vector3.ZERO, Vector3.ONE, 1.4)
-	solid(mast.position, Vector3(0.6, 3, 0.6))
-	scaffold = Node3D.new()
-	scaffold.position = Vector3(19.0, 0, -3.6)
-	add_child(scaffold)
-	Models.add(scaffold, Models.box(2.6, 0.18, 0.2), Color("#8a4b2a"), Vector3(0, 0.55, 0), Vector3(0, 0, 12))
-	Models.add(scaffold, Models.box(0.18, 1.3, 0.18), Color("#6b7378"), Vector3(-1.1, 0.5, 0.3), Vector3(0, 0, -30))
-	Models.add(scaffold, Models.box(0.18, 1.1, 0.18), Color("#6b7378"), Vector3(1.0, 0.4, -0.2), Vector3(0, 0, 40))
-	Models.add(scaffold, Models.box(1.8, 0.1, 0.9), Color("#7a5236"), Vector3(0.2, 0.75, 0.1), Vector3(0, 10, -8))
-	spots.append({"id": "free", "pos": Vector3(19.0, 0, -2.4), "radius": 2.4, "needs": FREE_NEED, "title": "Завал", "action": "Звільнити", "flag": "einstein", "anchor": Vector3(19.0, 2.4, -3.6)})
+	# The researcher, pinned under a sagging beam by a dead radio set.
+	_sprop("radio", Vector3(20.6, 0, -5.4), 0, 1.6, Vector3(0.8, 0.8, 0.6))
+	scaffold = Spr.prop(self, "beam", Vector3(19.0, 0, -3.0), 0, 0.85)
+	spots.append({"id": "free", "pos": Vector3(19.0, 0, -2.2), "radius": 2.4, "needs": FREE_NEED, "title": "Балка", "action": "Підпорати й звільнити", "flag": "einstein", "anchor": Vector3(19.0, 2.2, -3.3)})
 
 func _node(id: String, kind: String, amount: int, pos: Vector3) -> void:
-	var full := Node3D.new()
-	full.position = pos
-	add_child(full)
-	var empty := Node3D.new()
-	empty.position = pos
-	add_child(empty)
+	var full: Spr
+	var empty: Spr
 	if kind == "wood":
-		for i in 4:
-			Models.add(full, Models.cyl(0.17, 0.17, 1.4, 9), Color("#8a5a32").darkened(0.08 * (i % 2)), Vector3(-0.2 + (i % 2) * 0.4, 0.17 + (i / 2) * 0.3, -0.3 + i * 0.18), Vector3(0, 70, 90))
-		Models.add(full, Models.box(0.5, 0.5, 0.06), Color("#d9b27a"), Vector3(0.75, 0.3, 0), Vector3(0, 70, 0))
-		Models.add(empty, Models.cyl(0.17, 0.17, 0.8, 9), Color("#7a4e2a"), Vector3(0, 0.17, 0), Vector3(0, 30, 90))
+		full = Spr.prop(self, "stump", pos, 0, 1.0)
+		empty = Spr.prop(self, "planks", pos + Vector3(0.3, 0, 0.2), 0, 1.4)
 	else:
-		var cols := [Color("#8a4b2a"), Color("#3f73a3"), Color("#7c8287"), Color("#9a5a2e"), Color("#5a646a")]
-		for i in 7:
-			Models.add(full, Models.box(0.5, 0.3 + (i % 3) * 0.12, 0.4), cols[i % 5], Vector3(sin(i * 2.1) * 0.45, 0.15 + (i / 3) * 0.28, cos(i * 1.7) * 0.35), Vector3(i * 17, i * 41, i * 9))
-		Models.add(full, Models.cyl(0.25, 0.25, 0.12, 12), Color("#24272a"), Vector3(0.5, 0.5, 0.1), Vector3(70, 0, 0))
-		Models.add(empty, Models.box(0.6, 0.08, 0.5), Color("#7c8287"), Vector3(0, 0.04, 0), Vector3(0, 20, 0))
-	Models.blob(full, 1.8, 1.4)
+		full = Spr.prop(self, "rubble", pos, 0, 0.7)
+		empty = Spr.prop(self, "rubble", pos, 1, 0.7)
 	empty.visible = false
-	var body := solid(pos, Vector3(1.2, 0.8, 0.9))
+	var body := solid(pos, Vector3(1.1, 0.8, 0.8))
 	nodes.append({"id": id, "kind": kind, "amount": amount, "pos": pos, "time": 1.8, "radius": 1.7, "full": full, "empty": empty, "done": false, "prog": 0.0, "body": body})
 
 # ======================================================================= units
@@ -378,12 +319,13 @@ func _build_squad() -> void:
 	mira = Hero.new()
 	mira.id = "mira"
 	mira.world = self
-	mira.setup(Models.human({"kind": "mira", "jacket": Color("#2f8a90"), "pants": Color("#5a4030")}), 0.32)
+	mira.setup(Spr.character("mira", 2.1), 0.32)
 	mira.base_hp = 160.0
 	mira.base_atk = 16.0
 	mira.attack_range = 1.5
 	mira.attack_cd = 0.7
 	mira.speed = 4.6
+	mira.anim = {"walk": [0, 1, 2, 3], "idle": 4, "attack": 5, "work": 6, "down": 6}
 	mira.role = "Механікиня · ближній бій розвідним ключем"
 	mira.ability_text = "Лагодить механізми; б'є ключем того, хто поруч."
 	add_child(mira)
@@ -391,20 +333,21 @@ func _build_squad() -> void:
 	einstein = Hero.new()
 	einstein.id = "einstein"
 	einstein.world = self
-	einstein.setup(Models.human({"kind": "einstein", "jacket": Color("#7a5233"), "pants": Color("#4c4036")}), 0.32)
+	einstein.setup(Spr.character("einstein", 2.1), 0.32)
 	einstein.base_hp = 100.0
 	einstein.base_atk = 9.0
 	einstein.attack_range = 5.5
 	einstein.attack_cd = 1.0
 	einstein.ranged = true
 	einstein.speed = 4.6
+	einstein.anim = {"walk": [0, 1, 2, 3], "idle": 4, "attack": 5, "work": 6, "hurt": einstein.spr.pose("hurt", 6), "down": 6}
 	einstein.role = "Дослідник · дистанційна підтримка"
 	einstein.ability_text = "Імпульс: хвиля з приладу б'є всіх поруч і оглушує на 2,5 с. Перезарядка 9 с."
 	einstein.leader = mira
 	einstein.active = false
 	add_child(einstein)
-	einstein.global_position = Vector3(19.2, 0, -3.2)
-	einstein.face_dir = Vector3(0, 0, 1)
+	einstein.global_position = Vector3(19.2, 0, -3.6)
+	einstein.face_dir = Vector3(1, 0, 0)
 	heroes = [mira, einstein]
 	for h in heroes:
 		h.died.connect(_on_hero_down)
@@ -417,7 +360,9 @@ func _enemy(id: String, pos: Vector3, big := false) -> Enemy:
 	e.world = self
 	e.team = 1
 	e.big = big
-	e.setup(Models.crawler(big), 0.45 if not big else 0.8)
+	e.setup(Spr.character("crawler", 0.75 if not big else 1.45, 1.1 if not big else 2.0), 0.45 if not big else 0.8)
+	if big:
+		e.tint = Color(0.62, 0.66, 0.78)
 	e.make_telegraph()
 	if big:
 		e.max_hp = 260.0
@@ -442,6 +387,7 @@ func _enemy(id: String, pos: Vector3, big := false) -> Enemy:
 	e.global_position = pos
 	e.died.connect(_on_enemy_died)
 	enemies.append(e)
+	Spr.prop(self, "crawler_nest", pos + Vector3(0, 0, -0.6), 0, 1.5 if not big else 2.4)
 	return e
 
 func _build_enemies() -> void:
@@ -717,37 +663,42 @@ func _spot_here() -> Dictionary:
 
 func _free_visual(instant: bool) -> void:
 	einstein.active = true
-	if instant:
-		scaffold.rotation_degrees = Vector3(0, 0, -80)
-		scaffold.position = Vector3(17.2, 0, -3.6)
-		return
-	var tw := create_tween()
-	tw.tween_property(scaffold, "position", Vector3(17.2, 0, -3.6), 0.6)
-	tw.parallel().tween_property(scaffold, "rotation_degrees", Vector3(0, 0, -80), 0.6)
-	_burst(Vector3(19, 0.6, -3.6), Color("#c9b48a"), 16)
+	scaffold.set_state(1)
+	if not instant:
+		_burst(Vector3(19, 0.8, -3.3), Color("#c9b48a"), 16)
+		einstein.global_position = Vector3(19.2, 0, -2.4)
 
 func _pump_visual(instant: bool) -> void:
 	var on: bool = S.flags.get("pump_fixed", false)
-	lamp_bad.visible = not on
-	lamp_ok.visible = on
-	stream.visible = on
-	pump.get_node("Broken").visible = not on
+	var pur: Spr = pump.get_node("Purifier")
+	var tank: Spr = get_node("Tank")
 	pool_body.set_deferred("disabled", on)
 	if not on:
-		tank_water.position.y = 0.2
+		pur.set_state(0)
+		tank.set_state(0)
+		for b in plants:
+			b.set_state(0)
 		return
 	if instant:
-		tank_water.position.y = 0.82
+		pur.set_state(2)
+		tank.set_state(1)
 		pool_water.position.y = -0.3
-		for p in plants:
-			p.scale = Vector3.ONE
+		for b in plants:
+			b.set_state(3)
 		return
+	pur.set_state(1)
 	var tw := create_tween()
-	tw.tween_property(tank_water, "position:y", 0.82, 2.5)
+	tw.tween_interval(0.8)
+	tw.tween_callback(func(): pur.set_state(2))
+	tw.tween_interval(0.8)
+	tw.tween_callback(func(): tank.set_state(1))
 	tw.parallel().tween_property(pool_water, "position:y", -0.3, 3.0)
 	for i in plants.size():
-		tw.parallel().tween_property(plants[i], "scale", Vector3.ONE, 0.8).set_delay(1.0 + i * 0.12).set_trans(Tween.TRANS_BACK)
-	_burst(pump.global_position + Vector3(0, 1.6, 0), Color("#7fe8ff"), 18)
+		tw.tween_callback(func(): plants[i].set_state(2)).set_delay(0.3)
+	tw.tween_interval(0.6)
+	for i in plants.size():
+		tw.tween_callback(func(): plants[i].set_state(3)).set_delay(0.2)
+	_burst(pump.global_position + Vector3(0, 1.4, 0), Color("#7fe8ff"), 18)
 
 ## Gathering: standing still by a log pile or scrap heap, with no enemy close, works it; walking away stops.
 func _gather(delta: float) -> void:
@@ -887,7 +838,7 @@ func _camera(delta: float) -> void:
 	var t := cam_target
 	t.x = clampf(t.x, BOUNDS.position.x + 7.0, BOUNDS.end.x - 7.0)
 	t.z = clampf(t.z, BOUNDS.position.y + 3.0, BOUNDS.end.y - 4.0)
-	camera.global_position = t + Vector3(0, 11.0, 8.0)
+	camera.global_position = t + Vector3(0, 9.6, 7.0)
 	camera.look_at(t + Vector3(0, 0.6, 0), Vector3.UP)
 
 ## Trees and buildings between the camera and a hero turn see-through, so nobody is lost behind them.
@@ -898,15 +849,12 @@ func _fade_occluders(delta: float) -> void:
 			if not h.active or h.dead:
 				continue
 			var dz: float = f.pos.z - h.global_position.z
-			if absf(f.pos.x - h.global_position.x) < f.w and dz > -0.2 and dz < 2.6:
-				want = 0.35
+			if absf(f.pos.x - h.global_position.x) < f.w and dz > -0.2 and dz < 2.8:
+				want = 0.4
 		var a := move_toward(float(f.a), want, delta * 3.0)
 		if not is_equal_approx(a, f.a):
 			f.a = a
-			for m in f.meshes:
-				var mat: StandardMaterial3D = m.material_override
-				mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA if a < 0.99 else BaseMaterial3D.TRANSPARENCY_DISABLED
-				mat.albedo_color.a = a
+			(f.spr as Spr).set_alpha(a)
 
 func _projectiles(delta: float) -> void:
 	for p in projectiles.duplicate():
@@ -1105,7 +1053,7 @@ func _demo() -> void:
 	stage.call("boss")
 	_stats("бій загоном")
 	await _fight_until(func(): return S.killed.get("c4", false) and S.killed.get("c5", false), Vector3(36, 0, 0))
-	await _go_to(Vector3(40.0, 0, -2.6))
+	await _go_to(Vector3(40.8, 0, -2.8))
 	await _wait_gather()
 	await _go_to(Vector3(31.5, 0, -1.6))
 	await _wait_gather()
@@ -1172,6 +1120,11 @@ func _go_to(p: Vector3) -> void:
 		print("demo: could not reach ", p, " at ", mira.global_position)
 
 func _wait_gather() -> void:
+	var near := ""
+	for n in nodes:
+		if not n.done and mira.dist_to_point(n.pos) < n.radius:
+			near = n.id
+	print("gather at %s: %s" % [mira.global_position, near if near != "" else "nothing in reach"])
 	var t := 0.0
 	while t < 5.0:
 		var busy := false

@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://nyaax3tpq1ch"
-path="res://.godot/imported/DejaVuSans.ttf-762234438454d583c0104d205bde2047.fontdata"
+uid="uid://cjc67pmxheftt"
+path="res://.godot/imported/PixelifySans.ttf-66c7c9456dcd7906679fee240bcc72a4.fontdata"
 
 [deps]
 
-source_file="res://assets/DejaVuSans.ttf"
-dest_files=["res://.godot/imported/DejaVuSans.ttf-762234438454d583c0104d205bde2047.fontdata"]
+source_file="res://assets/PixelifySans.ttf"
+dest_files=["res://.godot/imported/PixelifySans.ttf-66c7c9456dcd7906679fee240bcc72a4.fontdata"]
 
 [params]
 

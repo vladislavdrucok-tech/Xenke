@@ -86,11 +86,8 @@ func _attack(delta: float) -> void:
 func die() -> void:
 	super.die()
 	down_t = 8.0
-	var tw := create_tween()
-	tw.tween_property(rig, "rotation:x", -1.45, 0.35)
 
 func revive(frac: float) -> void:
 	dead = false
 	hp = max_hp * frac
 	shape.set_deferred("disabled", false)
-	rig.rotation.x = 0.0

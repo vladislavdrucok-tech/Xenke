@@ -45,14 +45,15 @@ var end_text: Label
 var fade: ColorRect
 var ability_frac := 0.0
 
-const C_GOLD := Color("#f6c445")
-const C_PANEL := Color(0.08, 0.1, 0.12, 0.88)
+const C_GOLD := Color("#f2c14e")
+const C_PANEL := Color(0.07, 0.1, 0.125, 0.9)
 const NAMES := {"mira": "МІРА", "einstein": "ЕЙНШТЕЙН", "yana": "ЯНА"}
 const FACES := {"mira": "res://assets/portrait-mira.webp", "einstein": "res://assets/portrait-einstein.webp"}
 
 func _ready() -> void:
-	font = load("res://assets/DejaVuSans.ttf")
-	bold = load("res://assets/DejaVuSans-Bold.ttf")
+	# The earlier versions' pixel font (with the Ukrainian П and І added) and their dark panels with gold.
+	font = load("res://assets/PixelifySans.ttf")
+	bold = font
 	root = Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -67,7 +68,7 @@ func _ready() -> void:
 	layout()
 
 # ---------------------------------------------------------------- building blocks
-func _style(bg := C_PANEL, border := Color(1, 1, 1, 0.12), radius := 8) -> StyleBoxFlat:
+func _style(bg := C_PANEL, border := Color("#3b4a52"), radius := 2) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = bg
 	s.border_color = border
@@ -86,20 +87,23 @@ func _label(size := 13, color := Color.WHITE, b := false) -> Label:
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return l
 
-func _button(text: String, bg := Color("#e9a53a"), size := 15) -> Button:
+func _button(text: String, accent := C_GOLD, size := 15) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.focus_mode = Control.FOCUS_NONE
 	b.add_theme_font_override("font", bold)
 	b.add_theme_font_size_override("font_size", size)
-	b.add_theme_color_override("font_color", Color("#2b1a08"))
-	b.add_theme_color_override("font_pressed_color", Color("#2b1a08"))
-	b.add_theme_color_override("font_hover_color", Color("#2b1a08"))
-	b.add_theme_color_override("font_disabled_color", Color(0.25, 0.22, 0.2))
+	for k in ["font_color", "font_pressed_color", "font_hover_color"]:
+		b.add_theme_color_override(k, accent)
+	b.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.5))
 	for st in ["normal", "hover"]:
-		b.add_theme_stylebox_override(st, _style(bg, bg.darkened(0.35), 10))
-	b.add_theme_stylebox_override("pressed", _style(bg.darkened(0.15), bg.darkened(0.4), 10))
-	b.add_theme_stylebox_override("disabled", _style(Color(0.55, 0.53, 0.5), Color(0.3, 0.3, 0.3), 10))
+		var sb := _style(Color(0.07, 0.1, 0.125, 0.92), accent.darkened(0.25), 2)
+		sb.set_border_width_all(2)
+		b.add_theme_stylebox_override(st, sb)
+	var pr := _style(accent.darkened(0.6), accent, 2)
+	pr.set_border_width_all(2)
+	b.add_theme_stylebox_override("pressed", pr)
+	b.add_theme_stylebox_override("disabled", _style(Color(0.1, 0.1, 0.1, 0.85), Color(0.3, 0.3, 0.3), 2))
 	blockers.append(b)
 	return b
 
@@ -150,7 +154,7 @@ func _build() -> void:
 	root.add_child(rh)
 	for k in ["parts", "wood", "water"]:
 		var p := PanelContainer.new()
-		p.add_theme_stylebox_override("panel", _style(Color(0.08, 0.1, 0.12, 0.8), Color(1, 1, 1, 0.1), 14))
+		p.add_theme_stylebox_override("panel", _style(C_PANEL, Color("#3b4a52"), 2))
 		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var h := HBoxContainer.new()
 		var ic := Control.new()
@@ -165,19 +169,17 @@ func _build() -> void:
 		rh.add_child(p)
 		res_labels[k] = l
 		res_boxes[k] = p
-	squad_btn = _button("Загін", Color("#8fc6e8"), 13)
+	squad_btn = _button("Загін", C_GOLD, 13)
 	squad_btn.pressed.connect(open_squad)
 	root.add_child(squad_btn)
 	# Task card (under the team, yellow like a quest note).
 	quest_card = PanelContainer.new()
-	quest_card.add_theme_stylebox_override("panel", _style(Color("#f3d77a"), Color("#a7792a"), 8))
+	quest_card.add_theme_stylebox_override("panel", _style(C_PANEL, Color("#6b5a2a"), 2))
 	quest_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var qv := VBoxContainer.new()
 	qv.add_theme_constant_override("separation", 1)
-	quest_title = _label(14, Color("#2b1a08"), true)
-	quest_title.remove_theme_constant_override("outline_size")
-	quest_text = _label(11, Color("#4a3410"))
-	quest_text.remove_theme_constant_override("outline_size")
+	quest_title = _label(14, C_GOLD, true)
+	quest_text = _label(11, Color("#cbd6db"))
 	quest_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	qv.add_child(quest_title)
 	qv.add_child(quest_text)
@@ -209,7 +211,7 @@ func _build() -> void:
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(toast)
 	# The action at an object ("Полагодити") and the researcher's ability.
-	action_btn = _button("Дія", Color("#7fd46a"), 15)
+	action_btn = _button("Дія", Color("#9be37a"), 15)
 	action_btn.visible = false
 	action_btn.pressed.connect(func(): action_pressed.emit())
 	root.add_child(action_btn)
@@ -233,7 +235,7 @@ func _build() -> void:
 	ev.add_theme_constant_override("separation", 10)
 	end_text = _label(13)
 	end_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var again := _button("Пройти ще раз", Color("#e9a53a"), 15)
+	var again := _button("Пройти ще раз", C_GOLD, 15)
 	again.pressed.connect(func(): world.restart())
 	ev.add_child(end_text)
 	ev.add_child(again)
@@ -438,7 +440,7 @@ func open_squad() -> void:
 		var nxt: Dictionary = h.stats_for(h.level + 1)
 		var st := _label(12)
 		var up: bool = h.level < world.MAX_LEVEL
-		st.text = "Здоров'я: %d%s\nАтака: %d%s\nДосяжність: %s" % [now.hp, (" → %d" % nxt.hp) if up else "", now.atk, (" → %d" % nxt.atk) if up else "",
+		st.text = "Здоров'я: %d%s\nАтака: %d%s\nДосяжність: %s" % [now.hp, (" > %d" % nxt.hp) if up else "", now.atk, (" > %d" % nxt.atk) if up else "",
 			"далека (%.0f м)" % h.attack_range if h.ranged else "ближня"]
 		v.add_child(st)
 		var ab := _label(11, Color("#9fe0f5"))
@@ -449,7 +451,7 @@ func open_squad() -> void:
 		if up:
 			var cost: Dictionary = world.UPGRADE
 			var have: bool = world.can_pay(cost)
-			var b := _button("Покращити: %d деталей, %d дерева" % [cost.parts, cost.wood], Color("#e9a53a"), 12)
+			var b := _button("Покращити: %d деталей, %d дерева" % [cost.parts, cost.wood], C_GOLD, 12)
 			b.disabled = not have
 			b.pressed.connect(func():
 				world.upgrade(h)
@@ -467,9 +469,9 @@ func open_squad() -> void:
 		row.add_child(card)
 	var bottom := HBoxContainer.new()
 	bottom.add_theme_constant_override("separation", 10)
-	var close := _button("Закрити", Color("#8fc6e8"), 14)
+	var close := _button("Закрити", Color("#cbd6db"), 14)
 	close.pressed.connect(close_modal)
-	var reset := _button("Почати епізод заново", Color("#c9c3b8"), 11)
+	var reset := _button("Почати епізод заново", Color("#9aa3a8"), 11)
 	reset.pressed.connect(func(): world.restart())
 	bottom.add_child(close)
 	bottom.add_child(reset)
@@ -532,16 +534,16 @@ func _draw_bubble(b: Dictionary) -> void:
 	var w := 16.0 + needs.size() * 64.0
 	var h := 30.0
 	var r := Rect2(p.x - w / 2.0, p.y - h - 10, w, h)
-	var bg := Color("#fbf4e2") if not b.done else Color("#e4f5dc")
+	var bg := Color(0.07, 0.1, 0.125, 0.92) if not b.done else Color(0.1, 0.2, 0.1, 0.92)
 	overlay.draw_rect(r, bg)
-	overlay.draw_rect(r, Color(0.35, 0.25, 0.12), false, 1.5)
+	overlay.draw_rect(r, C_GOLD.darkened(0.3), false, 1.5)
 	overlay.draw_colored_polygon(PackedVector2Array([Vector2(p.x - 7, r.end.y), Vector2(p.x + 7, r.end.y), Vector2(p.x, r.end.y + 9)]), bg)
 	var x := r.position.x + 8
 	for n in needs:
 		draw_icon(overlay, n.kind, Rect2(x, r.position.y + 5, 20, 20))
 		var ok: bool = n.have >= n.need
 		overlay.draw_string(bold, Vector2(x + 23, r.position.y + 21), "%d/%d" % [mini(n.have, n.need), n.need], HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
-			Color("#2f7a2a") if ok else Color("#b5361f"))
+			Color("#6ad04a") if ok else Color("#ff7a5a"))
 		x += 64
 	if b.done:
 		draw_icon(overlay, "check", Rect2(p.x - 13, r.position.y - 30, 26, 26))

@@ -145,6 +145,23 @@ func die() -> void:
 	super.die()
 	telegraph.visible = false
 	var tw := create_tween()
-	tw.tween_property(rig, "rotation:z", 1.6, 0.25)
-	tw.tween_property(rig, "position:y", -0.6, 0.6)
+	tw.tween_interval(0.35)
+	tw.tween_property(spr.sprite, "modulate:a", 0.0, 0.5)
+	tw.parallel().tween_property(spr.shadow, "transparency", 1.0, 0.5)
 	tw.tween_callback(func(): visible = false)
+
+## Crawler frames: six walking phases, asleep by its nest, rearing up before a strike, lunging, hit, fleeing.
+func pick_frame() -> int:
+	if dead or flash > 0.04:
+		return spr.pose("hit", 5)
+	if state == "windup":
+		return spr.pose("alert", 5)
+	if swing > 0.0:
+		return spr.pose("lunge", 5)
+	if stun > 0.0:
+		return spr.pose("land", 4)
+	if moving:
+		return floori(walk_phase) % 6
+	if state == "idle":
+		return spr.pose("sleep_breathe", 4) if fmod(Time.get_ticks_msec() / 1000.0 + home.x, 2.4) < 1.2 else spr.pose("sleep", 4)
+	return spr.pose("land", 0)

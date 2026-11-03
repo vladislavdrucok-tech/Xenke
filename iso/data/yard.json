@@ -359,12 +359,16 @@
   "mira": {
    "tex": "res://assets/yard/mira.png",
    "w": 55,
-   "h": 100
+   "h": 100,
+   "hip": 73,
+   "split": 32.7
   },
   "einstein": {
    "tex": "res://assets/yard/einstein.png",
    "w": 75,
-   "h": 114
+   "h": 114,
+   "hip": 94,
+   "split": 42.0
   }
  }
 }

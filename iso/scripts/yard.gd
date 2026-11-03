@@ -9,6 +9,10 @@ extends Node2D
 
 const SAVE_PATH := "user://iso_save.json"
 const SPEED := 150.0
+const ACCEL := 900.0          # px/s²: about a sixth of a second to full speed
+const DECEL := 1400.0         # and a tenth to stop
+## The ground is seen at a slant: going up or down the screen covers more ground per pixel, so it is slower.
+const Y_FACTOR := 0.7
 const TANK_MAX := 6
 const KIT := {"scrap": 3, "wood": 2}
 const START := Vector2(640, 560)
@@ -44,7 +48,7 @@ func _ready() -> void:
 	for k in D.obstacles:
 		obstacles.append(_poly(D.obstacles[k]))
 	var args := OS.get_cmdline_user_args()
-	bot = args.has("--selftest")
+	bot = args.has("--selftest") or args.has("--walktest") or args.has("--stroll")
 	for a in args:
 		bot = bot or a.begins_with("--demo")
 	_keys()
@@ -95,6 +99,10 @@ func _ready() -> void:
 			["einstein", "Тоді почнімо з нього. Подивимося, що там зламалося."]])
 	if args.has("--selftest"):
 		_selftest()
+	elif args.has("--walktest"):
+		_walktest()
+	elif args.has("--stroll"):
+		_stroll()
 	elif bot:
 		_demo()
 
@@ -116,7 +124,9 @@ func _keys() -> void:
 
 func _actor(name: String, faces_right: bool) -> Actor:
 	var a := Actor.new()
-	a.setup(load(D.chars[name].tex), faces_right)
+	var c: Dictionary = D.chars[name]
+	a.setup(load(c.tex), faces_right, float(c.get("hip", c.h * 0.72)), float(c.get("split", c.w / 2.0)))
+	a.stepped.connect(_dust)
 	sorted.add_child(a)
 	return a
 
@@ -225,18 +235,29 @@ func can_stand(p: Vector2) -> bool:
 	return true
 
 ## Moves an actor, sliding along edges: full step, else along x, else along y.
+## Moves an actor towards the stick's direction with acceleration, sliding along edges (full step, else along x,
+## else along y); what a wall stops is taken out of the velocity, so nothing pushes into it.
 func _move(a: Actor, v: Vector2, delta: float) -> void:
-	var step := v * SPEED * delta
-	a.moving = v.length() > 0.05      # by the stick, not the step: at 120 Hz a gentle tilt makes steps under a pixel
-	if not a.moving:
+	var want := Vector2(v.x, v.y * Y_FACTOR) * SPEED
+	if v.length() > 0.05:
+		a.dir = v
+	var rate := ACCEL if want.length() > 1.0 else DECEL
+	a.vel = a.vel.move_toward(want, rate * delta)
+	var step := a.vel * delta
+	if step.length() < 0.0001:
 		return
-	a.dir = v
-	for s in [step, Vector2(step.x, 0), Vector2(0, step.y)]:
-		if s.length() > 0.1 and can_stand(a.position + s):
-			a.position += s
-			return
-	a.moving = false
+	if can_stand(a.position + step):
+		a.position += step
+	elif can_stand(a.position + Vector2(step.x, 0)):
+		a.position += Vector2(step.x, 0)
+		a.vel.y = 0.0
+	elif can_stand(a.position + Vector2(0, step.y)):
+		a.position += Vector2(0, step.y)
+		a.vel.x = 0.0
+	else:
+		a.vel = Vector2.ZERO
 
+var _following := false
 func _follow(delta: float) -> void:
 	var target := mira.position
 	if mira.moving and trail.size() > 6:
@@ -251,20 +272,27 @@ func _follow(delta: float) -> void:
 	var to := target - einstein.position
 	if to.length() > 260.0:
 		einstein.position = target if can_stand(target) else mira.position
+		einstein.vel = Vector2.ZERO
 		return
-	if to.length() > 8.0:
-		_move(einstein, to.normalized() * clampf(to.length() / 40.0, 0.4, 1.1), delta)
-	else:
-		einstein.moving = false
-		einstein.dir = Vector2(1 if mira.position.x > einstein.position.x else -1, 0)
-	# Keep apart from the leader (their sprites are ~60 px wide).
+	# Sets off only when clearly behind and stops once close: no shuffling on the spot.
+	if to.length() > 34.0:
+		_following = true
+	elif to.length() < 10.0:
+		_following = false
+	var v := Vector2.ZERO
+	if _following:
+		v = Vector2(to.x, to.y / Y_FACTOR).normalized() * clampf(to.length() / 60.0, 0.35, 1.15)
+	# Never through the leader: when she comes back his way, he steps aside.
 	var d := einstein.position - mira.position
-	if d.length() < 48.0:
-		var away := d.normalized() if d.length() > 0.5 else Vector2(-1, 0.3).normalized()
-		for v in [away, Vector2(away.x, 0).normalized(), Vector2(0, signf(away.y) if away.y != 0.0 else 1.0)]:
-			if v.length() > 0.1 and can_stand(einstein.position + v * 3.0):
-				einstein.position += v * 3.0
-				break
+	if d.length() < 50.0:
+		var away := d.normalized() if d.length() > 0.5 else Vector2(-1, 0.4).normalized()
+		var side := Vector2(-mira.vel.y, mira.vel.x).normalized() if mira.vel.length() > 10.0 else away
+		if side.dot(away) < 0.0:
+			side = -side
+		v = (v * 0.3 + (away + side) * 0.6 * (1.0 - d.length() / 50.0) * 2.0).limit_length(1.2)
+	_move(einstein, v, delta)
+	if not einstein.moving:
+		einstein.dir = Vector2(1 if mira.position.x > einstein.position.x else -1, 0)
 
 ## Objects between the camera and a character (the character's feet above the object's base line, sprites
 ## overlapping) fade, so nobody is lost behind the purifier, the stall or the crates.
@@ -614,6 +642,27 @@ func _float(at: Vector2, text: String, c: Color) -> void:
 	add_child(l)
 	fx.append({"node": l, "t": 0.0, "life": 1.1})
 
+## A small puff of dust where a foot lands.
+func _dust(at: Vector2) -> void:
+	var p := CPUParticles2D.new()
+	p.position = at + Vector2(0, -2)
+	p.amount = 5
+	p.one_shot = true
+	p.explosiveness = 1.0
+	p.lifetime = 0.45
+	p.direction = Vector2(0, -1)
+	p.spread = 70.0
+	p.initial_velocity_min = 8.0
+	p.initial_velocity_max = 20.0
+	p.gravity = Vector2(0, -6)
+	p.scale_amount_min = 1.5
+	p.scale_amount_max = 3.0
+	p.color = Color(0.72, 0.62, 0.5, 0.45)
+	p.z_index = 1
+	add_child(p)
+	p.emitting = true
+	fx.append({"node": p, "t": 0.0, "life": 0.6})
+
 func _burst(at: Vector2, c: Color) -> void:
 	var p := CPUParticles2D.new()
 	p.position = at
@@ -713,6 +762,43 @@ func _demo() -> void:
 	await _shot(dir, "14-harvest")
 	_stats("усе")
 	print("demo: %.1f s, flags %s, inv %s, bed %d" % [(Time.get_ticks_msec() - t0) / 1000.0, str(S.flags.keys()), str(S.inv), int(S.bed)])
+	get_tree().quit()
+
+## `-- --walktest=<folder>`: walking frames around Mira (right, then up-left), to look at the gait.
+func _walktest() -> void:
+	var dir := "user://walk"
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--walktest="):
+			dir = a.substr(11)
+	DirAccess.make_dir_recursive_absolute(dir)
+	hud.lines.clear()
+	hud.next_line()
+	await _wait(0.5)
+	var n := 0
+	for leg in [[Vector2(1, 0), 1.4], [Vector2(-0.6, -0.8), 1.2], [Vector2.ZERO, 0.5]]:
+		bot_vec = leg[0]
+		var t := 0.0
+		while t < leg[1]:
+			await _wait(0.07)
+			t += 0.07
+			await RenderingServer.frame_post_draw
+			var img := get_viewport().get_texture().get_image()
+			var sp := _screen(mira.position)
+			var z := camera.zoom.x
+			var r := Rect2i(int(sp.x - 70 * z), int(sp.y - 130 * z), int(140 * z), int(150 * z))
+			img.get_region(r).save_png("%s/w%03d.png" % [dir, n])
+			n += 1
+	get_tree().quit()
+
+## `-- --stroll`: a short walk round the yard (for a video of the movement).
+func _stroll() -> void:
+	hud.lines.clear()
+	hud.next_line()
+	await _wait(0.6)
+	for leg in [[Vector2(1, 0), 1.6], [Vector2.ZERO, 0.6], [Vector2(0.7, 0.7), 1.2], [Vector2(-1, 0), 1.8], [Vector2.ZERO, 0.5],
+			[Vector2(0, -1), 1.2], [Vector2(-0.5, 0.3), 0.6], [Vector2(0.4, 0), 0.8], [Vector2.ZERO, 1.0]]:
+		bot_vec = leg[0]
+		await _wait(leg[1])
 	get_tree().quit()
 
 func _storage_take() -> void:

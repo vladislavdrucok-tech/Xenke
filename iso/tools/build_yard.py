@@ -259,6 +259,30 @@ def bed_states(im, poly_local):
     out = [dry, sown, wet, sprout, a]
     return [Image.fromarray(o.clip(0, 255).astype(np.uint8), 'RGBA') for o in out]
 
+def legs(im):
+    """Where the legs begin and the column between them, for the walking legs in the game: going up from the feet,
+    the rows that show two separate legs (a gap near the middle), until the gap closes for good (the coat)."""
+    a = np.asarray(im)[..., 3] > 0
+    h, w = a.shape
+    found, top, misses, centres = False, None, 0, []
+    for y in range(h - 1, int(h * 0.45), -1):
+        xs = np.nonzero(a[y])[0]
+        gap = None
+        for i in range(len(xs) - 1):
+            c = (xs[i] + xs[i + 1]) / 2.0
+            if xs[i + 1] - xs[i] > 1 and w * 0.3 < c < w * 0.7:
+                gap = c
+        if gap is not None:
+            found, top, misses = True, y, 0
+            centres.append(gap)
+        elif found:
+            misses += 1
+            if misses > 3:
+                break
+    if top is None:
+        return round(h * 0.72), round(w / 2.0, 1)
+    return int(top) - 1, round(float(np.mean(centres)), 1)
+
 def main(debug=False):
     OUT.mkdir(parents=True, exist_ok=True)
     img = Image.open(SRC).convert('RGB')
@@ -287,7 +311,8 @@ def main(debug=False):
     for name in ('mira', 'einstein'):
         c = cc.union_cut(img, FIGURES[name])
         c.save(OUT / f'{name}.png')
-        data['chars'][name] = {'tex': f'res://assets/yard/{name}.png', 'w': c.width, 'h': c.height}
+        hip, split = legs(c)
+        data['chars'][name] = {'tex': f'res://assets/yard/{name}.png', 'w': c.width, 'h': c.height, 'hip': hip, 'split': split}
     DATA.write_text(json.dumps(data, indent=1))
     if debug:
         dbg = bgr.convert('RGB')

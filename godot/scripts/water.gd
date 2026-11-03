@@ -7,6 +7,8 @@ extends Node2D
 @export var bottom := 320.0
 @export var level := 270.0
 @export var deep_limit := 304.0
+## How far the water reaches below the floor line (a street flood covers the kerb and the drain under it).
+@export var depth_below := 0.0
 var _target := level
 var _walls: Array[CollisionShape2D] = []
 var draining := false
@@ -54,12 +56,45 @@ func _draw() -> void:
 	if level >= bottom:
 		return
 	var t := Time.get_ticks_msec() / 1000.0
-	var r := Rect2(x0, level, x1 - x0, bottom - level)
-	draw_rect(r, Color(0.16, 0.34, 0.36, 0.78))
-	draw_rect(Rect2(x0, level, x1 - x0, 2), Color(0.55, 0.78, 0.76, 0.85))
-	for i in 10:
-		var x := x0 + fmod(i * 73.0 + t * 18.0, x1 - x0)
-		draw_rect(Rect2(x, level + 1, 8, 1), Color(0.8, 0.95, 0.95, 0.6))
+	var y1 := bottom + depth_below
+	var deep := clampf((y1 - level) / 60.0, 0.4, 1.0)
+	var top_c := Color(0.22, 0.45, 0.47, 0.96)
+	var low_c := Color(0.05, 0.13, 0.17, 0.98).lerp(top_c, 1.0 - deep)
+	# Plain water: a solid body, lighter at the top, darker in the depth, with a gently moving surface.
+	var pts := PackedVector2Array()
+	var cols := PackedColorArray()
+	var step := 8.0
+	var x := x0
+	var surf := PackedVector2Array()
+	while true:
+		var y := level + sin(x * 0.07 + t * 1.8) * 1.0 + sin(x * 0.023 - t * 0.9) * 0.8
+		surf.append(Vector2(x, y))
+		if x >= x1:
+			break
+		x = minf(x + step, x1)
+	for p in surf:
+		pts.append(p)
+		cols.append(top_c)
+	pts.append(Vector2(x1, y1))
+	cols.append(low_c)
+	pts.append(Vector2(x0, y1))
+	cols.append(low_c)
+	draw_polygon(pts, cols)
+	# The bright line of the surface, and a darker band just under it.
+	draw_polyline(surf, Color(0.72, 0.9, 0.88, 0.95), 1.5)
+	var under := PackedVector2Array()
+	for p in surf:
+		under.append(p + Vector2(0, 3))
+	draw_polyline(under, Color(0.12, 0.28, 0.31, 0.6), 2.0)
+	# A few glints drifting with the current.
+	for i in 8:
+		var gx := x0 + fmod(i * 97.0 + t * 14.0, maxf(1.0, x1 - x0 - 12.0))
+		var gy := level + 6.0 + float(i % 3) * 6.0
+		if gy < y1 - 2.0:
+			draw_rect(Rect2(gx, gy, 6.0 + float(i % 2) * 4.0, 1), Color(0.75, 0.92, 0.92, 0.35))
+	# Foam where the water meets a wall or the shore.
+	for ex in [x0, x1 - 4.0]:
+		draw_rect(Rect2(ex, level - 1.0 + sin(t * 3.0 + ex) * 0.6, 4, 2), Color(0.88, 0.97, 0.96, 0.8))
 	# A swirl at the drain while it runs.
 	if draining:
 		for i in 6:

@@ -282,6 +282,7 @@ func _build_world() -> void:
 	flood.x1 = FLOOD_X1
 	flood.bottom = GROUND
 	flood.level = 268.0
+	flood.depth_below = 90.0
 	flood.z_index = 2
 	add_child(flood)
 	# ---- courtyard.
@@ -1337,14 +1338,12 @@ func _draw_rays(n: Node2D) -> void:
 ## Dark things close to the camera that slide past faster than the scene (parallax 1.35): pipes and hanging chains in
 ## the laundry, foliage and posts outside, columns at the Station. Drawn as silhouettes with a faint warm rim.
 const FRONT := [
-	["barrel", -1880.0], ["post", -1520.0], ["crate", -1180.0], ["barrel", -760.0], ["crate", -380.0], ["post", -60.0], ["barrel", 300.0],
-	["pipe", 760.0], ["chain", 1010.0], ["pipe", 1260.0], ["chain", 1530.0], ["pipe", 1720.0], ["chain", 1900.0], ["pipe", 2180.0],
-	["crate", 2520.0], ["post", 2700.0], ["barrel", 2900.0],
-	["pipe", 5380.0], ["chain", 5520.0], ["pipe", 5900.0]]
+	["pipe", 760.0], ["chain", 1010.0], ["pipe", 1330.0], ["chain", 1640.0], ["pipe", 2000.0], ["chain", 2250.0],
+	["chain", 5520.0]]
 
 func _draw_front(n: Node2D) -> void:
 	var cam := camera.get_screen_center_position()
-	var dark := Color(0.035, 0.045, 0.055, 0.88)
+	var dark := Color(0.06, 0.07, 0.08, 0.6)
 	var rim := Color(0.45, 0.33, 0.22, 0.55)
 	for e in FRONT:
 		var wx: float = e[1]

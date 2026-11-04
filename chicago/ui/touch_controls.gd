@@ -54,12 +54,21 @@ static func safe_rect(vp_size: Vector2, screen_safe: Rect2i, screen_size: Vector
 	return Rect2(Vector2(screen_safe.position) * k, Vector2(screen_safe.size) * k)
 
 func layout() -> void:
-	var vs := get_viewport().get_visible_rect().size
+	var vs := _view_size()
 	safe = safe_rect(vs, DisplayServer.get_display_safe_area(), DisplayServer.screen_get_size())
 	var m := 18.0
 	act_btn.position = Vector2(safe.end.x - act_btn.size.x - m, safe.end.y - act_btn.size.y - m)
 	atk_btn.position = act_btn.position + Vector2(-atk_btn.size.x - 16.0, act_btn.size.y - atk_btn.size.y)
 	pause_btn.position = Vector2(safe.end.x - pause_btn.size.x - m, safe.position.y + m + 56.0)
+
+## The HUD may be scaled (interface scale): lay out in the HUD's own units.
+func _view_size() -> Vector2:
+	var p := get_parent() as Control
+	return p.size if p and p.size.x > 0.0 else get_viewport().get_visible_rect().size
+
+func _to_local_ui(p: Vector2) -> Vector2:
+	var sc := Settings.ui_scale
+	return p / sc
 
 func set_verb(key: String, enabled: bool) -> void:
 	act_btn.text = tr(key) if key != "" else tr("HUD_ACT_USE")
@@ -90,34 +99,36 @@ func _input(e: InputEvent) -> void:
 		return
 	# A real mouse (desktop with --touch) presses the buttons too; emulated clicks from touches never do.
 	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and e.device != InputEvent.DEVICE_ID_EMULATION:
-		var mb := button_at(e.position)
+		var mb := button_at(_to_local_ui(e.position))
 		if mb:
 			_press(mb)
 			get_viewport().set_input_as_handled()
 		return
 	if e is InputEventScreenTouch:
 		if e.pressed:
-			var hit := button_at(e.position)
+			var hit := button_at(_to_local_ui(e.position))
 			if hit:
 				_press(hit)
 				get_viewport().set_input_as_handled()
 				return
-			var vs := get_viewport().get_visible_rect().size
-			if joy_index == -1 and e.position.x < vs.x * 0.55 and e.position.y > vs.y * 0.22 and not _over_button(e.position):
+			var vs := _view_size()
+			var lp := _to_local_ui(e.position)
+			if joy_index == -1 and lp.x < vs.x * 0.55 and lp.y > vs.y * 0.22 and not _over_button(lp):
 				joy_index = e.index
-				joy_origin = e.position
-				joy_pos = e.position
+				joy_origin = lp
+				joy_pos = lp
 				InputRouter.touch_active = true
 				InputRouter.touch_vec = Vector2.ZERO
 				queue_redraw()
 		elif e.index == joy_index:
 			release()
 	elif e is InputEventScreenDrag and e.index == joy_index:
-		var d: Vector2 = e.position - joy_origin
+		var lp := _to_local_ui(e.position)
+		var d: Vector2 = lp - joy_origin
 		if d.length() > JOY_R:
 			joy_origin += d - d.normalized() * JOY_R   # the base follows a thumb that slides too far
-			d = e.position - joy_origin
-		joy_pos = e.position
+			d = lp - joy_origin
+		joy_pos = lp
 		var v := d / JOY_R
 		InputRouter.touch_vec = Vector2.ZERO if v.length() < DEADZONE else v
 		queue_redraw()

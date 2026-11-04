@@ -72,4 +72,9 @@ func _run() -> void:
 	await _wait(1.6)
 	await _shot("08_ambush_telegraph_touch")
 	print("PERF ambush: ", world.hud.perf_text())
+	world.toggle_pause()
+	world.hud._open_settings()
+	await _wait(0.3)
+	world.hud.settings_panel.position = (world.hud.root.size - world.hud.settings_panel.size) / 2.0
+	await _shot("09_settings")
 	get_tree().quit()

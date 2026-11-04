@@ -7,6 +7,7 @@ const VERSION := "0.1.0-slice"
 
 func _ready() -> void:
 	Loc.load_all()
+	Settings.load_and_apply()
 	WorldClock.running = false
 	var args := OS.get_cmdline_user_args()
 	if not DataRegistry.errors.is_empty():
@@ -54,6 +55,10 @@ func _build_menu() -> void:
 	var cont := _button(v, "UI_CONTINUE", _continue)
 	cont.disabled = not (SaveService.has_save("autosave") or SaveService.has_save("slot1"))
 	_button(v, "UI_NEW_GAME", _new_game)
+	_button(v, "UI_SETTINGS", func():
+		var sp := SettingsPanel.new()
+		sp.closed.connect(sp.queue_free)
+		add_child(sp))
 	_button(v, "UI_QUIT", func(): get_tree().quit())
 	var ver := Label.new()
 	ver.text = Loc.t("UI_VERSION", [VERSION]) + " · " + tr("UI_TEMP_ART")

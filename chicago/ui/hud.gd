@@ -23,6 +23,7 @@ var touch: TouchControls
 var pause_panel: PanelContainer
 var _toast_t := 0.0
 var root: Control
+var settings_panel: SettingsPanel
 var perf_label: Label          # F3: frame time and counts (measurements, not targets)
 var _frame_ms: Array[float] = []
 
@@ -74,7 +75,7 @@ func _ready() -> void:
 	hint_label.add_theme_constant_override("outline_size", 6)
 	root.add_child(hint_label)
 	touch = TouchControls.new()
-	touch.visible = _want_touch()
+	touch.visible = Settings.want_touch()
 	touch.action_pressed.connect(func(): action_pressed.emit())
 	touch.attack_pressed.connect(func(): attack_pressed.emit())
 	touch.pause_pressed.connect(func(): pause_toggled.emit())
@@ -93,6 +94,15 @@ func _ready() -> void:
 	dialogue.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	root.add_child(dialogue)
 	_build_pause()
+	settings_panel = SettingsPanel.new()
+	settings_panel.visible = false
+	settings_panel.closed.connect(func():
+		settings_panel.visible = false
+		pause_panel.visible = true)
+	settings_panel.changed.connect(apply_ui_scale)
+	root.add_child(settings_panel)
+	get_viewport().size_changed.connect(apply_ui_scale)
+	apply_ui_scale.call_deferred()
 	perf_label = _label(14, Color("#b8f0b0"))
 	perf_label.position = Vector2(16, 120)
 	perf_label.visible = OS.get_cmdline_user_args().has("--perf")
@@ -104,10 +114,16 @@ func _ready() -> void:
 	lbl.position = Vector2(16, -26)
 	root.add_child(lbl)
 
-func _want_touch() -> bool:
-	if OS.get_cmdline_user_args().has("--touch"):
-		return true
-	return DisplayServer.is_touchscreen_available() and OS.has_feature("mobile")
+## Interface scale (settings): the HUD layer is scaled and its root sized to the view divided by the scale, so
+## anchored panels stay in the corners. The world is not affected.
+func apply_ui_scale() -> void:
+	var sc := Settings.ui_scale
+	scale = Vector2(sc, sc)
+	root.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	root.position = Vector2.ZERO
+	root.size = get_viewport().get_visible_rect().size / sc
+	touch.visible = Settings.want_touch()
+	touch.layout()
 
 func _panel(pos: Vector2) -> PanelContainer:
 	var p := PanelContainer.new()
@@ -154,7 +170,7 @@ func _build_pause() -> void:
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(t)
 	for pair in [["UI_RESUME", func(): pause_toggled.emit()], ["UI_SAVE", func(): menu_save.emit()],
-			["UI_LOAD", func(): menu_load.emit()], ["UI_MAIN_MENU", func(): menu_quit.emit()]]:
+			["UI_LOAD", func(): menu_load.emit()], ["UI_SETTINGS", func(): _open_settings()], ["UI_MAIN_MENU", func(): menu_quit.emit()]]:
 		var b := Button.new()
 		b.text = pair[0]
 		b.custom_minimum_size = Vector2(300, 60)
@@ -176,7 +192,14 @@ func _unhandled_input(e: InputEvent) -> void:
 		pause_toggled.emit()
 		get_viewport().set_input_as_handled()
 
+func _open_settings() -> void:
+	pause_panel.visible = false
+	settings_panel.visible = true
+	settings_panel.position = (root.size - settings_panel.size) / 2.0
+
 func show_pause(v: bool) -> void:
+	if not v:
+		settings_panel.visible = false
 	pause_panel.visible = v
 	if v:
 		pause_panel.position = -pause_panel.size / 2.0

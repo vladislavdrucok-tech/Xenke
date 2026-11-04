@@ -84,7 +84,7 @@ func _aim_point() -> Vector2:
 	var best: Node2D = null
 	var best_d := INF
 	var touch_ui: bool = world.hud.touch.visible
-	if aim_assist and (touch_ui or InputRouter.bot_active):
+	if (Settings.aim_assist and touch_ui) or InputRouter.bot_active:
 		for h in hostiles:
 			if is_instance_valid(h) and h.alive() and can_see(world.player, h):
 				var d := Player.ground_dist(p, h.position)

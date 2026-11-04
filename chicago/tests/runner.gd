@@ -7,6 +7,8 @@ func _ready() -> void:
 
 func _run() -> void:
 	Loc.load_all()
+	Settings.path = "user://test_settings.cfg"
+	Settings.load_and_apply()
 	SaveService.base_dir = "user://test_saves/"
 	var only := ""
 	for a in OS.get_cmdline_user_args():
@@ -57,6 +59,10 @@ func _reset() -> void:
 	for slot in ["t1", "autosave", "slot1"]:
 		SaveService.delete_slot(slot)
 	SaveService.transition_lock = false
+	Settings.ui_scale = 1.0
+	Settings.aim_assist = true
+	Settings.touch_mode = "auto"
+	Settings.reset_keys()
 
 func _cleanup() -> void:
 	for c in get_children():

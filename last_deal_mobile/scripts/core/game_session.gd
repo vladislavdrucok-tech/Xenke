@@ -144,6 +144,8 @@ func inspect() -> Dictionary:
 func offer(amount: int) -> Dictionary:
 	if not has_open_customer():
 		return {"result": "closed"}
+	if inventory.is_full():
+		return {"result": "full"}
 	amount = clampi(amount, 0, money)
 	if amount <= 0:
 		return {"result": "invalid"}

@@ -235,9 +235,13 @@ func refresh(animate: bool = false) -> void:
 			_show_mode("grid")
 		btn_inspect.disabled = c.get("inspected", false) or busy
 		btn_inspect.text = "Перевірено" if c.get("inspected", false) else "Перевірити"
-		btn_buy.disabled = busy or ses.money < int(n["ask"])
-		btn_buy.text = "Купити" if ses.money >= int(n["ask"]) else "Не вистачає\nкоштів"
-		btn_haggle.disabled = busy or ses.money <= 0
+		var full := ses.inventory.is_full()
+		btn_buy.disabled = busy or full or ses.money < int(n["ask"])
+		if full:
+			btn_buy.text = "Склад\nповний"
+		else:
+			btn_buy.text = "Купити" if ses.money >= int(n["ask"]) else "Не вистачає\nкоштів"
+		btn_haggle.disabled = busy or full or ses.money <= 0
 		btn_decline.disabled = busy
 		if offer_box.visible:
 			_update_offer()
@@ -286,6 +290,7 @@ func _on_inspect() -> void:
 	if r.is_empty():
 		return
 	Sfx.play("inspect")
+	view.react("inspect")
 	Game.vibrate(15)
 	refresh()
 
@@ -344,15 +349,18 @@ func _on_offer() -> void:
 		"deal":
 			_after_deal(money_before)
 		"counter":
+			view.react("counter")
 			Sfx.play("counter")
 			offer = mini(offer, s().money)
 			_lock(0.35)
 		"reject":
 			Sfx.play("deny")
+			view.react("reject")
 			view.shake()
 			Game.vibrate(40)
 			_lock(0.35)
 		"leave":
+			view.react("leave")
 			Sfx.play("leave")
 			_show_mode("next")
 			view.hide_customer(false)
@@ -374,6 +382,7 @@ func _on_buy() -> void:
 
 
 func _after_deal(money_before: int) -> void:
+	view.react("deal")
 	Sfx.play("buy")
 	Game.vibrate(30)
 	var spent := money_before - s().money

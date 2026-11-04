@@ -124,6 +124,9 @@ func run() -> void:
 				if sp.offer <= 0 or sp.btn_offer.disabled:
 					break
 				await press(sp.btn_offer)
+				if d == 0 and shot_n < 6:
+					await wait(0.15)
+					await shot("after_offer")
 				await wait(0.45)
 			if ses.has_open_customer():
 				if sp.offer_box.visible:
@@ -165,6 +168,7 @@ func run() -> void:
 			break
 		await press(modal_button("Наступний день"))
 		await wait(0.4)
+	var res_line := "UI RESULT: day=%d money=%d (start %d) bought=%d sold=%d" % [ses.day, ses.money, start_money, ses.stats_total["bought"], ses.stats_total["sold"]]
 	# подвійні натискання: друга дія не повинна змінити баланс
 	await press(sp.btn_next)
 	await wait(0.8)
@@ -192,7 +196,6 @@ func run() -> void:
 	if m:
 		m.close()
 	# банкрутство через UI: порожній склад, нуль грошей, кінець дня
-	var res_line := "UI RESULT: day=%d money=%d (start %d) bought=%d sold=%d" % [ses.day, ses.money, start_money, ses.stats_total["bought"], ses.stats_total["sold"]]
 	if ses.has_open_customer():
 		ses.decline()
 	while ses.next_customer():
@@ -213,8 +216,7 @@ func run() -> void:
 	if ses.game_over or ses.money != Economy.START_MONEY or ses.day != 1:
 		printerr("UI: new game after bankruptcy failed")
 		errors += 1
-	print(res_line)
-	print("UI RESULT: day=%d money=%d (start %d) bought=%d sold=%d errors=%d" % [ses.day, ses.money, start_money, ses.stats_total["bought"], ses.stats_total["sold"], errors])
+	print(res_line + " errors=%d" % errors)
 	# перевірка: стан після «перезапуску» (повторне завантаження з JSON)
 	var json := JSON.stringify(ses.to_dict())
 	var s2 := GameSession.new()

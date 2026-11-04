@@ -8,7 +8,6 @@ var header: Label
 var news: Label
 var list: VBoxContainer
 var scroll: ScrollContainer
-var empty_label: Label
 var sell_all: Button
 var _selling := {}   # uid -> true, поки йде анімація (захист від подвійного натискання)
 
@@ -31,8 +30,6 @@ func _ready() -> void:
 	list = UIKit.vbox(10)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(list)
-	empty_label = UIKit.label("Склад порожній. Купуйте речі в клієнтів дешевше, ніж за них дасть ринок.", UIKit.FS, UIKit.MUTED, true)
-	empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	sell_all = UIKit.button("Продати все з прибутком", "primary", UIKit.FS, 88)
 	sell_all.pressed.connect(_on_sell_profitable)
@@ -48,7 +45,9 @@ func refresh() -> void:
 		list.remove_child(ch)
 		ch.queue_free()
 	if inv.count() == 0:
-		list.add_child(empty_label.duplicate())
+		var el := UIKit.label("Склад порожній. Купуйте речі в клієнтів дешевше, ніж за них дасть ринок.", UIKit.FS, UIKit.MUTED, true)
+		el.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		list.add_child(el)
 	var items: Array = inv.items.duplicate()
 	items.sort_custom(func(a, b): return (ses.sell_price(a) - int(a["bought_price"])) > (ses.sell_price(b) - int(b["bought_price"])))
 	var profitable := 0

@@ -30,6 +30,9 @@ var _neon_on := 1.0
 var _rain: Array = []
 var _bob := 0.0
 var _tween: Tween
+var _reaction := ""
+var _reaction_color := Color.WHITE
+var _reaction_t := 0.0
 
 
 func _ready() -> void:
@@ -130,8 +133,53 @@ func _draw() -> void:
 		# тінь
 		draw_rect(Rect2(art_to_local(Vector2(ip.x + 4, COUNTER_TOP + 14)), Vector2(isz.x - 8, 2) * s), Color(0, 0, 0, 0.35 * item_alpha))
 		draw_texture_rect(item_tex, Rect2(art_to_local(ip), isz * s), false, Color(1, 1, 1, item_alpha))
+	_draw_reaction(s)
 	if shop_closed:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.05, 0.02, 0.1, 0.35))
+
+
+## Піксельна «бульбашка» над головою клієнта.
+func _draw_reaction(s: float) -> void:
+	if _reaction == "" or customer_alpha <= 0.0:
+		return
+	var age := _t - _reaction_t
+	if age > 1.6:
+		_reaction = ""
+		return
+	var a := clampf(minf(age * 6.0, (1.6 - age) * 4.0), 0.0, 1.0) * customer_alpha
+	var lift := minf(age * 20.0, 3.0)
+	var base := art_to_local(Vector2(104 + customer_offset, 52 - lift))
+	var r := Rect2(base, Vector2(14, 11) * s)
+	draw_rect(r.grow(s), Color(0.07, 0.05, 0.11, a))
+	draw_rect(r, Color(0.95, 0.92, 1.0, a))
+	draw_rect(Rect2(base + Vector2(2, 11) * s, Vector2(3, 2) * s), Color(0.95, 0.92, 1.0, a))
+	var f := UIKit.pixel()
+	var fs := int(9 * s)
+	var tw := f.get_string_size(_reaction, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	draw_string(f, Vector2(r.position.x + (r.size.x - tw) * 0.5, r.position.y + r.size.y * 0.82), _reaction,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(_reaction_color, a))
+
+
+func react(kind: String) -> void:
+	match kind:
+		"deal":
+			_reaction = "$"
+			_reaction_color = Color("#1f9e5a")
+		"counter":
+			_reaction = "?"
+			_reaction_color = Color("#c77a10")
+		"reject":
+			_reaction = "!"
+			_reaction_color = Color("#d0283e")
+		"leave":
+			_reaction = "..."
+			_reaction_color = Color("#5a4a7a")
+		"inspect":
+			_reaction = "~"
+			_reaction_color = Color("#2a8fa0")
+		_:
+			_reaction = ""
+	_reaction_t = _t
 
 
 func _kill_tween() -> void:

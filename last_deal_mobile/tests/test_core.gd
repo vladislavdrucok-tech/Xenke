@@ -179,6 +179,16 @@ func test_double_actions() -> void:
 	check(s.sell(uid).is_empty(), "second sell rejected")
 	check(s.money == m2, "money unchanged after double sell")
 	check(s.sell(-5).is_empty(), "sell unknown uid")
+	# переповнений склад
+	var s5 := _session(77)
+	s5.money = 1000000
+	for i in Inventory.MAX_ITEMS:
+		s5.inventory.add({"uid": 100000 + i, "id": "radio", "value": 10, "bought_price": 5, "bought_day": 1, "condition": 0.5, "defects": []})
+	s5.next_customer()
+	var m5 := s5.money
+	check(s5.buy()["result"] == "full", "full inventory blocks buy")
+	check(s5.offer(10)["result"] == "full", "full inventory blocks offer")
+	check(s5.money == m5 and s5.has_open_customer(), "full inventory: nothing changed")
 
 
 func test_inspection() -> void:

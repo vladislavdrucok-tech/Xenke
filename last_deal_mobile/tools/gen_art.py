@@ -198,7 +198,7 @@ def background():
 
     # ---- полиці праворуч
     sx, sw = 96, 78
-    for i, sy in enumerate([40, 64, 88, 112]):
+    for i, sy in enumerate([58, 80, 102]):
         cv.rect(sx, sy, sw, 3, hexc("#7a4a2c"))
         cv.rect(sx, sy + 3, sw, 1, hexc("#3b2216"))
         cv.rect(sx + 2, sy + 4, 2, 4, hexc("#3b2216"))
@@ -238,7 +238,7 @@ def background():
 
 def shelf_items(cv, sx, rnd):
     cols = ["#ff3fa4", "#3ff0ff", "#ffb347", "#8f6bff", "#5ad17a", "#e85d5d", "#c9c3ff", "#f2e36b"]
-    for sy in [40, 64, 88, 112]:
+    for sy in [58, 80, 102]:
         x = sx + 3
         while x < sx + 74:
             kind = rnd.randrange(6)
@@ -770,9 +770,11 @@ def main():
     coin_icon().save(os.path.join(ICONS, "coin.png"))
     heart_icon(True).save(os.path.join(ICONS, "heart_full.png"))
     heart_icon(False).save(os.path.join(ICONS, "heart_empty.png"))
-    gear_icon().save(os.path.join(ICONS, "gear.png"))
+    g = gear_icon().img
+    g.resize((g.width * 4, g.height * 4), Image.NEAREST).save(os.path.join(ICONS, "gear.png"))
     for k in ("shop", "bag", "up", "stats"):
-        tab_icon(k).save(os.path.join(ICONS, "tab_%s.png" % k))
+        t = tab_icon(k).img
+        t.resize((t.width * 3, t.height * 3), Image.NEAREST).save(os.path.join(ICONS, "tab_%s.png" % k))
     app_icon(192).save(os.path.join(ROOT, "icon.png"))
     app_icon(432).save(os.path.join(ICONS, "icon_432.png"))
     bg = Image.new("RGBA", (432, 432), hexc("#1d1430"))

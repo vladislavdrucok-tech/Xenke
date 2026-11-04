@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://bcvv3g00cx22g"
-path="res://.godot/imported/PixelifySans-LD.ttf-e95c6b1560ef03b0f4eb431bf6f1f647.fontdata"
+uid="uid://bm887h5gbbmtu"
+path="res://.godot/imported/Exo2-700.ttf-c0ec5c6885a0dd68ea8bf20cee7053bb.fontdata"
 
 [deps]
 
-source_file="res://assets/fonts/PixelifySans-LD.ttf"
-dest_files=["res://.godot/imported/PixelifySans-LD.ttf-e95c6b1560ef03b0f4eb431bf6f1f647.fontdata"]
+source_file="res://assets/fonts/Exo2-700.ttf"
+dest_files=["res://.godot/imported/Exo2-700.ttf-c0ec5c6885a0dd68ea8bf20cee7053bb.fontdata"]
 
 [params]
 

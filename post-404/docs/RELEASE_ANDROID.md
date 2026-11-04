@@ -1,55 +1,52 @@
-# Випуск у Google Play — покрокова інструкція
+# Випуск Time Post у Google Play — що лишилось зробити вам
 
-Усе, що можна було підготувати без вашого облікового запису й ключа, вже готово:
-пресет експорту, графіка магазину (`docs/store/`), тексти сторінки, політика конфіденційності.
+Уже готово (не треба нічого робити):
+- проєкт переведено на **Godot 4.7.2** — він збирає гру під **API 36 (Android 16)**, як вимагає Google з 31.08.2026
+  (перевірено в зібраному APK: targetSdk 36, minSdk 24 = Android 7.0+, дозвіл лише на вібрацію, портрет);
+- пресет експорту **«Android Play (AAB)»** (Gradle, формат AAB, ключ береться зі змінних середовища);
+- скрипти: `tools/release/1_make_upload_key.bat`, `tools/release/2_build_aab.bat` (Windows) та `.sh` (macOS/Linux);
+- графіка й тексти магазину, політика конфіденційності (`docs/store/`);
+- готові відповіді на всі анкети Play Console — `docs/store/PLAY_CONSOLE_ANSWERS.md`;
+- повідомлення для тестувальників — `docs/store/TESTERS.md`.
 
-## 1. Ключ підпису (робите ви, один раз)
-Ключ — це ваш «паспорт» застосунку. **Не втрачайте його і не кладіть у GitHub.**
-```
-keytool -genkeypair -v -keystore post404-upload.keystore -alias post404 \
-  -keyalg RSA -keysize 2048 -validity 10000
-```
-Збережіть файл і пароль у надійному місці (менеджер паролів + резервна копія).
-У Play Console увімкніть **Play App Signing** — тоді Google зберігає основний ключ, а цей стає «ключем завантаження»
-(якщо його загубити, Google може його замінити).
+У хмарному середовищі, де робилась гра, AAB зібрати неможливо: Gradle завантажує Android-плагін із серверів Google,
+а вони там заблоковані (перевірено: `could not resolve com.android.application ... 8.6.1`). На вашому ПК це
+відбудеться автоматично.
 
-## 2. Збірка AAB (Google Play приймає лише AAB)
-AAB потребує Gradle-збірки Godot:
-1. Godot 4.3 → Project → Install Android Build Template.
-2. Повний Android SDK (Android Studio або `sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34"`).
-3. У пресеті «Android»: `gradle_build/use_gradle_build = true`, `gradle_build/export_format = 1` (AAB).
-4. Ключ — через змінні середовища (не в `export_presets.cfg`):
-```
-export GODOT_ANDROID_KEYSTORE_RELEASE_PATH=/шлях/post404-upload.keystore
-export GODOT_ANDROID_KEYSTORE_RELEASE_USER=post404
-export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=ваш_пароль
-godot --headless --path post-404 --export-release "Android" build/post404.aab
-```
-У хмарному середовищі, де робилася гра, сервери Google (dl.google.com) заблоковані, тому AAB тут зібрати
-не вдалося — це треба зробити на вашому ПК (Windows/macOS/Linux). Debug APK для тестів збирається і тут.
+## Ваші кроки
 
-Перед кожним новим завантаженням збільшуйте `version/code` (ціле число) і `version/name` у пресеті.
+### 1. Встановити програми (≈30 хв, один раз)
+1. **Android Studio** — developer.android.com/studio. Відкрийте її один раз: вона встановить Android SDK і Java.
+   У SDK Manager (More Actions → SDK Manager) переконайтесь, що є **Android 16 (API 36)** і **Build-Tools 36**.
+2. **Godot 4.7.2** — godotengine.org/download/archive/4.7.2-stable (Windows, Standard) — розпакуйте, напр.,
+   у `C:\Godot\`.
+3. У Godot: **Editor → Manage Export Templates → Download and Install** (шаблони 4.7.2).
+4. У Godot: **Editor → Editor Settings → Export → Android → Android SDK Path** — вкажіть шлях із SDK Manager
+   (зазвичай `C:\Users\<ім'я>\AppData\Local\Android\Sdk`).
+5. Завантажте проєкт із GitHub (гілка `ccr-38649251-wfvorb` → Code → Download ZIP), розпакуйте.
 
-## 3. Play Console (робите ви)
-1. Обліковий запис розробника Google Play (разовий внесок $25).
-2. Створити застосунок: назва «Time Post», мова за замовчуванням — українська, гра, безкоштовна.
-3. **Сторінка в магазині:** тексти з `docs/store/listing_uk.md` і `listing_en.md`;
-   іконка `docs/store/icon_512.png`; графіка `docs/store/feature_graphic_1024x500.png`;
-   скриншоти `docs/store/screenshots/` (720×1280, підходять для телефонів).
-4. **Політика конфіденційності:** опублікуйте `docs/store/privacy_policy.md` за публічним посиланням
-   (напр. GitHub Pages або Google Sites) і вкажіть URL.
-5. **Безпека даних:** гра не збирає й не передає жодних даних → «No data collected», «No data shared».
-6. **Рейтинг вмісту (IARC):** без насильства, азартних ігор, покупок, чатів → очікуваний рейтинг 3+/PEGI 3.
-7. **Цільова аудиторія:** 13+ або «усі», реклами немає.
-8. Почати з **внутрішнього тестування** (до 100 тестувальників), потім закрите → відкрите → продакшн.
-   Для особистих акаунтів, створених після 13.11.2023, Google вимагає закрите тестування: щонайменше 12 тестувальників,
-   які безперервно беруть участь 14 днів, — лише після цього можна подати заявку на продакшн.
+### 2. Ключ (5 хв, один раз)
+Двічі клацніть `post-404\tools\release\1_make_upload_key.bat`, придумайте пароль.
+Файл `timepost-upload.keystore` з'явиться у вашій папці користувача.
+**Зробіть дві резервні копії файлу й пароля.** Не кладіть їх у GitHub.
+
+### 3. Зібрати AAB (≈5 хв)
+Відкрийте `2_build_aab.bat` у Блокноті, перевірте шлях до Godot у рядку `set GODOT=...`, збережіть,
+двічі клацніть, введіть пароль. Перша збірка довша (Gradle завантажує бібліотеки).
+Результат: `post-404\build\timepost.aab`. Якщо буде помилка — надішліть мені її текст.
+
+### 4. Play Console
+1. play.google.com/console → особистий акаунт → $25 → підтвердження особи.
+2. Create app → заповнити все за `docs/store/PLAY_CONSOLE_ANSWERS.md`.
+3. Увімкнути **Play App Signing** (пропонується при першому завантаженні — погоджуйтесь).
+4. Closed testing → завантажити `timepost.aab` → запросити 15–20 людей (`docs/store/TESTERS.md`).
+5. Через 14 днів — Apply for production → після перевірки гра в магазині.
+
+### Оновлення в майбутньому
+Перед кожним новим завантаженням збільшити у `export_presets.cfg` (обидва Android-пресети) `version/code`
+(+1) і `version/name`. Я можу робити це сам у кожній новій версії.
 
 ## Технічні параметри
-- Пакет: `ua.post404.parcels` (змінити можна лише до першої публікації).
-- **Цільовий API: Google Play з 31.08.2026 вимагає API 36 (Android 16)** для нових застосунків і оновлень.
-  Godot 4.3 за замовчуванням ставить 34 — Google такий файл не прийме. Варіанти: у Gradle-збірці виставити
-  Target SDK = 36 (Export → Android → Gradle Build → Target SDK) або перевести проєкт на новішу стабільну версію
-  Godot 4.x і зібрати нею. Сумісність Godot 4.3 з API 36 ще не перевірялась.
-- Мінімальний Android: 5.0 (API 21).
-- Архітектури: arm64-v8a, armeabi-v7a. Дозволи: лише вібрація. Інтернет не потрібен.
+- Пакет: `ua.post404.parcels` (після першої публікації змінити неможливо; користувачі його не бачать).
+- Target API 36, мінімальний Android 7.0 (API 24), архітектури arm64-v8a + armeabi-v7a.
+- Дозволи: лише вібрація. Інтернет не потрібен.

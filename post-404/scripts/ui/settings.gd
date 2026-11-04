@@ -56,8 +56,8 @@ func _build() -> void:
 	reset.pressed.connect(_ask_reset)
 	list.add_child(reset)
 	var credits := UI.wrap(UI.label(I18n.pick({
-		"uk": "Time Post v%s · Godot 4.3 · Шрифт Pixelify Sans (SIL OFL 1.1). Уся графіка, звук і музика створені для цієї гри.",
-		"en": "Time Post v%s · Godot 4.3 · Font Pixelify Sans (SIL OFL 1.1). All art, sound and music were made for this game."}) % ProjectSettings.get_setting("application/config/version"), 22, UI.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
+		"uk": "Time Post v%s · Godot 4.7 · Шрифт Pixelify Sans (SIL OFL 1.1). Уся графіка, звук і музика створені для цієї гри.",
+		"en": "Time Post v%s · Godot 4.7 · Font Pixelify Sans (SIL OFL 1.1). All art, sound and music were made for this game."}) % ProjectSettings.get_setting("application/config/version"), 22, UI.MUTED, HORIZONTAL_ALIGNMENT_CENTER))
 	list.add_child(credits)
 
 

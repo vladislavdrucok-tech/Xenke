@@ -6,17 +6,17 @@
 Логічні тести 246/246, скриншот-тур без помилок, debug APK у `builds/`.
 
 ## Відновити середовище (хмарний контейнер)
-1. Godot 4.3: `https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip`
+1. Godot 4.7.2: `https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip`
    → `/usr/local/bin/godot`.
-2. Шаблони експорту: `Godot_v4.3-stable_export_templates.tpz` → розпакувати вміст `templates/` у
-   `~/.local/share/godot/export_templates/4.3.stable/`.
+2. Шаблони експорту: `Godot_v4.7.2-stable_export_templates.tpz` → розпакувати вміст `templates/` у
+   `~/.local/share/godot/export_templates/4.7.2.stable/`.
 3. APK без повного Android SDK (dl.google.com у цьому середовищі заблоковано): папка-заглушка `~/android-sdk` з
    `platform-tools/adb` (порожній скрипт) і `build-tools/34.0.0/apksigner` — обгортка над
    `uber-apk-signer-1.3.0.jar` (GitHub releases patrickfav/uber-apk-signer, покласти в `~/tools/`).
    Готова обгортка: `tools/android_sdk_shim/apksigner` (скопіювати й `chmod +x`).
    Debug keystore: `keytool -genkeypair -keystore ~/.local/share/godot/keystores/debug.keystore -storepass android
    -alias androiddebugkey -keypass android -keyalg RSA -validity 10000 -dname "CN=Android Debug,O=Android,C=US"`.
-   У `~/.config/godot/editor_settings-4.3.tres` вказати `export/android/android_sdk_path`.
+   У `~/.config/godot/editor_settings-4.7.tres` вказати `export/android/android_sdk_path`.
 4. Python 3 + Pillow + numpy — для `tools/make_art.py` і `tools/make_audio.py`.
 
 ## Команди

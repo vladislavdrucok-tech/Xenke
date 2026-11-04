@@ -11,3 +11,6 @@ build/
 *.apk.idsig
 # Tools
 tools/__pycache__/
+
+# Android build template (installed locally by the release script)
+android/

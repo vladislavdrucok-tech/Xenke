@@ -2,7 +2,7 @@
 
 Робоча назва була «ПОШТА 404 / POST 404»; відділення в сюжеті й далі має номер 404.
 
-Мобільна 2D-гра (портрет) на **Godot 4.3**, GDScript. Casual / puzzle / simulation / mystery.
+Мобільна 2D-гра (портрет) на **Godot 4.7.2**, GDScript. Casual / puzzle / simulation / mystery.
 Окремий проєкт у папці `post-404/` — інші проєкти репозиторію (Afterfall тощо) не змінювались.
 
 ## Як запустити
@@ -10,7 +10,7 @@
 **На телефоні (Android):** `builds/TimePost-0.2.0-debug.apk` — відкрити файл на GitHub → «Download raw» → встановити
 (дозволити встановлення з невідомих джерел). Це debug-підпис; для Google Play потрібен ваш власний ключ (див. нижче).
 
-**На ПК:** Godot 4.3 → Import → `post-404/project.godot` → F5. Мишка працює як палець, стрілки клавіатури — як свайпи, Esc — пауза.
+**На ПК:** Godot 4.7.2 → Import → `post-404/project.godot` → F5. Мишка працює як палець, стрілки клавіатури — як свайпи, Esc — пауза.
 
 ## Як грати
 На конвеєрі приїжджають посилки. Порівняй рік на етикетці з табло **СЬОГОДНІ** (2038):
@@ -47,7 +47,7 @@ xvfb-run godot --path post-404 --resolution 720x1280 -- --save=user://tour.json 
 
 ## Збірка APK
 Пресет «Android» у `export_presets.cfg` (без Gradle, arm64-v8a + armeabi-v7a, портрет, immersive).
-Потрібні: шаблони експорту Godot 4.3, Java 17+, Android SDK з `platform-tools` і `build-tools/<версія>/apksigner`
+Потрібні: шаблони експорту Godot 4.7.2, Java 17+, Android SDK з `platform-tools` і `build-tools/<версія>/apksigner`
 (шлях — Editor Settings → Export → Android).
 ```
 godot --headless --path post-404 --export-debug "Android" build/post404-debug.apk

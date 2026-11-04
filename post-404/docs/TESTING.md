@@ -33,6 +33,9 @@
 скриптових помилок немає.
 
 ## Збірка
+Godot 4.7.2: маніфест APK (androguard) — targetSdk 36, minSdk 24, лише VIBRATE, портрет, підпис v2/v3.
+AAB (Gradle) у цьому середовищі не збирається: Google Maven заблоковано (`could not resolve com.android.application 8.6.1`).
+
 `--export-debug "Android"` → APK підписано (v1/v2/v3, zipalign перевірено), ~50 МБ (дві архітектури).
 
 ## На телефоні

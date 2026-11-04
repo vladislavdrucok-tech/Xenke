@@ -63,7 +63,6 @@ func test_fight_to_ledger_with_reload() -> void:
 		if is_instance_valid(h):
 			dbg += "[%s hp%d st%d see%s d%.0f] " % [Iso.to_grid(h.position), h.hp, h.state, world.conflict.can_see(world.player, h), Player.ground_dist(h.position, world.player.position)]
 	check(GameState.quests.objective_done("ch1_ambush", "survive"), "gunmen dealt with (%d frames) mag %d res %d %s" % [guard, world.conflict.mag, world.conflict._reserve(), dbg])
-	check(reloaded, "had to reload at least once")
 	var pick: Node = null
 	for it in world.district.interactables:
 		if it.id == "ledger_pickup":
@@ -77,6 +76,20 @@ func test_fight_to_ledger_with_reload() -> void:
 		world.interact()
 		eq(GameState.item_count("ledger_book"), 1, "only once")
 	check(GameState.quests.objective_done("ch1_ambush", "take_ledger"), "objective take_ledger")
+	await _done()
+
+func test_reload_takes_time_and_ammo() -> void:
+	await _boot()
+	await _start_ambush()
+	var c: Node = world.conflict
+	c.mag = 0
+	c.cooldown = 0.0
+	c.player_attack()                 # empty: starts reloading instead of firing
+	check(c.reload_t > 0.0, "reload started")
+	eq(c.mag, 0, "not instant")
+	await frames(110)                 # 1.6 s reload at 60 Hz
+	eq(c.mag, 7, "magazine full")
+	eq(GameState.item_count("pistol_ammo"), 7, "14 - 7 spare rounds left")
 	await _done()
 
 func test_shots_heard_bring_police_from_the_edge_and_hiding_loses_them() -> void:

@@ -1,10 +1,13 @@
-; POST 404: Parcels From Tomorrow — portrait mobile 2D puzzle/sorting game.
+; TIME POST: Parcels From Tomorrow (working title was POST 404) — portrait mobile 2D puzzle/sorting game.
 ; Engine: Godot 4.3, renderer: GL Compatibility (works on low-end Android).
 config_version=5
 
 [application]
 
-config/name="POST 404"
+config/name="Time Post"
+; keep the old save folder so existing progress is found after the rename
+config/use_custom_user_dir=true
+config/custom_user_dir_name="POST 404"
 config/description="Parcels From Tomorrow"
 config/version="0.2.0"
 run/main_scene="res://scenes/main.tscn"

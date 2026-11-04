@@ -10,7 +10,7 @@ const LANGS := ["uk", "en"]
 var lang := "uk"
 
 const STRINGS := {
-	"title": {"uk": "ПОШТА 404", "en": "POST 404"},
+	"title": {"uk": "TIME POST", "en": "TIME POST"},
 	"subtitle": {"uk": "Посилки з майбутнього", "en": "Parcels From Tomorrow"},
 	"btn_shift": {"uk": "Почати зміну", "en": "Start shift"},
 	"btn_calm": {"uk": "Спокійна зміна", "en": "Calm shift"},

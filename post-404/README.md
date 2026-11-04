@@ -1,11 +1,13 @@
-# ПОШТА 404: Посилки з майбутнього (POST 404: Parcels From Tomorrow)
+# TIME POST: Посилки з майбутнього (Parcels From Tomorrow)
+
+Робоча назва була «ПОШТА 404 / POST 404»; відділення в сюжеті й далі має номер 404.
 
 Мобільна 2D-гра (портрет) на **Godot 4.3**, GDScript. Casual / puzzle / simulation / mystery.
 Окремий проєкт у папці `post-404/` — інші проєкти репозиторію (Afterfall тощо) не змінювались.
 
 ## Як запустити
 
-**На телефоні (Android):** `builds/POST404-0.2.0-debug.apk` — відкрити файл на GitHub → «Download raw» → встановити
+**На телефоні (Android):** `builds/TimePost-0.2.0-debug.apk` — відкрити файл на GitHub → «Download raw» → встановити
 (дозволити встановлення з невідомих джерел). Це debug-підпис; для Google Play потрібен ваш власний ключ (див. нижче).
 
 **На ПК:** Godot 4.3 → Import → `post-404/project.godot` → F5. Мишка працює як палець, стрілки клавіатури — як свайпи, Esc — пауза.

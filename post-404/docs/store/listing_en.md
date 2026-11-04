@@ -1,8 +1,8 @@
 # Google Play listing (English)
 
-**Title (≤30):** POST 404: Parcels From Tomorrow
+**Title (≤30):** Time Post
 
-**Short description (≤80):** Sort parcels between past and future and save an erased tomorrow.
+**Short description (≤80):** Parcels From Tomorrow: sort mail between past and future, save tomorrow.
 
 **Full description:**
 It's 2038. Hardly anyone writes letters — an AI called the ORACLE decides everything. You inherit old post office

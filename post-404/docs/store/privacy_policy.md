@@ -1,8 +1,8 @@
-# Privacy Policy — POST 404: Parcels From Tomorrow
+# Privacy Policy — Time Post
 
 _Last updated: 4 November 2026_
 
-POST 404 does not collect, store on servers, or share any personal data.
+Time Post does not collect, store on servers, or share any personal data.
 
 - The game works fully offline and does not request internet access.
 - Your progress and settings are saved only on your device, in the app's private storage, and are deleted when you uninstall the game.
@@ -16,7 +16,7 @@ Contact: the developer via the Google Play store page.
 
 ---
 
-# Політика конфіденційності — ПОШТА 404
+# Політика конфіденційності — Time Post
 
 Гра не збирає, не зберігає на серверах і не передає жодних персональних даних. Працює без інтернету.
 Прогрес і налаштування зберігаються лише на вашому пристрої й видаляються разом із грою. Реклами, аналітики

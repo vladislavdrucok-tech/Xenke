@@ -32,7 +32,7 @@ godot --headless --path post-404 --export-release "Android" build/post404.aab
 
 ## 3. Play Console (робите ви)
 1. Обліковий запис розробника Google Play (разовий внесок $25).
-2. Створити застосунок: назва «POST 404: Parcels From Tomorrow», мова за замовчуванням — українська, гра, безкоштовна.
+2. Створити застосунок: назва «Time Post», мова за замовчуванням — українська, гра, безкоштовна.
 3. **Сторінка в магазині:** тексти з `docs/store/listing_uk.md` і `listing_en.md`;
    іконка `docs/store/icon_512.png`; графіка `docs/store/feature_graphic_1024x500.png`;
    скриншоти `docs/store/screenshots/` (720×1280, підходять для телефонів).

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates every sprite of POST 404 as original pixel art with one palette.
+"""Generates every sprite of Time Post as original pixel art with one palette.
 
 Run from the project root:  python3 tools/make_art.py
 Output: assets/sprites/*.png (1x pixel size; the game scales them with

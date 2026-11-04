@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Synthesises all sounds and music of POST 404 (original, license-free).
+"""Synthesises all sounds and music of Time Post (original, license-free).
 
 Run from the project root:  python3 tools/make_audio.py
 Output: assets/audio/*.wav, mono 16-bit 22050 Hz.

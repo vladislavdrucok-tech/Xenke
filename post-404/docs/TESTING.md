@@ -1,4 +1,4 @@
-# Перевірки POST 404 (стан на 0.2.0)
+# Перевірки Time Post (стан на 0.2.0)
 
 ## Автоматичні (headless) — `tests/run_tests.gd`
 Запуск: `godot --headless --path post-404 -s res://tests/run_tests.gd` → **322 passed, 0 failed**.

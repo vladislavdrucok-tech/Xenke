@@ -7,11 +7,13 @@ var session := GameSession.new()
 var settings := {"sound": true, "vibration": true, "tutorial_done": false}
 var loaded_from_save := false
 var _save_pending := false
+var test_mode := false   # --ld-test: нічого не пишемо на диск
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	if "--ld-test" in OS.get_cmdline_user_args():
+		test_mode = true
 		session.new_game(1)  # тести не чіпають справжнє збереження
 		return
 	_load_settings()
@@ -42,11 +44,14 @@ func _flush_save() -> void:
 
 
 func save_now() -> void:
+	if test_mode:
+		return
 	SaveSystem.save_game(session)
 
 
 func new_game() -> void:
-	SaveSystem.delete_save()
+	if not test_mode:
+		SaveSystem.delete_save()
 	session = GameSession.new()
 	session.new_game()
 	_connect_session()
@@ -56,6 +61,8 @@ func new_game() -> void:
 
 func set_setting(key: String, value) -> void:
 	settings[key] = value
+	if test_mode:
+		return
 	SaveSystem.write_json(SaveSystem.SETTINGS_PATH, settings)
 
 

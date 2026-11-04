@@ -35,6 +35,11 @@ func shot(name: String) -> void:
 
 
 func press(b: Button) -> void:
+	# як людина: чекаємо, поки кнопка стане доступною (анімації), але не довше 2 с
+	var t := 0
+	while b != null and (not b.is_visible_in_tree() or b.disabled) and t < 40:
+		await create_timer(0.05).timeout
+		t += 1
 	if b == null or not b.is_visible_in_tree() or b.disabled:
 		var info := ""
 		if main and main.shop_page:
@@ -68,7 +73,7 @@ func run() -> void:
 	root.add_child(main)
 	await wait(0.6)
 	await shot("tutorial")
-	press(modal_button("Зрозуміло"))
+	await press(modal_button("Зрозуміло"))
 	await wait(0.3)
 	var ses: GameSession = root.get_node("Game").session
 	var sp = main.shop_page
@@ -77,11 +82,11 @@ func run() -> void:
 		var guard := 0
 		while not ses.day_done() and guard < 20:
 			guard += 1
-			press(sp.btn_next)
+			await press(sp.btn_next)
 			await wait(0.75)
 			if d == 0 and guard == 1:
 				await shot("customer")
-			press(sp.btn_inspect)
+			await press(sp.btn_inspect)
 			await wait(0.1)
 			if d == 0 and guard == 1:
 				await shot("inspected")
@@ -92,10 +97,12 @@ func run() -> void:
 			while ses.has_open_customer() and rounds < 8:
 				rounds += 1
 				if ses.current_ask() <= target and ses.can_afford_ask():
-					press(sp.btn_buy)
+					await press(sp.btn_buy)
+					break
+				if ses.money <= 0:
 					break
 				if not sp.offer_box.visible:
-					press(sp.btn_haggle)
+					await press(sp.btn_haggle)
 					await wait(0.05)
 					if d == 0 and guard <= 2 and rounds == 1:
 						await shot("haggle")
@@ -116,51 +123,97 @@ func run() -> void:
 						break
 				if sp.offer <= 0 or sp.btn_offer.disabled:
 					break
-				press(sp.btn_offer)
+				await press(sp.btn_offer)
 				await wait(0.45)
 			if ses.has_open_customer():
 				if sp.offer_box.visible:
-					press(sp.btn_offer_back)
-				press(sp.btn_decline)
+					await press(sp.btn_offer_back)
+				await press(sp.btn_decline)
 			await wait(0.7)
 		# продаж
-		press(main.nav_buttons["inv"])
+		await press(main.nav_buttons["inv"])
 		await wait(0.2)
 		if d == 0:
 			await shot("inventory")
 		if not main.inv_page.sell_all.disabled:
-			press(main.inv_page.sell_all)
+			await press(main.inv_page.sell_all)
 			await wait(0.3)
 		# речі, що лежать довго, — продаємо
 		for it in ses.inventory.items.duplicate():
 			if ses.day - int(it["bought_day"]) >= 2:
 				ses.sell(int(it["uid"]))
-		press(main.nav_buttons["up"])
+		await press(main.nav_buttons["up"])
 		await wait(0.2)
 		if d == 1:
 			await shot("upgrades")
 		for u in Economy.UPGRADE_ORDER:
 			if ses.money > int(Economy.UPGRADES[u]["cost"]) + 600:
 				ses.buy_upgrade(u)
-		press(main.nav_buttons["shop"])
+		# неонова вивіска додає клієнтів уже сьогодні — обслуговуємо їх
+		while ses.next_customer():
+			ses.decline()
+		await press(main.nav_buttons["shop"])
 		await wait(0.2)
 		if d == 0:
 			await shot("day_done")
-		press(sp.btn_next)  # «Зачинити крамницю»
+		await press(sp.btn_next)  # «Зачинити крамницю»
 		await wait(0.5)
 		if d == 0:
 			await shot("summary")
 		if ses.game_over:
 			print("UI: bankrupt on day ", ses.day)
 			break
-		press(modal_button("Наступний день"))
+		await press(modal_button("Наступний день"))
 		await wait(0.4)
+	# подвійні натискання: друга дія не повинна змінити баланс
+	await press(sp.btn_next)
+	await wait(0.8)
+	if ses.has_open_customer():
+		ses.money = 100000
+		sp.refresh()
+		var m0 := ses.money
+		sp._on_buy()
+		sp._on_buy()
+		sp._on_decline()
+		if ses.money != m0 - int(ses.current["nego"]["deal_price"]) or ses.inventory.find(int(ses.current["item"]["uid"])).is_empty():
+			printerr("UI: double buy changed money twice")
+			errors += 1
+		var uid := int(ses.current["item"]["uid"])
+		var m1 := ses.money
+		ses.sell(uid)
+		ses.sell(uid)
+		if ses.money - m1 != int(ses.sell_price(ses.current["item"])):
+			printerr("UI: double sell")
+			errors += 1
 	main._show_settings()
 	await wait(0.4)
 	await shot("settings")
 	var m := modal()
 	if m:
 		m.close()
+	# банкрутство через UI: порожній склад, нуль грошей, кінець дня
+	var res_line := "UI RESULT: day=%d money=%d (start %d) bought=%d sold=%d" % [ses.day, ses.money, start_money, ses.stats_total["bought"], ses.stats_total["sold"]]
+	if ses.has_open_customer():
+		ses.decline()
+	while ses.next_customer():
+		ses.decline()
+	for it in ses.inventory.items.duplicate():
+		ses.sell(int(it["uid"]))
+	ses.money = 0
+	sp.refresh()
+	await press(sp.btn_next)
+	await wait(0.5)
+	await shot("bankrupt")
+	if not ses.game_over:
+		printerr("UI: expected bankruptcy")
+		errors += 1
+	await press(modal_button("Почати нову гру"))
+	await wait(0.3)
+	ses = root.get_node("Game").session
+	if ses.game_over or ses.money != Economy.START_MONEY or ses.day != 1:
+		printerr("UI: new game after bankruptcy failed")
+		errors += 1
+	print(res_line)
 	print("UI RESULT: day=%d money=%d (start %d) bought=%d sold=%d errors=%d" % [ses.day, ses.money, start_money, ses.stats_total["bought"], ses.stats_total["sold"], errors])
 	# перевірка: стан після «перезапуску» (повторне завантаження з JSON)
 	var json := JSON.stringify(ses.to_dict())

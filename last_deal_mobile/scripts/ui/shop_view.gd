@@ -59,21 +59,35 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+const MIN_VISIBLE_ROWS := 122.0  # скільки рядків арту мінімум видно (щоб не губити вивіску)
+
+
+## Масштаб «cover»: сцена заповнює контрол; на дуже широких/низьких екранах — не більше,
+## ніж треба, щоб видно було MIN_VISIBLE_ROWS рядків (з боків тоді темна стіна).
 func art_scale() -> float:
-	return size.x / ART_W
+	if size.y <= 0.0:
+		return maxf(size.x / ART_W, 1.0)
+	var s := maxf(size.x / ART_W, size.y / VIEW_BOTTOM)
+	if size.y / s < MIN_VISIBLE_ROWS:
+		s = size.y / MIN_VISIBLE_ROWS
+	return s
 
 
-## Перетворення координат арту в координати контрола (низ арту = низ контрола).
+func _offset_x() -> float:
+	return (size.x - ART_W * art_scale()) * 0.5
+
+
+## Перетворення координат арту в координати контрола (рядок VIEW_BOTTOM = низ контрола).
 func art_to_local(p: Vector2) -> Vector2:
 	var s := art_scale()
-	return Vector2(p.x * s, size.y - (VIEW_BOTTOM - p.y) * s)
+	return Vector2(_offset_x() + p.x * s, size.y - (VIEW_BOTTOM - p.y) * s)
 
 
 func _draw() -> void:
 	var s := art_scale()
 	var origin := art_to_local(Vector2.ZERO)
-	if origin.y > 0:
-		draw_rect(Rect2(Vector2.ZERO, Vector2(size.x, origin.y + 1)), Color("#140c22"))
+	if origin.y > 0 or origin.x > 0:
+		draw_rect(Rect2(Vector2.ZERO, size), Color("#1d1430"))
 	draw_texture_rect(bg_tex, Rect2(origin, Vector2(ART_W, ART_H) * s), false)
 	# дощ у вікні
 	for r in _rain:
@@ -90,6 +104,7 @@ func _draw() -> void:
 	# неонова вивіска на стіні над полицями
 	var neon_size := neon_tex.get_size() * s
 	var neon_pos := art_to_local(NEON_POS)
+	neon_pos.x = clampf(neon_pos.x, s * 2, size.x - neon_size.x - s * 2)  # на вузьких екранах не обрізаємо
 	draw_texture_rect(neon_tex, Rect2(neon_pos, neon_size), false, Color(1, 1, 1, _neon_on))
 	var open_size := open_tex.get_size() * s
 	draw_texture_rect(open_tex, Rect2(art_to_local(Vector2(52, 57)), open_size),
@@ -100,8 +115,14 @@ func _draw() -> void:
 		var bob := sin(_t * 2.2) * 0.6
 		var cp := Vector2(90 - cs.x / 2.0 + customer_offset, COUNTER_TOP + 18 - cs.y + bob + _bob)
 		draw_texture_rect(customer_tex, Rect2(art_to_local(cp), cs * s), false, Color(1, 1, 1, customer_alpha))
-	# стійка
-	draw_texture_rect(counter_tex, Rect2(art_to_local(Vector2(0, COUNTER_TOP)), Vector2(ART_W, 60) * s), false)
+	# стійка (на широких екранах продовжується на всю ширину)
+	var ct := art_to_local(Vector2(0, COUNTER_TOP))
+	if ct.x > 0:
+		var top_y := art_to_local(Vector2(0, COUNTER_TOP + 14)).y
+		draw_rect(Rect2(0, top_y, size.x, size.y - top_y), Color("#6b3f24"))
+		draw_rect(Rect2(0, top_y, size.x, 6 * s), Color("#9a6338"))
+		draw_rect(Rect2(0, art_to_local(Vector2(0, COUNTER_TOP + 26)).y, size.x, s), Color("#3ff0ff"))
+	draw_texture_rect(counter_tex, Rect2(ct, Vector2(ART_W, 60) * s), false)
 	# предмет на стійці
 	if item_tex and item_alpha > 0.0:
 		var isz := Vector2(32, 32) * item_scale

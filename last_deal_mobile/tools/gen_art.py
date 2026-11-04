@@ -763,7 +763,7 @@ def main():
     neon_sign().save(os.path.join(ART, "neon_sign.png"))
     open_sign().save(os.path.join(ART, "open_sign.png"))
     counter().save(os.path.join(ART, "counter.png"))
-    for i in range(12):
+    for i in range(16):
         customer(i).save(os.path.join(ART, "customers", "customer_%02d.png" % i))
     for name, fn in ITEMS.items():
         fn().save(os.path.join(ART, "items", name + ".png"))

@@ -218,6 +218,8 @@ func refresh(animate: bool = false) -> void:
 			est_label.text = "Ринок дасть: %s" % UIKit.money_text(int(c["est_low"]))
 		else:
 			est_label.text = "Оцінка: %s – %s" % [Economy.format_money(int(c["est_low"])), UIKit.money_text(int(c["est_high"]))]
+		var margin := (int(c["est_low"]) + int(c["est_high"])) / 2 - int(c["nego"]["ask"])
+		est_label.text += " · %s %s" % ["вигода ≈" if margin >= 0 else "збиток ≈", Economy.format_money(absi(margin))]
 	else:
 		info = "Стан зі слів клієнта: %s" % ItemDB.condition_label(c["claimed_condition"])
 		if item["id"] == "mystery":

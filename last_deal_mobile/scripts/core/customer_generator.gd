@@ -125,6 +125,7 @@ static func generate(money: int, upgrades: Dictionary, market: Market, uid: int,
 	var greet_arr: Array = t["greet"]
 	var greet: String = greet_arr[rng.randi_range(0, greet_arr.size() - 1)]
 	greet = greet % [ItemDB.item_name(item_id).to_lower(), ask]
+	greet = greet.substr(0, 1).to_upper() + greet.substr(1)
 	greet += " " + str(lore_arr[rng.randi_range(0, lore_arr.size() - 1)])
 	return {
 		"name": name,

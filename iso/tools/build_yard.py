@@ -346,6 +346,68 @@ def walk_frames(src, cols, height):
         frames.append(cv)
     return frames
 
+PACK2 = START / 'pack2/outputs'
+BED_POLY = [(804, 704), (898, 634), (1092, 692), (1092, 744), (996, 798), (804, 752)]   # covers the bed in all S2 states
+
+def figure_frames(src, n, height, ref=None, anchor='body', canvas=None):
+    """Frames of a sheet found as figures, not grid cells (the artist does not keep the cells): the n largest blobs,
+    left to right; small loose bits (water drops) go with the nearest figure. Scaled so the `ref` frames (standing
+    ones) are `height` px tall; feet (bottom of the figure itself) at the bottom centre of one shared canvas;
+    horizontal anchor = the body's centre ('body', for walking) or the feet ('feet', for crouching work)."""
+    im = Image.open(src).convert('RGBA')
+    alpha = np.asarray(im)[..., 3] > 110
+    lab, num = ndimage.label(ndimage.binary_dilation(alpha, iterations=5))
+    sizes = ndimage.sum(alpha, lab, range(1, num + 1))
+    order = sorted(range(1, num + 1), key=lambda i: -sizes[i - 1])
+    main = sorted(order[:n], key=lambda i: ndimage.center_of_mass(alpha, lab, i)[1])
+    cx = [ndimage.center_of_mass(alpha, lab, i)[1] for i in main]
+    groups = {m: [m] for m in main}
+    for i in order[n:]:
+        c = ndimage.center_of_mass(alpha, lab, i)[1]
+        groups[main[int(np.argmin([abs(c - x) for x in cx]))]].append(i)
+    a_img = np.asarray(im)
+    parts = []
+    for m in main:
+        body = (lab == m) & alpha
+        whole = np.isin(lab, groups[m]) & alpha
+        ys, xs = np.nonzero(whole)
+        y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+        rgba = a_img[y0:y1, x0:x1].copy()
+        rgba[..., 3] = np.where(whole[y0:y1, x0:x1], 255, 0)
+        bys, bxs = np.nonzero(body)
+        foot = bys.max() + 1 - y0
+        top = bys.min()
+        if anchor == 'feet':
+            low = body[bys.max() - max(3, int((bys.max() - top) * 0.08)):bys.max() + 1]
+            ax = float(np.nonzero(low)[1].mean()) - x0
+        else:
+            up = body[top:top + int((bys.max() - top) * 0.55)]
+            ax = float(np.nonzero(up)[1].mean()) - x0
+        parts.append((Image.fromarray(rgba, 'RGBA'), ax, foot, bys.max() - top))
+    refs = ref if ref is not None else range(n)
+    k = height / float(np.mean([parts[i][3] for i in refs]))
+    out = []
+    for c, ax, foot, h in parts:
+        s_ = c.resize((max(1, round(c.width * k)), max(1, round(c.height * k))), Image.Resampling.LANCZOS)
+        s_.putalpha(s_.getchannel('A').point(lambda v: 255 if v > 110 else 0))
+        out.append((s_, ax * k, foot * k))
+    half = int(max(max(ax, s_.width - ax) for s_, ax, f in out)) + 2
+    up_ = int(max(f for s_, ax, f in out)) + 2
+    below = int(max(s_.height - f for s_, ax, f in out)) + 1     # drops or tools that hang below the feet
+    frames = []
+    for s_, ax, f in out:
+        cv = Image.new('RGBA', (half * 2, up_ + below))
+        cv.alpha_composite(s_, (round(half - ax), round(up_ - f)))
+        frames.append(cv)
+    return frames, below
+
+def save_set(frames, name, below=0):
+    paths = []
+    for i, f in enumerate(frames):
+        f.save(OUT / f'{name}_{i}.png')
+        paths.append(f'res://assets/yard/{name}_{i}.png')
+    return {'frames': paths, 'below': below}
+
 def main(debug=False):
     OUT.mkdir(parents=True, exist_ok=True)
     img = Image.open(SRC).convert('RGB')
@@ -359,7 +421,7 @@ def main(debug=False):
     for name, (poly, base) in OCCLUDERS.items():
         piece, bb = cut_poly(bg, poly)
         piece.save(OUT / f'{name}.png')
-        data['occluders'][name] = {'x': bb[0], 'y': bb[1], 'base': base, 'tex': f'res://assets/yard/{name}.png'}
+        data['occluders'][name] = {'x': bb[0], 'y': bb[1], 'base': base, 'tex': f'res://assets/yard/{name}.png', 'poly': poly}
     # States.
     pur = Image.open(OUT / 'purifier.png')
     if s2a_path.exists():
@@ -385,8 +447,24 @@ def main(debug=False):
     bed = Image.open(OUT / 'bed.png')
     bx, by = data['occluders']['bed']['x'], data['occluders']['bed']['y']
     inner = [(x - bx, y - by) for x, y in [(840, 700), (912, 660), (1058, 696), (986, 736)]]
-    for i, s in enumerate(bed_states(bed, inner)):
-        s.save(OUT / f'bed_{i}.png')
+    s2 = [PACK2 / f'environment/{n}.png' for n in ('S2c_bed_dry', 'S2d_bed_sown', 'S2e_bed_watered', 'S2f_bed_sprouts')]
+    if all(p_.exists() for p_ in s2):
+        # The owner's bed states: each cut from its picture with one polygon that covers the bed in every state, soft
+        # edge so the drift of the generated pictures round the bed does not show. The grown bed is S1's own.
+        m = Image.new('L', bg.size, 0)
+        ImageDraw.Draw(m).polygon(BED_POLY, fill=255)
+        soft = np.clip(ndimage.gaussian_filter((np.asarray(m) > 0).astype(float), 2.0) * 1.8, 0, 1)
+        soft[np.asarray(m) > 0] = np.maximum(soft[np.asarray(m) > 0], 0.0)
+        bb = Image.fromarray((soft * 255).astype(np.uint8)).getbbox()
+        srcs = [Image.open(p_).convert('RGB') for p_ in s2] + [bg]
+        for i, src in enumerate(srcs):
+            piece = np.dstack([np.asarray(src), (soft * 255).astype(np.uint8)])
+            Image.fromarray(piece, 'RGBA').crop(bb).save(OUT / f'bed_{i}.png')
+        data['occluders']['bed'].update({'x': bb[0], 'y': bb[1], 'poly': BED_POLY})
+        bx, by = bb[0], bb[1]
+    else:
+        for i, s in enumerate(bed_states(bed, inner)):
+            s.save(OUT / f'bed_{i}.png')
     # The background must not show the grown bed or the working purifier under their other states: paint the
     # broken purifier and the dry bed into the background too (the live sprites sit exactly on top).
     bgr = bg.convert('RGBA')
@@ -407,6 +485,32 @@ def main(debug=False):
             f.save(OUT / f'mira_walk_{i}.png')
         data['chars']['mira']['walk'] = [f'res://assets/yard/mira_walk_{i}.png' for i in range(len(fr))]
         data['chars']['mira']['idle_frame'] = 1
+        sets = {'walk_se': {'frames': data['chars']['mira']['walk'], 'below': 0}}
+        M = PACK2 / 'mira'
+        for key, fn in (('walk_ne', 'S3b_mira_walk_NE.png'), ('walk_s', 'S3c_mira_walk_S.png'), ('walk_n', 'S3d_mira_walk_N.png')):
+            if (M / fn).exists():
+                fr, below = figure_frames(M / fn, 4, 104)
+                sets[key] = save_set(fr, 'mira_' + key, below)
+        if (M / 'S3f_mira_wrench_groundwork_v2.png').exists():
+            fr, below = figure_frames(M / 'S3f_mira_wrench_groundwork_v2.png', 4, 104, ref=(0, 1), anchor='feet')
+            sets['wrench'] = save_set(fr[:2], 'mira_wrench', below)
+            sets['ground'] = save_set(fr[2:], 'mira_ground', below)
+        if (M / 'S3g_mira_watering_pickup_happy_v1.png').exists():
+            fr, below = figure_frames(M / 'S3g_mira_watering_pickup_happy_v1.png', 4, 104, ref=(0, 1), anchor='feet')
+            sets['water'] = save_set(fr[:2], 'mira_water', below)
+            sets['pickup'] = save_set(fr[2:3], 'mira_pickup', below)
+            sets['happy'] = save_set(fr[3:4], 'mira_happy', below)
+        data['chars']['mira']['sets'] = sets
+    E = PACK2 / 'einstein'
+    if (E / 'S4a_einstein_walk_SE.png').exists():
+        sets = {}
+        fr, below = figure_frames(E / 'S4a_einstein_walk_SE.png', 4, 114)
+        sets['walk_se'] = save_set(fr, 'einstein_walk_se', below)
+        if (E / 'S4a_einstein_wrench_repair_v1.png').exists():
+            fr, below = figure_frames(E / 'S4a_einstein_wrench_repair_v1.png', 4, 114, ref=(0, 1), anchor='feet')
+            sets['wrench'] = save_set(fr[:2], 'einstein_wrench', below)
+            sets['ground'] = save_set(fr[2:], 'einstein_ground', below)
+        data['chars']['einstein']['sets'] = sets
     # People of the yard kept from the concept until their own sheets come (S5): Pavlo in the greenhouse, the storekeeper.
     if have_s1:
         for name, box in NPCS.items():

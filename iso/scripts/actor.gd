@@ -55,31 +55,58 @@ func _part(region: Rect2, origin: Vector2) -> Sprite2D:
 	rig.add_child(s)
 	return s
 
-## Real walking frames (the owner's sheets, S3...): all on one canvas with the feet at the bottom centre.
-var walk: Array[Texture2D] = []
-var idle_frame := 0
+## Real frames from the owner's sheets (S3, S4): sets by name - walk_se, walk_ne, walk_s, walk_n (walking that way;
+## the west-facing ones are mirrored), wrench, ground, water (work), pickup, happy (one-off poses). Every frame has the
+## point between the feet at its bottom centre (`below` rows of loose bits under it).
+var sets := {}
+var walk: Array[Texture2D] = []      # kept for the older single-set setup
+var idle_frame := 1
 var dist := 0.0
-var _frame := -1
+var facing := "se"                   # se, ne, s, n
+var work_kind := ""                  # which work pose while `working` > 0
+var pose := ""                       # a one-off pose shown for `pose_t` seconds
+var pose_t := 0.0
+var _frame_key := ""
 
-func setup_frames(frames: Array, faces_right: bool, idle: int) -> void:
-	for f in frames:
-		walk.append(f)
+func setup_sets(s_: Dictionary, idle: int) -> void:
+	sets = s_
 	idle_frame = idle
-	tex = walk[idle]
-	art_faces_right = faces_right
-	facing_right = faces_right
+	walk.assign(sets.walk_se.frames)
+	tex = walk[0]
+	art_faces_right = true
 	shadow = Sprite2D.new()
 	shadow.texture = shadow_tex()
-	shadow.scale = Vector2(0.9, 0.32)
+	shadow.scale = Vector2(0.8, 0.3)
 	shadow.position = Vector2(0, -2)
 	add_child(shadow)
 	rig = Node2D.new()
 	add_child(rig)
 	body = Sprite2D.new()
-	body.texture = tex
 	body.centered = false
-	body.offset = Vector2(-tex.get_width() / 2.0, -tex.get_height() + 2)
 	rig.add_child(body)
+	_show("walk_se", idle)
+
+func setup_frames(frames: Array, faces_right: bool, idle: int) -> void:
+	setup_sets({"walk_se": {"frames": frames, "below": 0}}, idle)
+	art_faces_right = faces_right
+
+func play(name: String, secs: float) -> void:
+	if sets.has(name):
+		pose = name
+		pose_t = secs
+
+func _show(set_name: String, i: int) -> void:
+	var st: Dictionary = sets.get(set_name, sets.walk_se)
+	var fr: Array = st.frames
+	i = i % fr.size()
+	var key := "%s%d" % [set_name, i]
+	if key == _frame_key:
+		return
+	_frame_key = key
+	var t: Texture2D = fr[i]
+	tex = t
+	body.texture = t
+	body.offset = Vector2(-t.get_width() / 2.0, -(t.get_height() - int(st.get("below", 0))) + 1)
 
 ## hip_y / split_x: where the legs start and where they part, in pixels of the frame.
 func setup(t: Texture2D, faces_right: bool, hip_y: float, split_x: float) -> void:
@@ -103,7 +130,7 @@ func setup(t: Texture2D, faces_right: bool, hip_y: float, split_x: float) -> voi
 	body = _part(Rect2(0, 0, w, hip + 1.0), Vector2(w / 2.0, hip))
 
 func animate(delta: float) -> void:
-	if not walk.is_empty():
+	if not sets.is_empty():
 		_animate_frames(delta)
 		return
 	var speed := vel.length()
@@ -153,41 +180,56 @@ func animate(delta: float) -> void:
 			body.scale = Vector2(1.0, 1.0 + sin(t * 2.2 + position.x) * 0.015)
 	shadow.scale = Vector2(0.9 - (0.06 if moving and absf(sin(phase)) > 0.7 else 0.0), 0.32)
 
-## With real frames: the frame follows the distance walked (one frame per 15 px), so the feet never slide;
-## standing, the idle frame breathes; working, it bobs over the job.
+## With real frames: the walking set follows the direction (up the screen = seen from behind), the frame follows the
+## distance walked (one frame per 15 px), so the feet never slide; work and one-off poses play facing the job.
 func _animate_frames(delta: float) -> void:
 	var speed := vel.length()
 	moving = speed > 6.0
 	working = maxf(0.0, working - delta)
-	if absf(vel.x) > 10.0:
-		facing_right = vel.x > 0.0
-	elif absf(dir.x) > 0.2 and not moving:
+	pose_t = maxf(0.0, pose_t - delta)
+	var t := Time.get_ticks_msec() / 1000.0
+	if moving:
+		# Direction on the ground (the screen squeezes up/down by 0.7).
+		var a := rad_to_deg(atan2(-vel.y / 0.7, vel.x))
+		if a > 62.0 and a < 118.0:
+			facing = "n"
+		elif a < -62.0 and a > -118.0:
+			facing = "s"
+		else:
+			facing = "ne" if a > 0.0 else "se"
+		if absf(vel.x) > 8.0:
+			facing_right = vel.x > 0.0
+		pose_t = 0.0
+	elif absf(dir.x) > 0.2:
 		facing_right = dir.x > 0.0
 	rig.scale.x = 1.0 if facing_right == art_faces_right else -1.0
-	var t := Time.get_ticks_msec() / 1000.0
-	var f := idle_frame
+	var walk_set := "walk_" + facing if sets.has("walk_" + facing) else "walk_se"
 	if moving:
 		dist += speed * delta
-		f = floori(dist / 15.0) % walk.size()
-		if f != _frame and f % 2 == 0:
+		var f := floori(dist / 15.0) % 4
+		if _frame_key != "%s%d" % [walk_set, f] and f % 2 == 0:
 			stepped.emit(global_position + Vector2(-5.0 if f == 0 else 5.0, 0))
-		body.position = Vector2(0, -absf(sin(dist / 15.0 * PI)) * 1.0)
-		body.rotation = 0.0
+		_show(walk_set, f)
+		body.position = Vector2.ZERO
 		body.scale = Vector2.ONE
-	elif working > 0.0:
-		var k := absf(sin(t * 9.0))
-		body.position = Vector2(1.5 * k, 1.5 * k)
-		body.rotation = 0.1 * k
-		body.scale = Vector2(1.0, 1.0 - 0.03 * k)
+	elif working > 0.0 and sets.has(work_kind):
+		_show(work_kind, floori(t * 3.5))
+		body.position = Vector2.ZERO
+		body.scale = Vector2.ONE
+	elif pose_t > 0.0:
+		_show(pose, 0)
+		body.position = Vector2(0, -absf(sin(t * 8.0)) * 3.0) if pose == "happy" else Vector2.ZERO
+		body.scale = Vector2.ONE
 	else:
 		dist = 0.0
-		body.position = Vector2.ZERO
-		body.rotation = 0.0
+		if working > 0.0:
+			var k := absf(sin(t * 9.0))
+			body.position = Vector2(1.5 * k, 1.5 * k)
+		else:
+			body.position = Vector2.ZERO
+		# The idle pose: the passing frame of the last direction, breathing a little.
+		_show(walk_set, idle_frame)
 		body.scale = Vector2(1.0, 1.0 + sin(t * 2.2 + position.x) * 0.015)
-	if f != _frame:
-		_frame = f
-		body.texture = walk[f]
-	shadow.scale = Vector2(0.8, 0.3)
 
 ## Rectangle the sprite covers on screen (for fading what stands in front of it).
 func rect() -> Rect2:

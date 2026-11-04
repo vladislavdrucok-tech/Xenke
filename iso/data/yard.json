@@ -334,43 +334,277 @@
    "x": 796,
    "y": 418,
    "base": 625,
-   "tex": "res://assets/yard/purifier.png"
+   "tex": "res://assets/yard/purifier.png",
+   "poly": [
+    [
+     796,
+     600
+    ],
+    [
+     806,
+     470
+    ],
+    [
+     846,
+     418
+    ],
+    [
+     1004,
+     418
+    ],
+    [
+     1052,
+     468
+    ],
+    [
+     1176,
+     478
+    ],
+    [
+     1180,
+     534
+    ],
+    [
+     1118,
+     562
+    ],
+    [
+     1118,
+     652
+    ],
+    [
+     1050,
+     676
+    ],
+    [
+     1020,
+     652
+    ],
+    [
+     950,
+     642
+    ],
+    [
+     860,
+     628
+    ]
+   ]
   },
   "bed": {
-   "x": 816,
-   "y": 650,
+   "x": 798,
+   "y": 629,
    "base": 770,
-   "tex": "res://assets/yard/bed.png"
+   "tex": "res://assets/yard/bed.png",
+   "poly": [
+    [
+     804,
+     704
+    ],
+    [
+     898,
+     634
+    ],
+    [
+     1092,
+     692
+    ],
+    [
+     1092,
+     744
+    ],
+    [
+     996,
+     798
+    ],
+    [
+     804,
+     752
+    ]
+   ]
   },
   "tomatoes": {
    "x": 1008,
    "y": 690,
    "base": 845,
-   "tex": "res://assets/yard/tomatoes.png"
+   "tex": "res://assets/yard/tomatoes.png",
+   "poly": [
+    [
+     1008,
+     744
+    ],
+    [
+     1100,
+     690
+    ],
+    [
+     1296,
+     770
+    ],
+    [
+     1296,
+     812
+    ],
+    [
+     1206,
+     860
+    ],
+    [
+     1008,
+     806
+    ]
+   ]
   },
   "stall": {
    "x": 500,
    "y": 650,
    "base": 840,
-   "tex": "res://assets/yard/stall.png"
+   "tex": "res://assets/yard/stall.png",
+   "poly": [
+    [
+     500,
+     702
+    ],
+    [
+     556,
+     662
+    ],
+    [
+     640,
+     650
+    ],
+    [
+     762,
+     700
+    ],
+    [
+     762,
+     782
+    ],
+    [
+     700,
+     852
+    ],
+    [
+     640,
+     864
+    ],
+    [
+     520,
+     834
+    ],
+    [
+     500,
+     784
+    ]
+   ]
   },
   "crates_l": {
    "x": 404,
    "y": 556,
    "base": 662,
-   "tex": "res://assets/yard/crates_l.png"
+   "tex": "res://assets/yard/crates_l.png",
+   "poly": [
+    [
+     404,
+     602
+    ],
+    [
+     420,
+     574
+    ],
+    [
+     472,
+     556
+    ],
+    [
+     562,
+     574
+    ],
+    [
+     566,
+     642
+    ],
+    [
+     502,
+     670
+    ],
+    [
+     420,
+     668
+    ]
+   ]
   },
   "crates_r": {
    "x": 1046,
    "y": 428,
    "base": 502,
-   "tex": "res://assets/yard/crates_r.png"
+   "tex": "res://assets/yard/crates_r.png",
+   "poly": [
+    [
+     1046,
+     472
+    ],
+    [
+     1058,
+     438
+    ],
+    [
+     1110,
+     428
+    ],
+    [
+     1162,
+     444
+    ],
+    [
+     1164,
+     498
+    ],
+    [
+     1110,
+     510
+    ],
+    [
+     1048,
+     494
+    ]
+   ]
   },
   "planter": {
    "x": 596,
    "y": 366,
    "base": 468,
-   "tex": "res://assets/yard/planter.png"
+   "tex": "res://assets/yard/planter.png",
+   "poly": [
+    [
+     596,
+     452
+    ],
+    [
+     598,
+     372
+    ],
+    [
+     642,
+     366
+    ],
+    [
+     748,
+     398
+    ],
+    [
+     752,
+     466
+    ],
+    [
+     700,
+     478
+    ],
+    [
+     600,
+     474
+    ]
+   ]
   }
  },
  "chars": {
@@ -386,14 +620,110 @@
     "res://assets/yard/mira_walk_2.png",
     "res://assets/yard/mira_walk_3.png"
    ],
-   "idle_frame": 1
+   "idle_frame": 1,
+   "sets": {
+    "walk_se": {
+     "frames": [
+      "res://assets/yard/mira_walk_0.png",
+      "res://assets/yard/mira_walk_1.png",
+      "res://assets/yard/mira_walk_2.png",
+      "res://assets/yard/mira_walk_3.png"
+     ],
+     "below": 0
+    },
+    "walk_ne": {
+     "frames": [
+      "res://assets/yard/mira_walk_ne_0.png",
+      "res://assets/yard/mira_walk_ne_1.png",
+      "res://assets/yard/mira_walk_ne_2.png",
+      "res://assets/yard/mira_walk_ne_3.png"
+     ],
+     "below": 1
+    },
+    "walk_s": {
+     "frames": [
+      "res://assets/yard/mira_walk_s_0.png",
+      "res://assets/yard/mira_walk_s_1.png",
+      "res://assets/yard/mira_walk_s_2.png",
+      "res://assets/yard/mira_walk_s_3.png"
+     ],
+     "below": 1
+    },
+    "walk_n": {
+     "frames": [
+      "res://assets/yard/mira_walk_n_0.png",
+      "res://assets/yard/mira_walk_n_1.png",
+      "res://assets/yard/mira_walk_n_2.png",
+      "res://assets/yard/mira_walk_n_3.png"
+     ],
+     "below": 1
+    },
+    "wrench": {
+     "frames": [
+      "res://assets/yard/mira_wrench_0.png",
+      "res://assets/yard/mira_wrench_1.png"
+     ],
+     "below": 1
+    },
+    "ground": {
+     "frames": [
+      "res://assets/yard/mira_ground_0.png",
+      "res://assets/yard/mira_ground_1.png"
+     ],
+     "below": 1
+    },
+    "water": {
+     "frames": [
+      "res://assets/yard/mira_water_0.png",
+      "res://assets/yard/mira_water_1.png"
+     ],
+     "below": 1
+    },
+    "pickup": {
+     "frames": [
+      "res://assets/yard/mira_pickup_0.png"
+     ],
+     "below": 1
+    },
+    "happy": {
+     "frames": [
+      "res://assets/yard/mira_happy_0.png"
+     ],
+     "below": 1
+    }
+   }
   },
   "einstein": {
    "tex": "res://assets/yard/einstein.png",
    "w": 75,
    "h": 114,
    "hip": 94,
-   "split": 42.0
+   "split": 42.0,
+   "sets": {
+    "walk_se": {
+     "frames": [
+      "res://assets/yard/einstein_walk_se_0.png",
+      "res://assets/yard/einstein_walk_se_1.png",
+      "res://assets/yard/einstein_walk_se_2.png",
+      "res://assets/yard/einstein_walk_se_3.png"
+     ],
+     "below": 1
+    },
+    "wrench": {
+     "frames": [
+      "res://assets/yard/einstein_wrench_0.png",
+      "res://assets/yard/einstein_wrench_1.png"
+     ],
+     "below": 1
+    },
+    "ground": {
+     "frames": [
+      "res://assets/yard/einstein_ground_0.png",
+      "res://assets/yard/einstein_ground_1.png"
+     ],
+     "below": 1
+    }
+   }
   }
  },
  "overlays": {

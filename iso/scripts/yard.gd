@@ -82,7 +82,8 @@ func _ready() -> void:
 		s.position = Vector2(o.x, o.base)
 		s.offset = Vector2(0, float(o.y) - float(o.base))
 		sorted.add_child(s)
-		occluders[name] = {"sprite": s, "rect": Rect2(o.x, o.y, s.texture.get_width(), s.texture.get_height()), "base": float(o.base), "a": 1.0}
+		occluders[name] = {"sprite": s, "rect": Rect2(o.x, o.y, s.texture.get_width(), s.texture.get_height()), "base": float(o.base), "a": 1.0,
+			"poly": _poly(o.get("poly", [])), "top": float(o.y)}
 	# People of the yard (kept from the concept until their own animated sheets come): standing where they work.
 	for name in D.get("npcs", {}):
 		var n: Dictionary = D.npcs[name]
@@ -152,7 +153,15 @@ func _keys() -> void:
 func _actor(name: String, faces_right: bool) -> Actor:
 	var a := Actor.new()
 	var c: Dictionary = D.chars[name]
-	if c.has("walk"):
+	if c.has("sets"):
+		var sets := {}
+		for k in c.sets:
+			var fr := []
+			for p in c.sets[k].frames:
+				fr.append(load(p))
+			sets[k] = {"frames": fr, "below": int(c.sets[k].get("below", 0))}
+		a.setup_sets(sets, int(c.get("idle_frame", 1)))
+	elif c.has("walk"):
 		var frames := []
 		for p in c.walk:
 			frames.append(load(p))
@@ -238,6 +247,7 @@ func _show_purifier() -> void:
 	var on: bool = S.flags.get("repaired", false)
 	var s: Sprite2D = occluders.purifier.sprite
 	s.texture = load("res://assets/yard/purifier.png" if on else "res://assets/yard/purifier_broken.png")
+	occluders.purifier.erase("img")
 	drops.emitting = on
 	var ov := get_node_or_null("Overlay_purifier_broken")
 	if ov:
@@ -332,15 +342,62 @@ func _follow(delta: float) -> void:
 
 ## Objects between the camera and a character (the character's feet above the object's base line, sprites
 ## overlapping) fade, so nobody is lost behind the purifier, the stall or the crates.
+## The lowest point of the object's outline straight above or below x: a character whose feet are below that line
+## stands in front of the object, above it - behind. (One horizontal base line is wrong for long diagonal objects.)
+func _bottom_y(poly: PackedVector2Array, x: float) -> float:
+	var best := -INF
+	for i in poly.size():
+		var a := poly[i]
+		var b := poly[(i + 1) % poly.size()]
+		if (x >= minf(a.x, b.x)) and (x <= maxf(a.x, b.x)) and absf(b.x - a.x) > 0.01:
+			best = maxf(best, lerpf(a.y, b.y, (x - a.x) / (b.x - a.x)))
+	return best
+
 func _fade(delta: float) -> void:
 	for name in occluders:
 		var o: Dictionary = occluders[name]
 		var want := 1.0
+		var front: Array[float] = []
+		var behind: Array[float] = []
 		for a in [mira, einstein]:
-			if a.position.y < o.base - 4.0 and a.rect().grow(-10).intersects(o.rect):
-				want = 0.45
+			var edge: float = _bottom_y(o.poly, a.position.x) if not (o.poly as PackedVector2Array).is_empty() else o.base
+			if a.position.y >= edge:
+				front.append(a.position.y)
+			else:
+				behind.append(a.position.y)
+				# Only the leader makes things see-through, and only when they really hide her: the companion
+				# passing a corner should not fade a whole bed.
+				if a == mira and a.rect().grow(-10).intersects(o.rect) and _covers(o, a):
+					want = 0.45
+		# Sort the object between the characters in front of it and those behind it.
+		var y: float = o.base
+		if behind.is_empty() and not front.is_empty():
+			y = minf(o.base, front.min() - 1.0)
+		elif front.is_empty() and not behind.is_empty():
+			y = maxf(o.base, behind.max() + 1.0)
+		elif not front.is_empty():
+			y = (behind.max() + front.min()) / 2.0
+		var sp: Sprite2D = o.sprite
+		if not is_equal_approx(sp.position.y, y):
+			sp.position.y = y
+			sp.offset.y = o.top - y
 		o.a = move_toward(o.a, want, delta * 4.0)
 		(o.sprite as Sprite2D).modulate.a = o.a
+
+## Does the object's picture really cover the character (opaque pixels over its head, chest or legs)?
+## Standing beside a bed or the purifier is not standing behind it.
+func _covers(o: Dictionary, a: Actor) -> bool:
+	if not o.has("img"):
+		o["img"] = (o.sprite as Sprite2D).texture.get_image()
+	var img: Image = o.img
+	var h := float(a.tex.get_height())
+	var hits := 0
+	for k in [0.15, 0.4, 0.65, 0.9]:
+		for dx in [-10.0, 0.0, 10.0]:
+			var p: Vector2 = a.position + Vector2(dx, -h * k) - o.rect.position
+			if p.x >= 0 and p.y >= 0 and p.x < img.get_width() and p.y < img.get_height() and img.get_pixel(int(p.x), int(p.y)).a > 0.9:
+				hits += 1
+	return hits >= 3
 
 # ======================================================================= interactions
 ## What each spot offers now: verb (action button), enabled, the bubble over it.
@@ -454,6 +511,7 @@ func _done(id: String) -> void:
 				S.flags["repaired"] = true
 				S.tank = 2
 				_show_purifier()
+				mira.play("happy", 1.4)
 				splash.position = Vector2(1110, 630)
 				splash.restart()
 				_burst(Vector2(940, 520), Color("#7fe8ff"))
@@ -478,6 +536,7 @@ func _done(id: String) -> void:
 					S.bed = 0
 					S.flags["harvest"] = true
 					add("cabbage", 4, at)
+					mira.play("happy", 1.4)
 					_finish()
 			_show_bed()
 		"pavlo":
@@ -617,11 +676,32 @@ func _process(delta: float) -> void:
 	var q: Array = quest()
 	hud.set_quest(q[0], q[1])
 
+## Which pose a job shows: the wrench for machines, hands in the soil, the watering can, picking up.
+func _kind(id: String) -> String:
+	match id:
+		"purifier", "craft":
+			return "wrench"
+		"basin":
+			return "pickup"
+		"bed":
+			return "water" if int(S.bed) == 1 else "ground"
+		"scrap":
+			return "ground"
+	return ""
+
 func _job(delta: float) -> void:
 	if job.is_empty():
 		return
 	job.t += delta
 	mira.working = 0.2
+	mira.work_kind = _kind(job.id)
+	if mira.work_kind == "pickup":
+		mira.play("pickup", 0.3)
+	# The researcher lends a hand when he stands near: a wrench at machines, on his knees at the soil.
+	if einstein.position.distance_to(mira.position) < 150.0 and not einstein.moving and mira.work_kind in ["wrench", "ground"]:
+		einstein.working = 0.2
+		einstein.work_kind = mira.work_kind
+		einstein.dir = Vector2(1 if _look_at(job.id).x > einstein.position.x else -1, 0)
 	if job.t >= job.len:
 		var id: String = job.id
 		job = {}
@@ -768,8 +848,7 @@ func _demo() -> void:
 	await _wait(2.0)
 	await _go([Vector2(1000, 420), Vector2(800, 500), Vector2(740, 560), Vector2(790, 640)])
 	await _shot(dir, "06-repair-ready")
-	await _use(1.2)
-	await _shot(dir, "07-repairing")
+	await _use_shot(dir, "07-repairing", 1.0)
 	await _wait(1.8)
 	await _talk()
 	await _shot(dir, "08-repaired")
@@ -781,9 +860,9 @@ func _demo() -> void:
 	await _use(1.2)
 	await _shot(dir, "09-water")
 	await _go([Vector2(1140, 600), Vector2(1135, 520), Vector2(800, 500), Vector2(740, 560), Vector2(780, 660), Vector2(796, 762)])
-	await _use(2.0)
+	await _use_shot(dir, "10-sowing", 0.8)
 	await _shot(dir, "10-sown")
-	await _use(2.0)
+	await _use_shot(dir, "11-watering", 0.8)
 	await _shot(dir, "11-watered")
 	await _go([Vector2(780, 660), Vector2(600, 690)])
 	await _wait(0.6)
@@ -830,8 +909,8 @@ func _stroll() -> void:
 	hud.lines.clear()
 	hud.next_line()
 	await _wait(0.6)
-	for leg in [[Vector2(1, 0), 1.6], [Vector2.ZERO, 0.6], [Vector2(0.7, 0.7), 1.2], [Vector2(-1, 0), 1.8], [Vector2.ZERO, 0.5],
-			[Vector2(0, -1), 1.2], [Vector2(-0.5, 0.3), 0.6], [Vector2(0.4, 0), 0.8], [Vector2.ZERO, 1.0]]:
+	for leg in [[Vector2(1, 0), 1.4], [Vector2.ZERO, 0.6], [Vector2(0.6, -0.8), 1.2], [Vector2(0, -1), 1.0], [Vector2.ZERO, 0.6],
+			[Vector2(-1, 0), 1.6], [Vector2(0, 1), 1.4], [Vector2.ZERO, 0.6], [Vector2(-0.7, -0.7), 1.0], [Vector2(0.7, 0.7), 1.0], [Vector2.ZERO, 1.0]]:
 		bot_vec = leg[0]
 		await _wait(leg[1])
 	get_tree().quit()
@@ -876,6 +955,15 @@ func _go(points: Array) -> void:
 			print("demo: could not reach ", p, " at ", mira.position)
 	bot_vec = Vector2.ZERO
 	await get_tree().process_frame
+
+## Starts the action and takes a picture while the work is going on.
+func _use_shot(dir: String, n: String, at: float) -> void:
+	_act()
+	await _wait(at)
+	await _shot(dir, n)
+	while not job.is_empty():
+		await get_tree().process_frame
+	await _wait(0.2)
 
 func _use(then := 0.0) -> void:
 	_act()

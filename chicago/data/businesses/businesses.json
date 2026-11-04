@@ -1,0 +1,26 @@
+{
+	"bellini_garage": {
+		"name": "BIZ_BELLINI_GARAGE",
+		"district": "santa_lucia",
+		"interior": "garage_interior",
+		"owned_at_start": true,
+		"staff_at_start": ["salvatore"],
+		"hours": [8, 18],
+		"closed_weekdays": [6],
+		"levels": [
+			{"name": "BIZ_GARAGE_L0", "job_pay_cents": 350, "walkin_cents": 400, "daily_cost_cents": 150, "wage_cents": 0, "jobs_per_day": 2},
+			{"name": "BIZ_GARAGE_L1", "upgrade_cents": 2500, "job_pay_cents": 550, "walkin_cents": 700, "daily_cost_cents": 200, "wage_cents": 0, "jobs_per_day": 3,
+				"requires": {"quest": {"ch1_shop_debt": "completed"}}}
+		]
+	},
+	"trattoria_rosa": {
+		"name": "BIZ_TRATTORIA",
+		"district": "santa_lucia",
+		"interior": "trattoria_interior",
+		"npc_owned": true,
+		"owner_npc": "rosa",
+		"hours": [9, 23],
+		"closed_weekdays": [],
+		"levels": [{"name": "BIZ_TRATTORIA_L0"}]
+	}
+}

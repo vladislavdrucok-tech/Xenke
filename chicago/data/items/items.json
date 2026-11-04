@@ -1,0 +1,8 @@
+{
+	"spare_parts": {"name": "ITEM_SPARE_PARTS", "stack": 20, "value_cents": 75},
+	"toolbox": {"name": "ITEM_TOOLBOX", "stack": 1, "value_cents": 0},
+	"car_keys_monarch": {"name": "ITEM_CAR_KEYS", "stack": 1, "value_cents": 0},
+	"ledger_book": {"name": "ITEM_LEDGER_BOOK", "stack": 1, "value_cents": 0, "story": true},
+	"coffee": {"name": "ITEM_COFFEE", "stack": 5, "value_cents": 10},
+	"pistol_ammo": {"name": "ITEM_PISTOL_AMMO", "stack": 64, "value_cents": 5}
+}

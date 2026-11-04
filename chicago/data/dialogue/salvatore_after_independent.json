@@ -1,0 +1,39 @@
+{
+	"id": "salvatore_after_independent",
+	"speaker": "salvatore",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "salvatore",
+			"text": "DLG_SALVATORE_AFTER_INDEPENDENT_A",
+			"next": "b"
+		},
+		"b": {
+			"speaker": "enzo",
+			"text": "DLG_SALVATORE_AFTER_INDEPENDENT_B",
+			"next": "c"
+		},
+		"c": {
+			"speaker": "salvatore",
+			"text": "DLG_SALVATORE_AFTER_INDEPENDENT_C",
+			"end": true,
+			"effects": [
+				{
+					"rel": {
+						"npc": "salvatore",
+						"axis": "fear",
+						"delta": 10
+					}
+				},
+				{
+					"remember": {
+						"npc": "salvatore",
+						"event": "enzo_went_independent",
+						"importance": 3,
+						"how": "told"
+					}
+				}
+			]
+		}
+	}
+}

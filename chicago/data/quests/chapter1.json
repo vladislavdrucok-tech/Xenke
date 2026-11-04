@@ -1,0 +1,50 @@
+{
+	"_start": {
+		"quests": ["ch1_homecoming"],
+		"debts": [{"lender": "lakeside_parts", "cents": 18000}]
+	},
+	"ch1_homecoming": {
+		"title": "Q_HOMECOMING", "beat": 1, "ordered": true, "checkpoint": true,
+		"objectives": [
+			{"id": "reach_shop", "text": "Q_HOMECOMING_O1", "on": {"event": "entered_district", "match": {"district": "garage_interior"}}},
+			{"id": "talk_father", "text": "Q_HOMECOMING_O2", "on": {"event": "dialogue_done", "match": {"dialogue": "salvatore_homecoming"}}}
+		],
+		"on_complete": [{"start_quest": "ch1_shop_debt"}, {"set_flag": {"home": true}}]
+	},
+	"ch1_shop_debt": {
+		"title": "Q_SHOP_DEBT", "beat": 2, "ordered": true, "checkpoint": true,
+		"objectives": [
+			{"id": "learn_debt", "text": "Q_SHOP_DEBT_O1", "when": {"flag": {"debt_known": true}}},
+			{"id": "two_jobs", "text": "Q_SHOP_DEBT_O2", "count": 2, "on": {"event": "business_job_done", "match": {"business": "bellini_garage"}}},
+			{"id": "pay_parts", "text": "Q_SHOP_DEBT_O3", "on": {"event": "debt_paid", "match": {"lender": "lakeside_parts"}}},
+			{"id": "meet_marco", "text": "Q_SHOP_DEBT_O4", "on": {"event": "dialogue_done", "match": {"dialogue": "marco_meet"}}}
+		],
+		"on_complete": [{"start_quest": "ch1_first_job"}]
+	},
+	"ch1_first_job": {
+		"title": "Q_FIRST_JOB", "beat": 3, "ordered": true, "checkpoint": true, "retry": "checkpoint",
+		"objectives": [
+			{"id": "accept", "text": "Q_FIRST_JOB_O1", "when": {"flag": {"marco_job": "accepted"}}},
+			{"id": "take_car", "text": "Q_FIRST_JOB_O2", "on": {"event": "vehicle_entered", "match": {"vehicle": "monarch_marco"}}},
+			{"id": "deliver", "text": "Q_FIRST_JOB_O3", "on": {"event": "area_reached", "match": {"area": "rail_yard_dropoff", "in_vehicle": "monarch_marco"}}}
+		],
+		"on_complete": [{"start_quest": "ch1_ambush"}]
+	},
+	"ch1_ambush": {
+		"title": "Q_AMBUSH", "beat": 4, "ordered": true, "checkpoint": true, "retry": "restart",
+		"on_start": [{"set_flag": {"ambush_happened": true}}, {"event": {"id": "ambush_start", "data": {"area": "rail_yard_dropoff"}}}],
+		"objectives": [
+			{"id": "survive", "text": "Q_AMBUSH_O1", "on": {"event": "ambush_resolved"}},
+			{"id": "take_ledger", "text": "Q_AMBUSH_O2", "when": {"item": {"ledger_book": 1}}},
+			{"id": "lose_police", "text": "Q_AMBUSH_O3", "when": {"flag": {"wanted_clear": true}}}
+		],
+		"on_complete": [{"start_quest": "ch1_the_ledger"}]
+	},
+	"ch1_the_ledger": {
+		"title": "Q_LEDGER", "beat": 5, "ordered": true, "checkpoint": true,
+		"objectives": [
+			{"id": "decide", "text": "Q_LEDGER_O1", "when": {"any": [{"flag": {"ch1_path": "loyal"}}, {"flag": {"ch1_path": "independent"}}, {"flag": {"ch1_path": "informant"}}]}}
+		],
+		"on_complete": [{"set_flag": {"chapter1_done": true}}, {"toast": "TOAST_CHAPTER1_DONE"}]
+	}
+}

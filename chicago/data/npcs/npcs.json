@@ -1,0 +1,65 @@
+{
+	"enzo": {"name": "NPC_ENZO", "tier": "player", "color": "#6b4a2f"},
+	"salvatore": {
+		"name": "NPC_SALVATORE", "tier": "A", "color": "#5a5f66",
+		"relationship_start": {"trust": 30, "affection": 55},
+		"schedule": [
+			{"from": 7, "to": 19, "district": "garage_interior", "spot": "bench_side"},
+			{"from": 19, "to": 7, "district": "apartment_interior", "spot": "kitchen"}
+		],
+		"dialogue": [
+			{"if": {"quest": {"ch1_the_ledger": "completed"}, "flag": {"ch1_path": "loyal"}}, "dialogue": "salvatore_after_loyal"},
+			{"if": {"quest": {"ch1_the_ledger": "completed"}, "flag": {"ch1_path": "independent"}}, "dialogue": "salvatore_after_independent"},
+			{"if": {"quest": {"ch1_the_ledger": "completed"}, "flag": {"ch1_path": "informant"}}, "dialogue": "salvatore_after_informant"},
+			{"if": {"quest": {"ch1_homecoming": "active"}}, "dialogue": "salvatore_homecoming"},
+			{"if": {"quest": {"ch1_shop_debt": "active"}, "not_flag": ["debt_known"]}, "dialogue": "salvatore_debt"},
+			{"if": {}, "dialogue": "salvatore_idle"}
+		]
+	},
+	"rosa": {
+		"name": "NPC_ROSA", "tier": "A", "color": "#8a3b3b",
+		"relationship_start": {"trust": 20, "affection": 40},
+		"schedule": [
+			{"from": 9, "to": 23, "district": "trattoria_interior", "spot": "counter"},
+			{"from": 23, "to": 9, "district": "", "spot": "home"}
+		],
+		"dialogue": [
+			{"if": {"remembers": {"npc": "rosa", "event": "shots_fired_street"}}, "dialogue": "rosa_after_shots"},
+			{"if": {}, "dialogue": "rosa_idle"}
+		]
+	},
+	"marco": {
+		"name": "NPC_MARCO", "tier": "A", "color": "#2f4a3a",
+		"relationship_start": {"trust": 45, "affection": 50, "loyalty": 10},
+		"schedule": [
+			{"from": 10, "to": 17, "district": "santa_lucia", "spot": "club_corner"},
+			{"from": 17, "to": 24, "district": "trattoria_interior", "spot": "corner_table"},
+			{"from": 0, "to": 10, "district": "", "spot": "home"}
+		],
+		"dialogue": [
+			{"if": {"quest": {"ch1_the_ledger": "completed"}}, "dialogue": "marco_after"},
+			{"if": {"quest": {"ch1_the_ledger": "active"}}, "dialogue": "marco_ledger"},
+			{"if": {"quest": {"ch1_first_job": "active"}, "objective": {"ch1_first_job/accept": false}}, "dialogue": "marco_job"},
+			{"if": {"quest": {"ch1_shop_debt": "active"}}, "dialogue": "marco_meet"},
+			{"if": {}, "dialogue": "marco_idle"}
+		]
+	},
+	"kowalski": {
+		"name": "NPC_KOWALSKI", "tier": "A", "color": "#283a5c", "faction": "police",
+		"schedule": [{"from": 0, "to": 24, "district": "santa_lucia", "spot": "call_box", "if": {"flag": {"ambush_happened": true}}}],
+		"dialogue": [
+			{"if": {"quest": {"ch1_the_ledger": "active"}}, "dialogue": "kowalski_ledger"},
+			{"if": {}, "dialogue": "kowalski_idle"}
+		]
+	},
+	"valenti": {
+		"name": "NPC_VALENTI", "tier": "A", "color": "#1f1f24", "faction": "valenti_family",
+		"schedule": [{"from": 18, "to": 24, "district": "trattoria_interior", "spot": "back_table", "if": {"flag": {"ambush_happened": true}}}],
+		"dialogue": [
+			{"if": {"quest": {"ch1_the_ledger": "active"}}, "dialogue": "valenti_ledger"},
+			{"if": {}, "dialogue": "valenti_idle"}
+		]
+	},
+	"pedestrian": {"name": "NPC_PEDESTRIAN", "tier": "C", "color": "#6d6458", "generic": true,
+		"dialogue": [{"if": {}, "dialogue": "pedestrian"}]}
+}

@@ -1,0 +1,39 @@
+{
+	"id": "salvatore_after_loyal",
+	"speaker": "salvatore",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "salvatore",
+			"text": "DLG_SALVATORE_AFTER_LOYAL_A",
+			"next": "b"
+		},
+		"b": {
+			"speaker": "enzo",
+			"text": "DLG_SALVATORE_AFTER_LOYAL_B",
+			"next": "c"
+		},
+		"c": {
+			"speaker": "salvatore",
+			"text": "DLG_SALVATORE_AFTER_LOYAL_C",
+			"end": true,
+			"effects": [
+				{
+					"rel": {
+						"npc": "salvatore",
+						"axis": "trust",
+						"delta": -10
+					}
+				},
+				{
+					"remember": {
+						"npc": "salvatore",
+						"event": "enzo_joined_valenti",
+						"importance": 3,
+						"how": "told"
+					}
+				}
+			]
+		}
+	}
+}

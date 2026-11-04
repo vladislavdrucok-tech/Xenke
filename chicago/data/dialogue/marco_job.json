@@ -1,0 +1,51 @@
+{
+	"id": "marco_job",
+	"speaker": "marco",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_JOB_A",
+			"choices": [
+				{
+					"text": "DLG_MARCO_JOB_A_C1",
+					"next": "b",
+					"effects": [
+						{
+							"set_flag": {
+								"marco_job": "accepted"
+							}
+						},
+						{
+							"item": {
+								"id": "car_keys_monarch",
+								"n": 1
+							}
+						},
+						{
+							"rel": {
+								"npc": "marco",
+								"axis": "trust",
+								"delta": 5
+							}
+						}
+					]
+				},
+				{
+					"text": "DLG_MARCO_JOB_A_C2",
+					"next": "c"
+				}
+			]
+		},
+		"b": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_JOB_B",
+			"end": true
+		},
+		"c": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_JOB_C",
+			"end": true
+		}
+	}
+}

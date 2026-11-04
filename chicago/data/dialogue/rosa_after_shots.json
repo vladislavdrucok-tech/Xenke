@@ -1,0 +1,51 @@
+{
+	"id": "rosa_after_shots",
+	"speaker": "rosa",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "rosa",
+			"text": "DLG_ROSA_AFTER_SHOTS_A",
+			"choices": [
+				{
+					"text": "DLG_ROSA_AFTER_SHOTS_A_C1",
+					"next": "b",
+					"effects": [
+						{
+							"rel": {
+								"npc": "rosa",
+								"axis": "trust",
+								"delta": -5
+							}
+						}
+					]
+				},
+				{
+					"text": "DLG_ROSA_AFTER_SHOTS_A_C2",
+					"next": "b",
+					"effects": [
+						{
+							"rel": {
+								"npc": "rosa",
+								"axis": "trust",
+								"delta": 5
+							}
+						},
+						{
+							"rel": {
+								"npc": "rosa",
+								"axis": "fear",
+								"delta": 5
+							}
+						}
+					]
+				}
+			]
+		},
+		"b": {
+			"speaker": "rosa",
+			"text": "DLG_ROSA_AFTER_SHOTS_B",
+			"end": true
+		}
+	}
+}

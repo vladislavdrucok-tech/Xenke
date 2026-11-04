@@ -1,0 +1,54 @@
+{
+	"id": "salvatore_homecoming",
+	"speaker": "salvatore",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "salvatore",
+			"text": "DLG_SALVATORE_HOMECOMING_A",
+			"next": "b"
+		},
+		"b": {
+			"speaker": "enzo",
+			"text": "DLG_SALVATORE_HOMECOMING_B",
+			"next": "c"
+		},
+		"c": {
+			"speaker": "salvatore",
+			"text": "DLG_SALVATORE_HOMECOMING_C",
+			"choices": [
+				{
+					"text": "DLG_SALVATORE_HOMECOMING_C_C1",
+					"next": "d",
+					"effects": [
+						{
+							"rel": {
+								"npc": "salvatore",
+								"axis": "affection",
+								"delta": 5
+							}
+						}
+					]
+				},
+				{
+					"text": "DLG_SALVATORE_HOMECOMING_C_C2",
+					"next": "d",
+					"effects": [
+						{
+							"rel": {
+								"npc": "salvatore",
+								"axis": "trust",
+								"delta": 3
+							}
+						}
+					]
+				}
+			]
+		},
+		"d": {
+			"speaker": "salvatore",
+			"text": "DLG_SALVATORE_HOMECOMING_D",
+			"end": true
+		}
+	}
+}

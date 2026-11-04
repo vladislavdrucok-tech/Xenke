@@ -1,0 +1,55 @@
+{
+	"id": "santa_lucia",
+	"comment": "Fictional Italian-American block on Chicago's West Side, 1947. Grid units = tiles (128x64 px). TEMPORARY code-drawn art.",
+	"kind": "exterior",
+	"size": [28, 24],
+	"colors": {"ground": "#5b5a48", "road": "#3a3b3d", "road_line": "#8d8a6a", "sidewalk": "#8a8478", "yard": "#4f5a3c"},
+	"roads": [[0, 14, 28, 2], [0, 4, 28, 2], [4, 0, 2, 24], [18, 0, 2, 24]],
+	"sidewalk_width": 1,
+	"rail": [[21, 17, 7, 7]],
+	"buildings": [
+		{"id": "bellini_garage", "rect": [7, 10, 4, 3], "height": 112, "wall": "#8b5a3c", "roof": "#4a3a33", "sign": "SIGN_GARAGE", "business": "bellini_garage", "windows": 2},
+		{"id": "trattoria_rosa", "rect": [12, 10, 4, 3], "height": 132, "wall": "#a2795a", "roof": "#5b3b30", "sign": "SIGN_TRATTORIA", "business": "trattoria_rosa", "windows": 3, "awning": "#7a2e2e"},
+		{"id": "tenement_row", "rect": [7, 6, 9, 2], "height": 196, "wall": "#7c4b3a", "roof": "#3a2f2c", "windows": 6},
+		{"id": "bellini_apartment", "rect": [0, 7, 3, 5], "height": 176, "wall": "#86624a", "roof": "#3d322e", "windows": 3},
+		{"id": "club_marina", "rect": [0, 17, 3, 4], "height": 120, "wall": "#53424a", "roof": "#2b2428", "sign": "SIGN_CLUB", "windows": 2},
+		{"id": "lakeside_parts", "rect": [21, 10, 4, 3], "height": 104, "wall": "#7d7466", "roof": "#3b3a37", "sign": "SIGN_PARTS", "windows": 2},
+		{"id": "warehouse", "rect": [24, 18, 3, 4], "height": 150, "wall": "#5d5246", "roof": "#2f2b27", "sign": "SIGN_RAIL", "windows": 1},
+		{"id": "church_annex", "rect": [21, 6, 5, 3], "height": 168, "wall": "#9a8f7c", "roof": "#4a4440", "windows": 3}
+	],
+	"doors": [
+		{"id": "garage_door", "cell": [8, 13], "target": {"district": "garage_interior", "spawn": "from_street"}},
+		{"id": "trattoria_door", "cell": [13, 13], "target": {"district": "trattoria_interior", "spawn": "from_street"}},
+		{"id": "apartment_door", "cell": [3, 9], "target": {"district": "apartment_interior", "spawn": "from_street"}}
+	],
+	"spawns": {
+		"station_arrival": {"pos": [1.5, 13.5], "facing": "E"},
+		"garage_front": {"pos": [8.5, 13.55], "facing": "S"},
+		"trattoria_front": {"pos": [13.5, 13.55], "facing": "S"},
+		"apartment_front": {"pos": [3.55, 9.5], "facing": "SE"}
+	},
+	"spots": {
+		"club_corner": [3.4, 17.5],
+		"call_box": [17.4, 13.4],
+		"home": [1.5, 13.5]
+	},
+	"areas": {
+		"rail_yard_dropoff": {"rect": [21, 17, 3, 6]},
+		"garage_bay": {"rect": [9, 13, 3, 1]}
+	},
+	"interactables": [
+		{"id": "parts_counter", "kind": "pay_debt", "pos": [22.5, 13.4], "lender": "lakeside_parts", "verb": "HUD_ACT_PAY"},
+		{"id": "repair_bay", "kind": "repair_vehicle", "pos": [10.5, 13.4], "business": "bellini_garage", "verb": "HUD_ACT_REPAIR_CAR"}
+	],
+	"props": [
+		{"kind": "lamp", "pos": [6.5, 13.4]}, {"kind": "lamp", "pos": [11.5, 13.4]}, {"kind": "lamp", "pos": [16.5, 13.4]},
+		{"kind": "lamp", "pos": [3.4, 6.5]}, {"kind": "lamp", "pos": [20.6, 16.6]}, {"kind": "lamp", "pos": [6.6, 16.6]},
+		{"kind": "hydrant", "pos": [10.8, 16.4]}, {"kind": "call_box", "pos": [17.6, 13.2]},
+		{"kind": "tree", "pos": [9.5, 8.8]}, {"kind": "tree", "pos": [14.5, 8.9]},
+		{"kind": "crates", "pos": [22.5, 21.5]}, {"kind": "crates", "pos": [23.0, 18.4]},
+		{"kind": "streetcar_stop", "pos": [0.6, 13.3]}
+	],
+	"population": {"pedestrians": 6, "seed": 47},
+	"weather": true,
+	"ambush": {"area": "rail_yard_dropoff", "enemy_spawn": [26.0, 17.3], "cover": [[22.6, 20.8], [23.2, 18.0]], "ledger_drop": [25.0, 17.6], "police_arrive_from": [19.0, 0.5]}
+}

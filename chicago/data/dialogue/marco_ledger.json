@@ -1,0 +1,120 @@
+{
+	"id": "marco_ledger",
+	"speaker": "marco",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_LEDGER_A",
+			"choices": [
+				{
+					"text": "DLG_MARCO_LEDGER_A_C1",
+					"next": "loyal",
+					"effects": [
+						{
+							"set_flag": {
+								"ch1_path": "loyal"
+							}
+						},
+						{
+							"item": {
+								"id": "ledger_book",
+								"n": -1
+							}
+						},
+						{
+							"rel": {
+								"npc": "marco",
+								"axis": "loyalty",
+								"delta": 20
+							}
+						},
+						{
+							"rel": {
+								"npc": "marco",
+								"axis": "trust",
+								"delta": 10
+							}
+						},
+						{
+							"money": {
+								"cents": 5000,
+								"reason": "story:valenti_reward"
+							}
+						},
+						{
+							"remember": {
+								"npc": "marco",
+								"event": "enzo_returned_ledger",
+								"importance": 3,
+								"how": "seen"
+							}
+						}
+					],
+					"if": {
+						"item": {
+							"ledger_book": 1
+						}
+					}
+				},
+				{
+					"text": "DLG_MARCO_LEDGER_A_C2",
+					"next": "independent",
+					"effects": [
+						{
+							"set_flag": {
+								"ch1_path": "independent"
+							}
+						},
+						{
+							"rel": {
+								"npc": "marco",
+								"axis": "trust",
+								"delta": -15
+							}
+						},
+						{
+							"rel": {
+								"npc": "marco",
+								"axis": "fear",
+								"delta": 10
+							}
+						},
+						{
+							"remember": {
+								"npc": "marco",
+								"event": "enzo_kept_ledger",
+								"importance": 3,
+								"how": "seen"
+							}
+						}
+					],
+					"if": {
+						"item": {
+							"ledger_book": 1
+						}
+					}
+				},
+				{
+					"text": "DLG_MARCO_LEDGER_A_C3",
+					"next": "later"
+				}
+			]
+		},
+		"loyal": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_LEDGER_LOYAL",
+			"end": true
+		},
+		"independent": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_LEDGER_INDEPENDENT",
+			"end": true
+		},
+		"later": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_LEDGER_LATER",
+			"end": true
+		}
+	}
+}

@@ -1,0 +1,15 @@
+{
+	"id": "apartment_interior", "kind": "interior", "size": [7, 6],
+	"colors": {"ground": "#6a5a48", "wall": "#9c8a6c", "wall_dark": "#7d6c52"},
+	"wall_height": 150,
+	"buildings": [
+		{"id": "bed", "rect": [1, 1, 2, 1], "height": 26, "wall": "#5a4030", "roof": "#c9c0a8"},
+		{"id": "kitchen_table", "rect": [4, 2, 1, 1], "height": 30, "wall": "#6e4a32", "roof": "#d9cfb6"},
+		{"id": "stove", "rect": [6, 1, 1, 1], "height": 50, "wall": "#3a3a3a", "roof": "#2a2a2a"}
+	],
+	"doors": [{"id": "street_door", "cell": [3, 5], "target": {"district": "santa_lucia", "spawn": "apartment_front"}}],
+	"spawns": {"from_street": {"pos": [3.5, 4.4], "facing": "N"}},
+	"spots": {"kitchen": [5.4, 2.6]},
+	"interactables": [{"id": "bed_sleep", "kind": "sleep", "pos": [2.0, 2.4], "verb": "HUD_ACT_SLEEP"}],
+	"props": [{"kind": "lamp_hanging", "pos": [3.5, 3.0]}]
+}

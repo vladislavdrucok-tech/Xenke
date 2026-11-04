@@ -1,0 +1,64 @@
+{
+	"id": "salvatore_debt",
+	"speaker": "salvatore",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "enzo",
+			"text": "DLG_SALVATORE_DEBT_A",
+			"next": "b"
+		},
+		"b": {
+			"speaker": "salvatore",
+			"text": "DLG_SALVATORE_DEBT_B",
+			"next": "c"
+		},
+		"c": {
+			"speaker": "salvatore",
+			"text": "DLG_SALVATORE_DEBT_C",
+			"choices": [
+				{
+					"text": "DLG_SALVATORE_DEBT_C_C1",
+					"next": "d",
+					"effects": [
+						{
+							"set_flag": {
+								"debt_known": true
+							}
+						},
+						{
+							"rel": {
+								"npc": "salvatore",
+								"axis": "trust",
+								"delta": 5
+							}
+						}
+					]
+				},
+				{
+					"text": "DLG_SALVATORE_DEBT_C_C2",
+					"next": "d",
+					"effects": [
+						{
+							"set_flag": {
+								"debt_known": true
+							}
+						},
+						{
+							"rel": {
+								"npc": "salvatore",
+								"axis": "affection",
+								"delta": -3
+							}
+						}
+					]
+				}
+			]
+		},
+		"d": {
+			"speaker": "salvatore",
+			"text": "DLG_SALVATORE_DEBT_D",
+			"end": true
+		}
+	}
+}

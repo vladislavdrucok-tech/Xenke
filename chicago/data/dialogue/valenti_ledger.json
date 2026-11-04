@@ -1,0 +1,77 @@
+{
+	"id": "valenti_ledger",
+	"speaker": "valenti",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "valenti",
+			"text": "DLG_VALENTI_LEDGER_A",
+			"choices": [
+				{
+					"text": "DLG_VALENTI_LEDGER_A_C1",
+					"next": "b",
+					"effects": [
+						{
+							"set_flag": {
+								"ch1_path": "loyal"
+							}
+						},
+						{
+							"item": {
+								"id": "ledger_book",
+								"n": -1
+							}
+						},
+						{
+							"money": {
+								"cents": 5000,
+								"reason": "story:valenti_reward"
+							}
+						},
+						{
+							"rel": {
+								"npc": "valenti",
+								"axis": "trust",
+								"delta": 20
+							}
+						},
+						{
+							"rel": {
+								"npc": "marco",
+								"axis": "loyalty",
+								"delta": 15
+							}
+						},
+						{
+							"remember": {
+								"npc": "valenti",
+								"event": "enzo_returned_ledger",
+								"importance": 3,
+								"how": "seen"
+							}
+						}
+					],
+					"if": {
+						"item": {
+							"ledger_book": 1
+						}
+					}
+				},
+				{
+					"text": "DLG_VALENTI_LEDGER_A_C2",
+					"next": "c"
+				}
+			]
+		},
+		"b": {
+			"speaker": "valenti",
+			"text": "DLG_VALENTI_LEDGER_B",
+			"end": true
+		},
+		"c": {
+			"speaker": "valenti",
+			"text": "DLG_VALENTI_LEDGER_C",
+			"end": true
+		}
+	}
+}

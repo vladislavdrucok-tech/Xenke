@@ -1,0 +1,18 @@
+{
+	"id": "garage_interior", "kind": "interior", "size": [10, 7],
+	"colors": {"ground": "#4d4842", "wall": "#6e4c36", "wall_dark": "#553a2a"},
+	"wall_height": 150,
+	"buildings": [
+		{"id": "workbench", "rect": [1, 1, 3, 1], "height": 40, "wall": "#7a5a3a", "roof": "#5c4128"},
+		{"id": "customer_car", "rect": [5, 1, 2, 4], "height": 46, "wall": "#5e6b5b", "roof": "#3f4a3e"},
+		{"id": "tool_rack", "rect": [8, 1, 1, 2], "height": 90, "wall": "#5a4a3a", "roof": "#3f342a"}
+	],
+	"doors": [{"id": "street_door", "cell": [2, 6], "target": {"district": "santa_lucia", "spawn": "garage_front"}}],
+	"spawns": {"from_street": {"pos": [2.5, 5.4], "facing": "N"}},
+	"spots": {"bench_side": [4.4, 2.6]},
+	"interactables": [
+		{"id": "workbench_job", "kind": "repair_job", "pos": [2.5, 2.4], "business": "bellini_garage", "verb": "HUD_ACT_WORK", "minutes": 90},
+		{"id": "shop_ledger", "kind": "business_panel", "pos": [8.4, 3.6], "business": "bellini_garage", "verb": "HUD_ACT_UPGRADE"}
+	],
+	"props": [{"kind": "lamp_hanging", "pos": [4.5, 3.5]}]
+}

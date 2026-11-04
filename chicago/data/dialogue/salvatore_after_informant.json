@@ -1,0 +1,39 @@
+{
+	"id": "salvatore_after_informant",
+	"speaker": "salvatore",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "salvatore",
+			"text": "DLG_SALVATORE_AFTER_INFORMANT_A",
+			"next": "b"
+		},
+		"b": {
+			"speaker": "enzo",
+			"text": "DLG_SALVATORE_AFTER_INFORMANT_B",
+			"next": "c"
+		},
+		"c": {
+			"speaker": "salvatore",
+			"text": "DLG_SALVATORE_AFTER_INFORMANT_C",
+			"end": true,
+			"effects": [
+				{
+					"rel": {
+						"npc": "salvatore",
+						"axis": "trust",
+						"delta": 10
+					}
+				},
+				{
+					"remember": {
+						"npc": "salvatore",
+						"event": "enzo_informed_police",
+						"importance": 3,
+						"how": "told"
+					}
+				}
+			]
+		}
+	}
+}

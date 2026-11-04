@@ -1,0 +1,12 @@
+{
+	"id": "pedestrian",
+	"speaker": "pedestrian",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "pedestrian",
+			"text": "DLG_PEDESTRIAN_A",
+			"end": true
+		}
+	}
+}

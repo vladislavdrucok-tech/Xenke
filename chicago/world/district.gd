@@ -17,6 +17,7 @@ var blocks_by_building := {}    # building id -> [IsoBlock]
 var building_rects := {}        # building id -> Rect2 (grid)
 var interactables: Array[Node] = []
 var is_interior := false
+var blockers: Array = []        # [screen position, radius px] of round prop colliders
 
 func build(d: Dictionary) -> void:
 	def = d
@@ -140,15 +141,17 @@ func _build_building(b: Dictionary) -> void:
 			list.append(blk)
 	blocks_by_building[String(b.id)] = list
 	if b.has("sign"):
-		# The sign hangs on the left (+y) wall, centred. Its node stands on the wall's foot line (so it sorts just in
-		# front of the wall) and draws itself `lift` px up.
+		# A parapet sign above the left (+y) wall's top edge (period-plausible). It is drawn one z level above the
+		# street, which is safe because nothing walking on the ground ever reaches above a roof line.
 		var plate := preload("res://world/iso_sign.gd").new()
 		plate.text_key = String(b.sign)
 		plate.position = Iso.to_screen(Vector2(r.position.x + r.size.x / 2.0, r.end.y)) + Vector2(0, 0.5)
-		plate.lift = minf(float(b.get("height", 100)) * 0.6, 84.0)
+		plate.lift = float(b.get("height", 100)) + 16.0
+		plate.z_index = 1
 		entities.add_child(plate)
 
 func _add_round_collider(at: Vector2, r: float) -> void:
+	blockers.append([at, r])
 	var body := StaticBody2D.new()
 	body.collision_layer = 1
 	var s := CollisionShape2D.new()
@@ -206,6 +209,12 @@ func is_free(g: Vector2, r: float = 0.18) -> bool:
 	for id_b in building_rects:
 		var br: Rect2 = building_rects[id_b]
 		if br.grow(r).has_point(g):
+			return false
+	var s := Iso.to_screen(g)
+	for b in blockers:
+		# Props are flat ellipses (2:1), like the actors' feet; r * 64 px ~ the actor's foot radius.
+		var d: Vector2 = s - b[0]
+		if Vector2(d.x, d.y * 2.0).length() < float(b[1]) + r * 90.0:
 			return false
 	return true
 

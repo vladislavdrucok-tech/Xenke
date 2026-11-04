@@ -371,16 +371,16 @@ func _find_focus() -> Node:
 	if dv:
 		return dv
 	var best: Node = null
-	var best_d := Player.REACH
+	var best_d := INF
 	for n in get_tree().get_nodes_in_group("interactable"):
 		if not is_instance_valid(n) or not n.is_inside_tree() or not district.is_ancestor_of(n):
 			continue
+		# Cars are big: their reach is measured from the centre, so it is longer.
 		var reach := Player.REACH * (1.6 if n is Vehicle else 1.0)
 		var d := Player.ground_dist(player.position, n.position)
-		if d < reach and d < best_d + (0.0 if best == null else 0.0):
-			if d < best_d or best == null:
-				best = n
-				best_d = d
+		if d < reach and d < best_d:
+			best = n
+			best_d = d
 	return best
 
 func interact() -> void:

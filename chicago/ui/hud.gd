@@ -41,16 +41,18 @@ func _ready() -> void:
 	v.add_child(money_label)
 	v.add_child(status_label)
 	var tr_panel := _panel(Vector2.ZERO)
-	tr_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	tr_panel.anchor_left = 1.0
+	tr_panel.anchor_right = 1.0
+	tr_panel.offset_left = -390.0
+	tr_panel.offset_right = -16.0
+	tr_panel.offset_top = 16.0
 	tr_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	tr_panel.position = Vector2(-16, 16)
-	tr_panel.custom_minimum_size = Vector2(360, 0)
 	var qv := VBoxContainer.new()
 	tr_panel.add_child(qv)
 	quest_title = _label(18, Color("#e7c27a"))
 	quest_text = _label(18, Color("#f1e6cf"))
 	quest_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	quest_text.custom_minimum_size = Vector2(340, 0)
+	quest_text.custom_minimum_size = Vector2(350, 0)
 	qv.add_child(quest_title)
 	qv.add_child(quest_text)
 	toast_label = _label(22, Color("#fff4d6"))

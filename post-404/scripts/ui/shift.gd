@@ -343,6 +343,7 @@ func _build_bit() -> void:
 	bit_state = "idle" if lvl > 0 else "broken"
 	bit_sprite = UI.image("bit_idle", 3)
 	bit_sprite.texture = bit_frames[bit_state][0]
+	bit_sprite.custom_minimum_size = Vector2(36, 40) * 3
 	bit_sprite.size = Vector2(36, 40) * 3
 	bit_sprite.position = Vector2(col_x + 12, belt_y + 50)
 	bit_sprite.visible = met
@@ -471,7 +472,11 @@ func _refresh_hud() -> void:
 		var hc: TextureRect = hearts.get_child(i)
 		hc.texture = UI.tex("ic_heart" if i < session.reliability else "ic_heart_empty")
 	if session.combo >= 2:
-		combo_label.text = "x%s  %d" % [_mult_text(session.combo_mult()), session.combo]
+		var m := session.combo_mult()
+		if m > 1.0:
+			combo_label.text = "x%s · %d" % [_mult_text(m), session.combo]
+		else:
+			combo_label.text = "%s %d" % [I18n.t("combo"), session.combo]
 		combo_label.visible = true
 	else:
 		combo_label.visible = false

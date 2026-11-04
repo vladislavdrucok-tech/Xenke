@@ -104,11 +104,13 @@ func _draw_label(lab: Rect2) -> void:
 		x += w
 	var old := int(p.get("old_year", 0))
 	if old != 0:
-		var osz := int(k * 4.2)
-		var pos := Vector2(lab.get_center().x, lab.position.y - k * 2.4)
-		var tw := _font.get_string_size(str(old), HORIZONTAL_ALIGNMENT_LEFT, -1, osz).x
-		draw_rect(Rect2(pos.x - tw / 2 - k, pos.y - osz * 0.7, tw + 2 * k, osz * 0.95), Color("fff6e0"))
-		_text_centered(str(old), pos, osz, Color("6b5a55"), _font)
+		var osz := int(k * 5.0)
+		var pos := Vector2(lab.get_center().x, lab.position.y - k * 4.2)
+		var tw := _font_bold.get_string_size(str(old), HORIZONTAL_ALIGNMENT_LEFT, -1, osz).x
+		var sticker := Rect2(pos.x - tw / 2 - k * 1.2, pos.y - osz * 0.62, tw + 2.4 * k, osz * 1.1)
+		draw_rect(sticker.grow(k * 0.5), Color("2a1f2f"))
+		draw_rect(sticker, Color("cdbca0"))
+		_text_centered(str(old), pos, osz, Color("6b5a55"), _font_bold)
 		draw_line(Vector2(pos.x - tw / 2 - k * 0.5, pos.y - osz * 0.2), Vector2(pos.x + tw / 2 + k * 0.5, pos.y - osz * 0.3), UI.RED, max(2.0, k * 0.6))
 
 

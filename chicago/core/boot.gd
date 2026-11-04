@@ -8,6 +8,9 @@ const VERSION := "0.1.0-slice"
 func _ready() -> void:
 	Loc.load_all()
 	Settings.load_and_apply()
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--art-manifest="):
+			ArtRegistry.use_manifest(a.substr(15))   # dev: preview an imported package before it is in res://art
 	WorldClock.running = false
 	var args := OS.get_cmdline_user_args()
 	if not DataRegistry.errors.is_empty():

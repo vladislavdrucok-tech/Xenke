@@ -1,0 +1,5 @@
+{
+	"valenti_family": {"name": "FACTION_VALENTI", "kind": "crime_family"},
+	"police": {"name": "FACTION_POLICE", "kind": "law"},
+	"neighbors": {"name": "FACTION_NEIGHBORS", "kind": "community"}
+}

@@ -1,0 +1,5 @@
+{
+	"m1911": {"name": "WPN_M1911", "kind": "pistol", "damage": 34, "mag": 7, "reload_s": 1.6, "fire_interval_s": 0.35,
+		"range_px": 520.0, "spread_deg": 3.0, "recoil_deg": 2.5, "ammo_item": "pistol_ammo", "noise_px": 900.0},
+	"fists": {"name": "WPN_FISTS", "kind": "melee", "damage": 12, "range_px": 46.0, "fire_interval_s": 0.45, "windup_s": 0.15, "noise_px": 160.0}
+}

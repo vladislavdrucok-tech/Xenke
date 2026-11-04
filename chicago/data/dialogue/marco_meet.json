@@ -1,0 +1,45 @@
+{
+	"id": "marco_meet",
+	"speaker": "marco",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_MEET_A",
+			"next": "b"
+		},
+		"b": {
+			"speaker": "enzo",
+			"text": "DLG_MARCO_MEET_B",
+			"next": "c"
+		},
+		"c": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_MEET_C",
+			"choices": [
+				{
+					"text": "DLG_MARCO_MEET_C_C1",
+					"next": "d"
+				},
+				{
+					"text": "DLG_MARCO_MEET_C_C2",
+					"next": "d",
+					"effects": [
+						{
+							"rel": {
+								"npc": "marco",
+								"axis": "affection",
+								"delta": -3
+							}
+						}
+					]
+				}
+			]
+		},
+		"d": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_MEET_D",
+			"end": true
+		}
+	}
+}

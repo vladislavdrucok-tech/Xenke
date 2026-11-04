@@ -1,0 +1,12 @@
+{
+	"id": "valenti_idle",
+	"speaker": "valenti",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "valenti",
+			"text": "DLG_VALENTI_IDLE_A",
+			"end": true
+		}
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"id": "salvatore_idle",
+	"speaker": "salvatore",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "salvatore",
+			"text": "DLG_SALVATORE_IDLE_A",
+			"end": true
+		}
+	}
+}

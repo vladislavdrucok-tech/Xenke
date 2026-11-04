@@ -1,0 +1,15 @@
+{
+	"id": "trattoria_interior", "kind": "interior", "size": [9, 7],
+	"colors": {"ground": "#6b4f3a", "wall": "#b49a74", "wall_dark": "#8d7556"},
+	"wall_height": 150,
+	"buildings": [
+		{"id": "counter", "rect": [1, 1, 4, 1], "height": 44, "wall": "#5a3b2a", "roof": "#7a5236"},
+		{"id": "table_a", "rect": [2, 4, 1, 1], "height": 30, "wall": "#6e4a32", "roof": "#e8e0cc"},
+		{"id": "table_b", "rect": [5, 4, 1, 1], "height": 30, "wall": "#6e4a32", "roof": "#e8e0cc"},
+		{"id": "table_c", "rect": [7, 2, 1, 1], "height": 30, "wall": "#6e4a32", "roof": "#e8e0cc"}
+	],
+	"doors": [{"id": "street_door", "cell": [4, 6], "target": {"district": "santa_lucia", "spawn": "trattoria_front"}}],
+	"spawns": {"from_street": {"pos": [4.5, 5.4], "facing": "N"}},
+	"spots": {"counter": [3.0, 2.5], "corner_table": [6.0, 4.6], "back_table": [7.6, 3.4]},
+	"props": [{"kind": "lamp_hanging", "pos": [4.5, 3.0]}]
+}

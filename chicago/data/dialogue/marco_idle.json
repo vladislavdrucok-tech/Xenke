@@ -1,0 +1,12 @@
+{
+	"id": "marco_idle",
+	"speaker": "marco",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_IDLE_A",
+			"end": true
+		}
+	}
+}

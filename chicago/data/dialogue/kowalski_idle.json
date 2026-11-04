@@ -1,0 +1,12 @@
+{
+	"id": "kowalski_idle",
+	"speaker": "kowalski",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "kowalski",
+			"text": "DLG_KOWALSKI_IDLE_A",
+			"end": true
+		}
+	}
+}

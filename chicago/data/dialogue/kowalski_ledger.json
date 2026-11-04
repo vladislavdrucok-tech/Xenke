@@ -1,0 +1,94 @@
+{
+	"id": "kowalski_ledger",
+	"speaker": "kowalski",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "kowalski",
+			"text": "DLG_KOWALSKI_LEDGER_A",
+			"choices": [
+				{
+					"text": "DLG_KOWALSKI_LEDGER_A_C1",
+					"next": "b",
+					"effects": [
+						{
+							"set_flag": {
+								"ch1_path": "informant"
+							}
+						},
+						{
+							"item": {
+								"id": "ledger_book",
+								"n": -1
+							}
+						},
+						{
+							"rel": {
+								"npc": "kowalski",
+								"axis": "trust",
+								"delta": 25
+							}
+						},
+						{
+							"rel": {
+								"npc": "marco",
+								"axis": "trust",
+								"delta": -30
+							}
+						},
+						{
+							"remember": {
+								"npc": "kowalski",
+								"event": "enzo_gave_ledger",
+								"importance": 3,
+								"how": "seen"
+							}
+						},
+						{
+							"faction": {
+								"id": "police",
+								"axis": "trust",
+								"delta": 20
+							}
+						},
+						{
+							"faction": {
+								"id": "valenti_family",
+								"axis": "suspicion",
+								"delta": 40
+							}
+						}
+					],
+					"if": {
+						"item": {
+							"ledger_book": 1
+						}
+					}
+				},
+				{
+					"text": "DLG_KOWALSKI_LEDGER_A_C2",
+					"next": "c",
+					"effects": [
+						{
+							"rel": {
+								"npc": "kowalski",
+								"axis": "trust",
+								"delta": -10
+							}
+						}
+					]
+				}
+			]
+		},
+		"b": {
+			"speaker": "kowalski",
+			"text": "DLG_KOWALSKI_LEDGER_B",
+			"end": true
+		},
+		"c": {
+			"speaker": "kowalski",
+			"text": "DLG_KOWALSKI_LEDGER_C",
+			"end": true
+		}
+	}
+}

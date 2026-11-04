@@ -1,0 +1,29 @@
+# Chicago: Blood & Loyalty - headless tests and export-pack check on Godot 4.3-stable.
+# Only runs when the chicago/ project changes; the old Afterfall projects are not built here.
+name: chicago-tests
+
+on:
+  push:
+    paths: ["chicago/**", ".github/workflows/chicago-tests.yml"]
+  pull_request:
+    paths: ["chicago/**", ".github/workflows/chicago-tests.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Godot 4.3-stable
+        run: |
+          curl -sSL -o godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          echo "GODOT=$PWD/Godot_v4.3-stable_linux.x86_64" >> "$GITHUB_ENV"
+      - name: Tests (headless)
+        run: chicago/tools/run_tests.sh
+      - name: Legacy Afterfall files untouched
+        run: chicago/tools/check_legacy_untouched.sh
+      - name: Export .pck and run it 20 s
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb > /dev/null
+          chicago/tools/check_export.sh

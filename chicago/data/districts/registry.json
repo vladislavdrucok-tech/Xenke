@@ -1,0 +1,6 @@
+{
+	"santa_lucia": {"file": "res://data/districts/santa_lucia.json", "kind": "exterior", "name": "DISTRICT_SANTA_LUCIA", "unlocked": true},
+	"garage_interior": {"file": "res://data/districts/garage_interior.json", "kind": "interior", "name": "DISTRICT_GARAGE_INTERIOR", "unlocked": true},
+	"trattoria_interior": {"file": "res://data/districts/trattoria_interior.json", "kind": "interior", "name": "DISTRICT_TRATTORIA_INTERIOR", "unlocked": true},
+	"apartment_interior": {"file": "res://data/districts/apartment_interior.json", "kind": "interior", "name": "DISTRICT_APARTMENT_INTERIOR", "unlocked": true}
+}

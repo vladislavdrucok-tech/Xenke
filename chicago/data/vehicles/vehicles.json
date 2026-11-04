@@ -1,0 +1,61 @@
+{
+	"monarch_sedan_41": {
+		"name": "VEH_MONARCH",
+		"comment": "Fictional 1941 four-door sedan. TEMPORARY placeholder body until art ticket V1.",
+		"fuel_max": 100,
+		"repair_cents_per_point": 15,
+		"start": {
+			"instance": "monarch_marco",
+			"district": "santa_lucia",
+			"pos": [
+				12.5,
+				14.6
+			],
+			"heading": 0.0,
+			"owner": "marco"
+		},
+		"color": "#3c4a5a",
+		"units": "grid tiles and tiles/s (1 tile = 128x64 px)",
+		"length": 1.55,
+		"width": 0.72,
+		"height_px": 30,
+		"max_speed": 5.2,
+		"reverse_speed": 1.6,
+		"accel": 2.6,
+		"brake": 7.0,
+		"drag": 0.9,
+		"steer_rate": 2.3,
+		"fuel_per_tile": 0.12,
+		"impact_threshold": 1.6,
+		"damage_per_impact": 9.0,
+		"rain_grip": 0.7
+	},
+	"civilian_coupe_46": {
+		"name": "VEH_COUPE",
+		"comment": "Fictional 1946 coupe for city traffic. TEMPORARY placeholder body.",
+		"units": "grid tiles and tiles/s",
+		"length": 1.4,
+		"width": 0.68,
+		"height_px": 28,
+		"max_speed": 2.4,
+		"reverse_speed": 1.0,
+		"accel": 2.0,
+		"brake": 6.0,
+		"drag": 0.9,
+		"steer_rate": 2.0,
+		"fuel_max": 100,
+		"fuel_per_tile": 0.0,
+		"impact_threshold": 1.6,
+		"damage_per_impact": 9.0,
+		"rain_grip": 0.7,
+		"repair_cents_per_point": 15,
+		"color": "#6a5a3a",
+		"colors": [
+			"#6a5a3a",
+			"#3f5a4a",
+			"#5a2f2f",
+			"#2f3a55",
+			"#7a7466"
+		]
+	}
+}

@@ -1,0 +1,40 @@
+{
+	"id": "rosa_idle",
+	"speaker": "rosa",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "rosa",
+			"text": "DLG_ROSA_IDLE_A",
+			"choices": [
+				{
+					"text": "DLG_ROSA_IDLE_A_C1",
+					"next": "b",
+					"effects": [
+						{
+							"rel": {
+								"npc": "rosa",
+								"axis": "affection",
+								"delta": 3
+							}
+						}
+					]
+				},
+				{
+					"text": "DLG_ROSA_IDLE_A_C2",
+					"next": "c"
+				}
+			]
+		},
+		"b": {
+			"speaker": "rosa",
+			"text": "DLG_ROSA_IDLE_B",
+			"end": true
+		},
+		"c": {
+			"speaker": "rosa",
+			"text": "DLG_ROSA_IDLE_C",
+			"end": true
+		}
+	}
+}

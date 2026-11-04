@@ -1,0 +1,71 @@
+{
+	"id": "marco_job_again",
+	"speaker": "marco",
+	"start": "a",
+	"nodes": {
+		"a": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_JOB_AGAIN_A",
+			"next": "b"
+		},
+		"b": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_JOB_AGAIN_B",
+			"choices": [
+				{
+					"text": "DLG_MARCO_JOB_AGAIN_B_C1",
+					"next": "yes",
+					"effects": [
+						{
+							"set_flag": {
+								"marco_job": "accepted"
+							}
+						},
+						{
+							"item": {
+								"id": "car_keys_monarch",
+								"n": 1
+							}
+						},
+						{
+							"money": {
+								"cents": 500,
+								"reason": "story:marco_advance"
+							}
+						},
+						{
+							"rel": {
+								"npc": "marco",
+								"axis": "trust",
+								"delta": 3
+							}
+						}
+					]
+				},
+				{
+					"text": "DLG_MARCO_JOB_AGAIN_B_C2",
+					"next": "no",
+					"effects": [
+						{
+							"rel": {
+								"npc": "marco",
+								"axis": "affection",
+								"delta": -2
+							}
+						}
+					]
+				}
+			]
+		},
+		"yes": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_JOB_AGAIN_YES",
+			"end": true
+		},
+		"no": {
+			"speaker": "marco",
+			"text": "DLG_MARCO_JOB_AGAIN_NO",
+			"end": true
+		}
+	}
+}

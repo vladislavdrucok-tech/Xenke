@@ -45,7 +45,29 @@
 		"c": {
 			"speaker": "marco",
 			"text": "DLG_MARCO_JOB_C",
-			"end": true
+			"end": true,
+			"effects": [
+				{
+					"set_flag": {
+						"marco_refused": true
+					}
+				},
+				{
+					"rel": {
+						"npc": "marco",
+						"axis": "affection",
+						"delta": -3
+					}
+				},
+				{
+					"remember": {
+						"npc": "marco",
+						"event": "enzo_refused_job",
+						"importance": 2,
+						"how": "seen"
+					}
+				}
+			]
 		}
 	}
 }

@@ -87,3 +87,30 @@ func test_schedule() -> void:
 	check(not Schedule.present_in("trattoria_interior", GameState).has("valenti"), "Valenti only after the ambush")
 	GameState.set_flag("ambush_happened", true)
 	check(Schedule.present_in("trattoria_interior", GameState).has("valenti"), "Valenti appears after the ambush")
+
+func _talk_rule(npc: String) -> String:
+	for r in DataRegistry.get_def("npcs", npc).dialogue:
+		if Conditions.check(r.get("if", {}), GameState):
+			return r.dialogue
+	return ""
+
+func test_refusing_marco_does_not_block_the_story() -> void:
+	for q in ["ch1_homecoming", "ch1_shop_debt"]:
+		GameState.quests.states[q] = {"state": "completed", "obj": {}, "started_min": 0}
+	GameState.quests.start("ch1_first_job")
+	WorldClock.set_total(12 * 60)
+	eq(_talk_rule("marco"), "marco_job")
+	var job := DataRegistry.dialogue("marco_job")
+	GameState.apply_effects(job.nodes.a.choices[1].get("effects", []), "dlg:marco_job:a:c1")
+	GameState.apply_effects(job.nodes.c.effects, "dlg:marco_job:c")
+	check(GameState.memory.knows("marco", "enzo_refused_job"), "Marco remembers the refusal")
+	WorldClock.set_total(20 * 60)
+	eq(_talk_rule("marco"), "marco_job_again", "evening: a second offer")
+	var again := DataRegistry.dialogue("marco_job_again")
+	var cash := GameState.ledger.balance
+	GameState.apply_effects(again.nodes.b.choices[0].effects, "dlg:marco_job_again:b:c0")
+	GameState.apply_effects(again.nodes.b.choices[0].effects, "dlg:marco_job_again:b:c0")
+	eq(GameState.ledger.balance - cash, 500, "advance paid once")
+	eq(GameState.item_count("car_keys_monarch"), 1, "keys")
+	EventBus.emit_event("inventory_changed", {})
+	check(GameState.quests.objective_done("ch1_first_job", "accept"), "job accepted")

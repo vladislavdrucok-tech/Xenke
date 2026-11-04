@@ -20,10 +20,12 @@ func _ready() -> void:
 		return
 	for a in args:
 		if a.begins_with("--shots="):
-			var tour := preload("res://tools/shot_tour.gd").new()
-			tour.out_dir = a.substr(8)
-			get_tree().root.call_deferred("add_child", tour)
-			return
+			# A dev tool: not part of exported builds (tools/ is excluded), so it is loaded only on request.
+			if ResourceLoader.exists("res://tools/shot_tour.gd"):
+				var tour: Node = load("res://tools/shot_tour.gd").new()
+				tour.set("out_dir", a.substr(8))
+				get_tree().root.call_deferred("add_child", tour)
+				return
 	_build_menu()
 
 func _build_menu() -> void:

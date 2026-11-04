@@ -111,6 +111,7 @@ func load_district(id: String, spawn_id: String, pos: Variant = null, in_vehicle
 	_spawn_vehicles()
 	_spawn_npcs(true)
 	_spawn_pedestrians()
+	_spawn_traffic()
 	GameState.location = {"district": id, "spawn": spawn_id, "pos": [g.x, g.y], "facing": player.facing, "in_vehicle": ""}
 	if in_vehicle != "" and vehicles.has(in_vehicle):
 		_enter_vehicle(vehicles[in_vehicle])
@@ -212,6 +213,53 @@ func _send_away(n: NPC) -> void:
 func _on_npc_left(n: NPC) -> void:
 	npcs.erase(n.npc_id)
 	n.queue_free()
+
+## Traffic (tier C, not saved): cars spaced evenly along the district's lane loops, fewer at night.
+func _spawn_traffic() -> void:
+	var tdef: Dictionary = district.def.get("traffic", {})
+	if tdef.is_empty():
+		return
+	var night := WorldClock.daylight() < 0.3
+	var count := int(tdef.get("cars_night" if night else "cars_day", 0))
+	var vdef: Dictionary = DataRegistry.get_def("vehicles", String(tdef.vehicle)).duplicate()
+	vdef["_id"] = String(tdef.vehicle)
+	var colors: Array = vdef.get("colors", [vdef.get("color", "#666666")])
+	var loops: Array = tdef.loops
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(tdef.get("seed", 1)) * 100 + WorldClock.day()
+	for i in count:
+		var raw: Array = loops[i % loops.size()]
+		var loop: Array[Vector2] = []
+		for p in raw:
+			loop.append(Vector2(float(p[0]), float(p[1])))
+		var car := TrafficCar.new()
+		var d := vdef.duplicate()
+		d["color"] = colors[rng.randi() % colors.size()]
+		car.setup("traffic_%d" % i, d, {"pos": [0, 0], "heading": 0.0})
+		car.world = self
+		car.rain = _raining
+		district.entities.add_child(car)
+		# Find a free stretch of the loop: never on top of the player, a parked car or other traffic.
+		var placed := false
+		for attempt in 12:
+			car.start_on(loop, (i / loops.size() + attempt) % loop.size(), rng.randf_range(0.15, 0.85))
+			if _traffic_spot_free(car):
+				placed = true
+				break
+		if not placed:
+			car.queue_free()
+
+func _traffic_spot_free(car: TrafficCar) -> bool:
+	var g := car.grid_pos()
+	if g.distance_to(player.grid_pos()) < 2.5:
+		return false
+	for v in vehicles.values():
+		if g.distance_to(v.grid_pos()) < 2.2:
+			return false
+	for t in get_tree().get_nodes_in_group("traffic"):
+		if t != car and not t.is_queued_for_deletion() and g.distance_to(t.grid_pos()) < 2.5:
+			return false
+	return true
 
 func _spawn_pedestrians() -> void:
 	var pop: Dictionary = district.def.get("population", {})

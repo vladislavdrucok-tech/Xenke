@@ -35,7 +35,7 @@ func _ready() -> void:
 	add_to_group("vehicle")
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	collision_layer = 8
-	collision_mask = 1 | 4 | 16 | 32
+	collision_mask = 1 | 4 | 8 | 16 | 32    # world, NPCs, other cars, gunmen, police
 	var cs := CollisionShape2D.new()
 	_shape = ConvexPolygonShape2D.new()
 	cs.shape = _shape
@@ -116,6 +116,9 @@ func _drive(throttle: float, steer: float, delta: float) -> void:
 	var turn := float(def.get("steer_rate", 2.2)) * steer * clampf(absf(speed) / 1.2, 0.0, 1.0) * (1.0 - 0.35 * clampf(absf(speed) / max_v, 0.0, 1.0)) * grip
 	heading = wrapf(heading + turn * signf(speed if speed != 0.0 else 1.0) * delta, -PI, PI)
 	_update_shape()
+	if driver == null and speed == 0.0 and throttle == 0.0 and not (self is TrafficCar):
+		velocity = Vector2.ZERO
+		return   # parked: never shoved by physics recovery when something brushes it
 	var v_grid := forward() * speed
 	velocity = Iso.to_screen(v_grid)
 	var before := position

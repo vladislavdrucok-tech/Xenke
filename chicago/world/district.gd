@@ -231,6 +231,75 @@ func nearest_free(g: Vector2, r: float = 0.18) -> Vector2:
 				return p
 	return Iso.to_grid(spawn_screen(""))
 
+## Shortest route between two grid points over tiles (8-way, no corner cutting past buildings), as grid points at
+## tile centres ending with the destination. Breadth-first search: a district is a few hundred tiles, cheap enough
+## to re-plan once a second. `wide` = for a car: tiles touching a building are avoided (no squeezing down a
+## one-tile alley). `avoid`: extra blocked tiles {Vector2i: true} (parked cars). If the goal cannot be reached, the route ends at the reachable tile closest to it.
+func path(from: Vector2, to: Vector2, wide: bool = false, avoid: Dictionary = {}) -> PackedVector2Array:
+	var a := Vector2i(from.floor())
+	var b := Vector2i(to.floor())
+	var out := PackedVector2Array()
+	if tile(a) < 0 or tile(b) < 0:
+		return out
+	if a == b:
+		out.append(to)
+		return out
+	var came := {a: a}
+	var q: Array[Vector2i] = [a]
+	var head := 0
+	var best := a
+	var best_d := Vector2(a).distance_squared_to(Vector2(b))
+	var dirs := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
+	while head < q.size():
+		var c: Vector2i = q[head]
+		head += 1
+		if c == b:
+			break
+		for dd in dirs:
+			var n: Vector2i = c + dd
+			if came.has(n) or not _passable(n, wide and n != b) or (avoid.has(n) and n != b):
+				continue
+			if dd.x != 0 and dd.y != 0 and (tile(Vector2i(c.x + dd.x, c.y)) == T.BUILDING or tile(Vector2i(c.x, c.y + dd.y)) == T.BUILDING):
+				continue
+			came[n] = c
+			q.append(n)
+			var nd := Vector2(n).distance_squared_to(Vector2(b))
+			if nd < best_d:
+				best = n
+				best_d = nd
+	var end := b if came.has(b) else best
+	if end == a:
+		return out
+	var rev: Array[Vector2i] = []
+	var c2 := end
+	while c2 != a:
+		rev.append(c2)
+		c2 = came[c2]
+	rev.reverse()
+	for t in rev.slice(0, rev.size() - 1):
+		out.append(Vector2(t) + Vector2(0.5, 0.5))
+	out.append(to if end == b else Vector2(end) + Vector2(0.5, 0.5))
+	return out
+
+func _passable(t: Vector2i, wide: bool) -> bool:
+	if tile(t) < 0 or tile(t) == T.BUILDING:
+		return false
+	if wide:
+		for dd in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			if tile(t + dd) == T.BUILDING:
+				return false
+		if _prop_tiles().has(t):
+			return false
+	return true
+
+var _prop_tiles_cache := {}
+## Tiles with a lamp post, hydrant, tree... in them: a car cannot pass there.
+func _prop_tiles() -> Dictionary:
+	if _prop_tiles_cache.is_empty() and not blockers.is_empty():
+		for b in blockers:
+			_prop_tiles_cache[Vector2i(Iso.to_grid(b[0]).floor())] = true
+	return _prop_tiles_cache
+
 func screen_bounds() -> Rect2:
 	var c := Iso.rect_corners(Rect2(Vector2.ZERO, Vector2(size)))
 	var r := Rect2(c[0], Vector2.ZERO)

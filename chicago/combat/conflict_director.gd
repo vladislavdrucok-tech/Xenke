@@ -38,6 +38,7 @@ var fx: Node2D
 var aim_assist := true
 var regen_acc := 0.0
 var _crimes_this_session := {}
+var _ram_cooldown := 0.0
 
 func _ready() -> void:
 	rng.seed = 4711
@@ -354,6 +355,8 @@ func _on_minute(m: int) -> void:
 		police.director = self
 		police.position = Iso.to_screen(world.district.nearest_free(Vector2(float(edge[0]), float(edge[1])), 0.5))
 		police.goal = report_pos
+		police.district = world.district
+		police.rammed.connect(_on_police_rammed)
 		world.district.entities.add_child(police)
 		unseen_t = 0.0
 
@@ -361,6 +364,7 @@ func _process(delta: float) -> void:
 	if world == null or world.district == null or world.transitioning:
 		return
 	cooldown = maxf(cooldown - delta, 0.0)
+	_ram_cooldown = maxf(_ram_cooldown - delta, 0.0)
 	if reload_t > 0.0:
 		reload_t -= delta
 		if reload_t <= 0.0:
@@ -380,6 +384,7 @@ func _process(delta: float) -> void:
 	if police and is_instance_valid(police):
 		var follow: Node2D = world._driving() if world._driving() else p
 		var seen := Player.ground_dist(police.position, follow.position) < POLICE_SIGHT and _los(police.position, follow.position)
+		police.pursuing = seen and world._driving() != null
 		if seen:
 			unseen_t = 0.0
 			police.goal = follow.position
@@ -389,12 +394,28 @@ func _process(delta: float) -> void:
 			if unseen_t > LOSE_TIME:
 				_lose_police()
 				return
-		if not world._driving() and Player.ground_dist(police.position, p.position) < CATCH_DIST:
+		# Caught: on foot next to the patrol, or in a car that is boxed in (barely moving) with the patrol alongside.
+		var dv: Vehicle = world._driving()
+		var boxed: bool = dv != null and absf(dv.speed) < 0.4 and Player.ground_dist(police.position, dv.position) < CATCH_DIST * 1.8
+		if boxed or (dv == null and Player.ground_dist(police.position, p.position) < CATCH_DIST):
 			catch_t += delta
 			if catch_t > CATCH_TIME:
 				_arrested()
 		else:
 			catch_t = 0.0
+
+## Enzo's car hit the patrol car: a new crime the officers saw themselves. Wanted goes up (max 3) and the search
+## starts over; one report per second at most.
+func _on_police_rammed(strength: float) -> void:
+	if strength < 0.5 or _ram_cooldown > 0.0:
+		return
+	GameState.wanted.level = mini(int(GameState.wanted.level) + 1, 3)
+	unseen_t = 0.0
+	EventBus.wanted_changed.emit(int(GameState.wanted.level))
+	EventBus.toast.emit("TOAST_RAMMED_POLICE", [])
+	EventBus.emit_event("police_rammed", {"witnesses": ["kowalski"] if world.npcs.has("kowalski") else [], "importance": 2})
+	GameState.memory.remember("kowalski", "enzo_rammed_police", WorldClock.total_minutes, 2, "told")
+	_ram_cooldown = 1.0
 
 func _lose_police() -> void:
 	if police and is_instance_valid(police):

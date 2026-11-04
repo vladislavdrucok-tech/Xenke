@@ -191,6 +191,7 @@ func _spawn_npcs(instant: bool) -> void:
 			continue
 		var n := NPC.new()
 		n.setup(id, DataRegistry.get_def("npcs", id))
+		n.district = district
 		if instant:
 			n.position = spot
 		else:

@@ -87,7 +87,7 @@ func _something_ahead(g: Vector2) -> bool:
 		if world.conflict and world.conflict.police and is_instance_valid(world.conflict.police):
 			others.append(Iso.to_grid(world.conflict.police.position))
 	for t in get_tree().get_nodes_in_group("traffic"):
-		if t != self:
+		if t != self and is_instance_valid(t) and not t.is_queued_for_deletion():
 			others.append(t.grid_pos())
 	var reach := LOOK_AHEAD + float(def.get("length", 1.4)) * 0.5
 	for o in others:

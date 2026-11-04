@@ -46,18 +46,25 @@ func kind() -> String:
 func verb() -> String:
 	return "HUD_ACT_TALK"
 
+var district: District
+var route := PackedVector2Array()  # grid waypoints round walls and furniture (District.path)
+
 func walk_to(p: Vector2) -> void:
 	target = p
 	has_target = true
 	stuck_t = 0.0
+	route = district.path(Iso.to_grid(position), Iso.to_grid(p)) if district else PackedVector2Array()
 
 func _physics_process(delta: float) -> void:
 	if not has_target:
 		velocity = Vector2.ZERO
 		figure.walking = false
 		return
-	var d := target - position
-	if Vector2(d.x, d.y * 2.0).length() < 6.0:
+	while route.size() > 1 and Iso.to_grid(position).distance_to(route[0]) < 0.35:
+		route.remove_at(0)
+	var aim := Iso.to_screen(route[0]) if route.size() > 1 else target
+	var d := aim - position
+	if route.size() <= 1 and Vector2(d.x, d.y * 2.0).length() < 6.0:
 		has_target = false
 		velocity = Vector2.ZERO
 		figure.walking = false

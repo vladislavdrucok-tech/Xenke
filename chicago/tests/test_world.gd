@@ -200,3 +200,24 @@ func test_night_is_darker_and_lamps_light() -> void:
 			lit += 1
 	check(lit >= 4, "street lamps on at night (%d)" % lit)
 	await _done()
+
+func test_npc_walks_round_furniture() -> void:
+	GameState.location = {"district": "garage_interior", "spawn": "from_street", "pos": null, "in_vehicle": ""}
+	await _boot()
+	var n := NPC.new()
+	n.setup("pedestrian", DataRegistry.get_def("npcs", "pedestrian"))
+	n.district = world.district
+	n.position = Iso.to_screen(Vector2(3.5, 5.5))
+	world.district.entities.add_child(n)
+	await frames(2)
+	var goal := Iso.to_screen(Vector2(8.5, 3.5))     # the customer's car on the lift is in between
+	n.walk_to(goal)
+	var max_stuck := 0.0
+	for i in 600:
+		max_stuck = maxf(max_stuck, n.stuck_t)
+		if not n.has_target:
+			break
+		await frames(1)
+	check(not n.has_target, "arrived")
+	check(max_stuck < 1.0, "walked round, never stuck long enough to be teleported (%.2f s)" % max_stuck)
+	await _done()

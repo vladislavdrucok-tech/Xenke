@@ -110,6 +110,14 @@ func _show_line() -> void:
 func _show_choice(line: Dictionary) -> void:
 	_waiting_choice = true
 	tap_hint.visible = false
+	text_label.visible_characters = -1
+	_full_len = 0
+	if pos > 0 and lines[pos - 1] is Array:
+		var prev: Array = lines[pos - 1]
+		text_label.text = I18n.line(prev)
+		if prev[0] != "":
+			portrait.texture = UI.tex("pt_" + prev[0])
+			portrait.visible = true
 	for o in line["choice"]:
 		var opt: Dictionary = o
 		var ok := Story.option_available(Game.profile, opt) or replay

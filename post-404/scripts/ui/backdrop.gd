@@ -55,17 +55,17 @@ func rebuild() -> void:
 		return
 	var cx := s.x / 2
 	var mood := Story.city_mood(Game.profile)
-	var win_pos := Vector2(cx - 72 * UI.PIX / 2, wall_h * 0.18)
+	var win_pos := Vector2(cx - 72 * UI.PIX / 2, maxf(wall_h * 0.36, 300.0))
 	_sprite("city_" + mood, win_pos + Vector2(4, 6) * UI.PIX)
 	_sprite("window", win_pos)
 	_sprite("shelf", Vector2(16, wall_h - 60 * UI.PIX + 8))
 	_sprite("shelf", Vector2(s.x - 44 * UI.PIX - 16, wall_h - 60 * UI.PIX + 8))
-	_sprite("clock", Vector2(cx - 11 * UI.PIX, win_pos.y - 26 * UI.PIX))
+	_sprite("clock", Vector2(cx - 72 * UI.PIX / 2 - 30 * UI.PIX, win_pos.y + 8 * UI.PIX))
 	var d: Dictionary = Game.profile.get("upgrades", {})
 	if int(d.get("poster", 0)) > 0:
-		_sprite("dc_poster", Vector2(44 * UI.PIX + 40, wall_h * 0.12))
+		_sprite("dc_poster", Vector2(cx + 72 * UI.PIX / 2 + 8 * UI.PIX, win_pos.y + 4 * UI.PIX))
 	if int(d.get("neon", 0)) > 0:
-		_sprite("dc_neon", Vector2(cx - 24 * UI.PIX, wall_h * 0.18 + 56 * UI.PIX))
+		_sprite("dc_neon", Vector2(cx - 24 * UI.PIX, win_pos.y + 56 * UI.PIX))
 	if int(d.get("plant", 0)) > 0:
 		_sprite("dc_plant", Vector2(24, wall_h + 160 - 28 * UI.PIX))
 	if int(d.get("lamp", 0)) > 0:

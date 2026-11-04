@@ -80,7 +80,7 @@ func _chapters() -> void:
 		card.add_child(v)
 		v.add_child(UI.wrap(UI.label(I18n.line(c["title"], 0), 30, UI.AMBER if done else (UI.CYAN if avail else UI.MUTED), 0, true)))
 		if done or avail:
-			var b := UI.button(I18n.t("btn_continue") if avail else I18n.pick({"uk": "Переглянути", "en": "Replay"}), "cyan" if avail else "normal", 72, "ic_story")
+			var b := UI.button(I18n.t("btn_continue") if avail else I18n.pick({"uk": "Переглянути", "en": "Replay"}), "cyan" if avail else "normal", 72, "ic_book")
 			var idx := i
 			b.pressed.connect(func(): Game.goto("story", {"chapter": idx, "replay": done}))
 			v.add_child(b)

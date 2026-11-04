@@ -33,12 +33,8 @@ func _ready() -> void:
 	_hum = AudioStreamPlayer.new()
 	_hum.bus = "SFX"
 	_hum.volume_db = -14.0
-	var hum = load("res://assets/audio/belt_loop.wav")
-	if hum is AudioStreamWAV:
-		hum = hum.duplicate()
-		hum.loop_mode = AudioStreamWAV.LOOP_FORWARD
-		hum.loop_end = int(hum.data.size() / 2)
-		_hum.stream = hum
+	# Looping is set in the .import files (edit/loop_mode = Forward).
+	_hum.stream = load("res://assets/audio/belt_loop.wav")
 	add_child(_hum)
 
 
@@ -87,11 +83,7 @@ func music(track: String) -> void:
 		_music.stop()
 		return
 	var s = load("res://assets/audio/music_%s.wav" % track)
-	if s is AudioStreamWAV:
-		s = s.duplicate()
-		s.loop_mode = AudioStreamWAV.LOOP_FORWARD
-		s.loop_begin = 0
-		s.loop_end = int(s.data.size() / 2)
+	if s:
 		_music.stream = s
 		_music.volume_db = -4.0
 		_music.play()

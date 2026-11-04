@@ -370,6 +370,8 @@ func stars() -> int:
 	if not completed:
 		return 0
 	var acc := accuracy()
+	if mode == "tutorial":
+		return 3 if acc >= 0.99 else (2 if acc >= 0.75 else 1)
 	if acc >= 0.95 and sorted_count >= 25:
 		return 3
 	if acc >= 0.85 and sorted_count >= 15:

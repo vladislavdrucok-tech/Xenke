@@ -345,7 +345,7 @@ func _build_bit() -> void:
 	bit_sprite.texture = bit_frames[bit_state][0]
 	bit_sprite.size = Vector2(36, 40) * 3
 	bit_sprite.position = Vector2(col_x + 12, belt_y + 50)
-	bit_sprite.visible = met or mode == "tutorial"
+	bit_sprite.visible = met
 	hud_layer.add_child(bit_sprite)
 	bit_bubble = UI.panel("ui_panel_paper")
 	bit_bubble_label = UI.wrap(UI.label("", 24, UI.INK))
@@ -810,7 +810,7 @@ func _show_banner(text: String, col: Color, dur: float) -> void:
 	banner_label.add_theme_color_override("font_color", col)
 	banner.visible = true
 	banner.reset_size()
-	banner.position = Vector2((W - banner.size.x) / 2, tube_pos.y + 60)
+	banner.position = Vector2((W - banner.size.x) / 2, tube_pos.y + 140)
 	UI.pop(banner)
 	var tw := banner.create_tween()
 	tw.tween_interval(dur)
@@ -958,6 +958,11 @@ func _open_overlay(content: Control) -> void:
 	p.position = (get_viewport_rect().size - p.size) / 2
 	p.resized.connect(func(): p.position = (get_viewport_rect().size - p.size) / 2)
 	UI.pop(p)
+	# Wrapped labels know their height only after a layout pass.
+	await get_tree().process_frame
+	if is_instance_valid(p):
+		p.reset_size()
+		p.position = (get_viewport_rect().size - p.size) / 2
 
 
 func _close_overlay() -> void:

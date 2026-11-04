@@ -79,7 +79,9 @@ func _ready() -> void:
 		for id in out["new_items"]:
 			var h := HBoxContainer.new()
 			h.add_child(UI.image("it_" + id, 5))
-			h.add_child(UI.wrap(UI.label(I18n.pick(Content.COLLECTIBLES[id]["name"]), 28)))
+			var nl := UI.wrap(UI.label(I18n.pick(Content.COLLECTIBLES[id]["name"]), 28))
+			nl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			h.add_child(nl)
 			iv.add_child(h)
 		body.add_child(it)
 	# next steps

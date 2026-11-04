@@ -7,7 +7,7 @@ func _ready() -> void:
 
 func _run() -> void:
 	Loc.load_all()
-	Settings.path = "user://test_settings.cfg"
+	Settings.use_path("user://test_settings.cfg")
 	Settings.load_and_apply()
 	SaveService.base_dir = "user://test_saves/"
 	var only := ""
@@ -63,6 +63,7 @@ func _reset() -> void:
 	Settings.aim_assist = true
 	Settings.touch_mode = "auto"
 	Settings.reset_keys()
+	ArtRegistry.use_manifest("res://art/manifest.json")
 
 func _cleanup() -> void:
 	for c in get_children():

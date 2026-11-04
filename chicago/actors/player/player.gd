@@ -31,8 +31,7 @@ func _ready() -> void:
 	shape.points = pts
 	cs.shape = shape
 	add_child(cs)
-	figure = Figure.new()
-	figure.coat = Color("#6b4a2f")
+	figure = SpriteFigure.make("char_enzo", Color("#6b4a2f"))   # real art if imported, else the placeholder
 	add_child(figure)
 
 func _physics_process(delta: float) -> void:

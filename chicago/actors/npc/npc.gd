@@ -35,8 +35,7 @@ func _ready() -> void:
 	shape.points = pts
 	cs.shape = shape
 	add_child(cs)
-	figure = Figure.new()
-	figure.coat = Color(String(def.get("color", "#555555")))
+	figure = SpriteFigure.make("char_" + npc_id, Color(String(def.get("color", "#555555"))))
 	figure.hat = figure.coat.darkened(0.5)
 	add_child(figure)
 

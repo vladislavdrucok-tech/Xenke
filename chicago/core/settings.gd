@@ -14,6 +14,9 @@ static var keys := {}                  # action -> physical keycode (only remapp
 static var _defaults := {}             # action -> [events] captured before any remap
 static var path := PATH                # tests point this elsewhere
 
+static func use_path(p: String) -> void:
+	path = p
+
 static func load_and_apply() -> void:
 	_capture_defaults()
 	var cf := ConfigFile.new()

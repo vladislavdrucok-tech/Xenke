@@ -85,7 +85,7 @@ func _show(nid: String) -> void:
 		if not Conditions.check(ch.get("if", {}), GameState):
 			continue
 		var b := Button.new()
-		b.text = tr(String(ch.text))
+		b.text = "%d. %s" % [shown + 1, tr(String(ch.text))]
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.custom_minimum_size = Vector2(0, 52)
 		b.add_theme_font_size_override("font_size", 20)
@@ -93,6 +93,8 @@ func _show(nid: String) -> void:
 		choices_box.add_child(b)
 		shown += 1
 	hint.visible = shown == 0
+	if shown > 0:
+		choices_box.get_child(choices_box.get_child_count() - shown).call_deferred("grab_focus")
 
 ## Visible choices in order (tests and bots use these indices into the node's full choice list).
 func visible_choices() -> Array[int]:
@@ -146,6 +148,19 @@ func close() -> void:
 	finished.emit(id)
 
 func _gui_input(e: InputEvent) -> void:
-	if (e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT) or (e is InputEventScreenTouch and e.pressed):
+	# Taps arrive as emulated mouse clicks too, so only the mouse event is handled: one tap = one line.
+	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 		advance()
 		accept_event()
+
+## Keyboard: 1-9 pick a visible choice.
+func _unhandled_key_input(e: InputEvent) -> void:
+	if not visible or not (e is InputEventKey) or not e.pressed or e.echo:
+		return
+	var k: int = e.physical_keycode
+	if k >= KEY_1 and k <= KEY_9:
+		var vis := visible_choices()
+		var i := k - KEY_1
+		if i < vis.size():
+			choose(vis[i])
+			get_viewport().set_input_as_handled()

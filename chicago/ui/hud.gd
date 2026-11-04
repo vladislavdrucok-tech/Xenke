@@ -154,6 +154,12 @@ func _build_pause() -> void:
 	v.add_child(h)
 	root.add_child(pause_panel)
 
+func _unhandled_input(e: InputEvent) -> void:
+	# The world is paused with the tree; the HUD keeps running, so it is the one that hears "unpause".
+	if pause_panel.visible and e.is_action_pressed("pause"):
+		pause_toggled.emit()
+		get_viewport().set_input_as_handled()
+
 func show_pause(v: bool) -> void:
 	pause_panel.visible = v
 	if v:

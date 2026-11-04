@@ -12,7 +12,7 @@ func _ready() -> void:
 	add_to_group("police")
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	collision_layer = 32
-	collision_mask = 1
+	collision_mask = 1 | 2 | 8
 	var cs := CollisionShape2D.new()
 	var shape := ConvexPolygonShape2D.new()
 	shape.points = PackedVector2Array([Vector2(-50, 0), Vector2(0, -25), Vector2(50, 0), Vector2(0, 25)])

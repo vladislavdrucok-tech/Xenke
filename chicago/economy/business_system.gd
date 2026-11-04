@@ -28,9 +28,16 @@ func is_open(id: String) -> bool:
 	if not is_owned(id) and not bool(d.get("npc_owned", false)):
 		return false
 	var h: Array = d.get("hours", [8, 18])
-	if WorldClock.weekday() in d.get("closed_weekdays", []):
+	if is_closed_day(id, WorldClock.weekday()):
 		return false
 	return WorldClock.is_between(float(h[0]), float(h[1]))
+
+## JSON numbers are floats and Array.has() compares types strictly (6 is not 6.0), so compare as ints.
+func is_closed_day(id: String, weekday: int) -> bool:
+	for w in defs.get(id, {}).get("closed_weekdays", []):
+		if int(w) == weekday:
+			return true
+	return false
 
 func level_def(id: String) -> Dictionary:
 	var lv: Array = defs.get(id, {}).get("levels", [{}])
@@ -56,7 +63,8 @@ func settle_day(day: int) -> void:
 		if not is_owned(id) or int(s.settled_day) >= day:
 			continue
 		var lv := level_def(id)
-		var staffed := not (s.staff as Array).is_empty()
+		var weekday := (day - 1) % 7
+		var staffed: bool = not (s.staff as Array).is_empty() and not is_closed_day(id, weekday)
 		var walkin := int(lv.get("walkin_cents", 0)) if staffed else 0
 		var cost := int(lv.get("daily_cost_cents", 0)) + int(lv.get("wage_cents", 0)) * (s.staff as Array).size()
 		var net := walkin - cost

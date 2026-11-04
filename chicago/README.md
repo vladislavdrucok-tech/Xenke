@@ -54,7 +54,7 @@
 ```
 GODOT=/шлях/до/Godot_v4.3-stable_linux.x86_64 chicago/tools/run_tests.sh
 ```
-45 тестів без вікна, зокрема повне проходження глави (`tests/test_playthrough.gd`). Що саме перевіряється — у `docs/TEST_PLAN.md`.
+60 тестів без вікна, зокрема повне проходження глави (`tests/test_playthrough.gd`). Що саме перевіряється — у `docs/TEST_PLAN.md`.
 
 ## Документи
 - `docs/GAME_DESIGN.md` — гра, персонажі, глава 1, баланс.

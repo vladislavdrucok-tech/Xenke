@@ -23,10 +23,36 @@ func _notification(what: int) -> void:
 	# Android: the app can be killed at any time after it goes to the background.
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
 		if GameState.get_flag("game_started") == true and not transition_lock:
-			save(AUTOSAVE_SLOT)
+			# The world writes the live position, cars and combat state first. Saving mid-fight is safe here:
+			# encounters restart from their checkpoint on load and chases never resume.
+			var worlds := get_tree().get_nodes_in_group("world")
+			if worlds.is_empty():
+				save(AUTOSAVE_SLOT)
+			else:
+				worlds[0].autosave(true)
 
 func path(slot: String, ext: String = "json") -> String:
 	return base_dir.path_join("%s.%s" % [slot, ext])
+
+## Unix time stored in a slot's header (0 if none / unreadable). The menu continues from the newest slot.
+func saved_time(slot: String) -> int:
+	for ext in ["json", "bak"]:
+		if FileAccess.file_exists(path(slot, ext)):
+			var t := FileAccess.get_file_as_string(path(slot, ext))
+			var nl := t.find("\n")
+			var h: Variant = JSON.parse_string(t.substr(0, nl)) if nl > 0 else null
+			if typeof(h) == TYPE_DICTIONARY:
+				return int(h.get("saved_unix", 0))
+	return 0
+
+func newest_slot() -> String:
+	var best := ""
+	var best_t := -1
+	for s in ["autosave", "slot1"]:
+		if has_save(s) and saved_time(s) > best_t:
+			best = s
+			best_t = saved_time(s)
+	return best
 
 func has_save(slot: String) -> bool:
 	return FileAccess.file_exists(path(slot)) or FileAccess.file_exists(path(slot, "bak"))
@@ -63,12 +89,19 @@ func save(slot: String) -> Error:
 	var main := ProjectSettings.globalize_path(path(slot))
 	var bak := ProjectSettings.globalize_path(path(slot, "bak"))
 	if FileAccess.file_exists(path(slot)):
-		if FileAccess.file_exists(path(slot, "bak")):
-			DirAccess.remove_absolute(bak)
-		var e1 := DirAccess.rename_absolute(main, bak)
-		if e1 != OK:
-			last_error = "rotate backup: %s" % error_string(e1)
-			return e1
+		# Keep the backup good: a corrupt main file replaces nothing, it is simply overwritten.
+		var keep_err := last_error
+		var main_ok := not _parse(FileAccess.get_file_as_string(path(slot))).is_empty()
+		last_error = keep_err
+		if main_ok:
+			if FileAccess.file_exists(path(slot, "bak")):
+				DirAccess.remove_absolute(bak)
+			var e1 := DirAccess.rename_absolute(main, bak)
+			if e1 != OK:
+				last_error = "rotate backup: %s" % error_string(e1)
+				return e1
+		else:
+			DirAccess.remove_absolute(main)
 	var e2 := DirAccess.rename_absolute(ProjectSettings.globalize_path(tmp), main)
 	if e2 != OK:
 		last_error = "replace: %s" % error_string(e2)

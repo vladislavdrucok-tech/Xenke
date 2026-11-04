@@ -11,6 +11,7 @@ extends RefCounted
 ##   "hour_between": [from, to]  (may wrap midnight)
 ##   "item": {"item_id": min_count}
 ##   "remembers": {"npc": id, "event": event}
+##   "debt_lte": {"lender_id": cents}        what is still owed to that lender is at most this
 ##   "any": [cond, cond]  (OR)
 
 static func check(c: Variant, gs: Node) -> bool:
@@ -57,6 +58,10 @@ static func check(c: Variant, gs: Node) -> bool:
 				for i in v:
 					if gs.item_count(i) < int(v[i]):
 						return false
+			"debt_lte":
+				for lender in v:
+					if int(gs.debts.get(lender, 0)) > int(v[lender]):
+						return false
 			"remembers":
 				if not gs.memory.knows(v.npc, v.event):
 					return false
@@ -73,4 +78,4 @@ static func check(c: Variant, gs: Node) -> bool:
 				return false
 	return true
 
-const KEYS := ["flag", "not_flag", "quest", "objective", "rel", "money_gte", "money_lt", "hour_between", "item", "remembers", "any"]
+const KEYS := ["flag", "not_flag", "quest", "objective", "rel", "money_gte", "money_lt", "hour_between", "item", "remembers", "debt_lte", "any"]

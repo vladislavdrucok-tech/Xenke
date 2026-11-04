@@ -49,7 +49,7 @@ func _process(delta: float) -> void:
 	if scared_t > 0.0:
 		# Running away from danger (shots): faster, ignores the player.
 		scared_t -= delta
-	elif player and Player.ground_dist(player.position, position) < 60.0:
+	elif player and player.visible and Player.ground_dist(player.position, position) < 60.0:
 		figure.walking = false
 		return
 	var sp := SPEED * (2.4 if scared_t > 0.0 else 1.0)

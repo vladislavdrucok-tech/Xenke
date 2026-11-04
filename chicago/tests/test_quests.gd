@@ -16,6 +16,7 @@ func test_homecoming_ordered_objectives() -> void:
 	eq(GameState.get_flag("home"), true)
 
 func test_shop_debt_full_beat() -> void:
+	GameState.businesses.acquire("bellini_garage")
 	GameState.quests.states["ch1_homecoming"] = {"state": "completed", "obj": {}, "started_min": 0}
 	GameState.quests.start("ch1_shop_debt")
 	GameState.set_flag("debt_known", true)

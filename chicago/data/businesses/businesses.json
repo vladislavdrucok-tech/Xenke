@@ -3,7 +3,7 @@
 		"name": "BIZ_BELLINI_GARAGE",
 		"district": "santa_lucia",
 		"interior": "garage_interior",
-		"owned_at_start": true,
+		"owned_at_start": false,
 		"staff_at_start": [
 			"salvatore"
 		],
@@ -37,7 +37,9 @@
 					}
 				}
 			}
-		]
+		],
+		"price_cents": 0,
+		"comment": "Salvatore signs the shop over to Enzo in the debt talk (effect acquire_business)."
 	},
 	"trattoria_rosa": {
 		"name": "BIZ_TRATTORIA",

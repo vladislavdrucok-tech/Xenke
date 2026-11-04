@@ -29,6 +29,7 @@ func test_dollars_format() -> void:
 	eq(Ledger.dollars(0), "$0.00")
 
 func test_repair_job_pays_once_per_id() -> void:
+	GameState.businesses.acquire("bellini_garage")
 	WorldClock.set_total(9 * 60)
 	var start := GameState.ledger.balance
 	check(GameState.businesses.record_job("bellini_garage", "d1_1"), "job 1")
@@ -36,6 +37,7 @@ func test_repair_job_pays_once_per_id() -> void:
 	eq(GameState.ledger.balance - start, 600, "paid once")
 
 func test_day_settlement_once_even_after_reload() -> void:
+	GameState.businesses.acquire("bellini_garage")
 	WorldClock.set_total(9 * 60)
 	var b0 := GameState.ledger.balance
 	WorldClock.advance(24 * 60)                 # crosses into day 2 -> day 1 settled
@@ -47,6 +49,7 @@ func test_day_settlement_once_even_after_reload() -> void:
 	eq(GameState.ledger.balance, after, "no duplicate payout after reload")
 
 func test_upgrade_requires_debt_quest() -> void:
+	GameState.businesses.acquire("bellini_garage")
 	GameState.pay(10000, "test:gift", "test")
 	check(not GameState.businesses.upgrade("bellini_garage"), "locked before quest")
 	GameState.quests.states["ch1_shop_debt"] = {"state": "completed", "obj": {}, "started_min": 0}

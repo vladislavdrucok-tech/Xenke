@@ -22,6 +22,8 @@ var wanted := {"level": 0, "heat": 0.0, "last_seen_min": 0}
 var profile_id := ""
 var seed_value := 0
 var playtime_s := 0.0
+var player := {"hp": 100, "mag": 0}   # written by the world before saving
+var factions := {}             # faction_id -> {"trust": int, "suspicion": int}, clamped -100..100
 
 func _ready() -> void:
 	EventBus.game_event.connect(_on_game_event)
@@ -46,6 +48,10 @@ func new_game(seed_in: int = 1947) -> void:
 	profile_id = "p%d" % (Time.get_unix_time_from_system() as int)
 	seed_value = seed_in
 	playtime_s = 0.0
+	player = {"hp": 100, "mag": 0}
+	factions = {}
+	for f in DataRegistry.table("factions"):
+		factions[f] = {"trust": 0, "suspicion": 0}
 	WorldClock.set_total(8 * 60)
 	ledger.post("start:pocket", START_CASH, "start", 0)
 	for id in DataRegistry.table("vehicles"):
@@ -177,18 +183,26 @@ func apply_effects(effects: Array, key: String) -> void:
 					businesses.record_job(String(v), sub)
 				"advance_hours":
 					WorldClock.advance(int(v) * 60)
+				"acquire_business":
+					businesses.acquire(String(v))
+				"faction":
+					var fs: Dictionary = factions.get(String(v.id), {"trust": 0, "suspicion": 0})
+					fs[String(v.axis)] = clampi(int(fs.get(String(v.axis), 0)) + int(v.delta), -100, 100)
+					factions[String(v.id)] = fs
 				_:
 					push_error("GameState: unknown effect '%s' in %s" % [k, key])
 
 const EFFECT_KEYS := ["repeatable", "set_flag", "rel", "money", "item", "start_quest", "fail_quest", "event", "remember",
-	"debt", "pay_debt", "toast", "business_job", "advance_hours"]
+	"debt", "pay_debt", "toast", "business_job", "advance_hours", "acquire_business", "faction"]
 
 # ------------------------------------------------------------------ world reactions
 func _on_game_event(id: String, data: Dictionary) -> void:
-	quests.on_event(id, data)
+	quests.on_event(id, data)   # also re-checks "when" objectives, e.g. after a load
 	# Witnessed memories: whoever the event lists as witnesses remembers it (world code decides who could see).
 	for w in data.get("witnesses", []):
 		memory.remember(w, id, WorldClock.total_minutes, int(data.get("importance", 1)), "seen", {})
+	for w in data.get("hearers", []):
+		memory.remember(w, id, WorldClock.total_minutes, int(data.get("importance", 1)), "heard", {})
 
 func _on_day_changed(day: int) -> void:
 	businesses.settle_day(day - 1)
@@ -203,6 +217,8 @@ func to_dict() -> Dictionary:
 		"relationships": relationships.to_dict(), "memory": memory.to_dict(), "businesses": businesses.to_dict(),
 		"inventory": inventory.duplicate(), "debts": debts.duplicate(), "once": once.keys(),
 		"location": location.duplicate(true), "vehicles": vehicles.duplicate(true), "wanted": wanted.duplicate(),
+		"player": player.duplicate(),
+		"factions": factions.duplicate(true),
 	}
 
 func from_dict(d: Dictionary) -> void:
@@ -243,6 +259,14 @@ func from_dict(d: Dictionary) -> void:
 		if typeof(vs[k]) == TYPE_DICTIONARY and DataRegistry.has("vehicles", String(vs[k].get("def", ""))):
 			vehicles[String(k)] = vs[k]
 	wanted = {"level": 0, "heat": 0.0, "last_seen_min": 0}   # chases never resume on load (safe resume policy)
+	if flags.has("wanted_clear"):
+		flags["wanted_clear"] = true   # ...so a quest waiting for "lost the police" can finish
+	var fa := _dict(d.get("factions"))
+	for f in fa:
+		if factions.has(f) and typeof(fa[f]) == TYPE_DICTIONARY:
+			factions[f] = {"trust": clampi(int(fa[f].get("trust", 0)), -100, 100), "suspicion": clampi(int(fa[f].get("suspicion", 0)), -100, 100)}
+	var pl := _dict(d.get("player"))
+	player = {"hp": clampi(int(pl.get("hp", 100)), 1, 100), "mag": clampi(int(pl.get("mag", 0)), 0, 7)}
 	EventBus.money_changed.emit(ledger.balance)
 
 func _dict(v: Variant) -> Dictionary:

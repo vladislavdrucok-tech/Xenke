@@ -22,11 +22,11 @@ func post(id: String, cents: int, reason: String, minute: int = 0) -> bool:
 	_ids[id] = true
 	entries.append({"id": id, "cents": cents, "reason": reason, "minute": minute})
 	if entries.size() > MAX_ENTRIES:
-		var old: Dictionary = entries.pop_front()
-		if not entries.is_empty() and entries[0].get("reason", "") == "carried":
-			entries[0].cents += old.cents
-		else:
-			entries.push_front({"id": "carried", "cents": old.cents, "reason": "carried", "minute": old.minute})
+		# Fold the oldest real entry into the single "carried" line at the front (IDs stay in _ids).
+		if entries[0].get("reason", "") != "carried":
+			entries.push_front({"id": "carried", "cents": 0, "reason": "carried", "minute": int(entries[0].minute)})
+		var old: Dictionary = entries.pop_at(1)
+		entries[0].cents = int(entries[0].cents) + int(old.cents)
 	return true
 
 func has_tx(id: String) -> bool:

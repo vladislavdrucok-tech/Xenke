@@ -6,6 +6,7 @@ extends Node2D
 const AUTOSAVE := "autosave"
 const MANUAL := "slot1"
 const INTERIOR_ZOOM := 1.3
+const FUEL_CENTS_PER_POINT := 2   # a full tank of the Monarch ~ $2 (1947 prices, ~20 gallons)
 
 var district: District
 var player: Player
@@ -24,6 +25,7 @@ var transitioning := false
 var conflict: Node             # combat/conflict_director.gd
 var ui_zoom := 1.0
 var no_autosave := false       # tests
+var pending_autosave := false  # a checkpoint save that waits for the fight to end
 
 func _ready() -> void:
 	add_to_group("save_sync")
@@ -103,6 +105,9 @@ func load_district(id: String, spawn_id: String, pos: Variant = null, in_vehicle
 	player.visible = true
 	district.entities.add_child(player)
 	player.set_facing(district.spawn_facing(spawn_id))
+	if from_id == "":
+		player.hp = int(GameState.player.get("hp", 100))
+		conflict.mag = int(GameState.player.get("mag", 0))
 	_spawn_vehicles()
 	_spawn_npcs(true)
 	_spawn_pedestrians()
@@ -239,6 +244,8 @@ func _process(delta: float) -> void:
 	_occlusion(delta)
 
 func _slow_update() -> void:
+	if pending_autosave and not no_autosave and not conflict.is_unsafe_to_save():
+		autosave()
 	focus = _find_focus()
 	if focus == null:
 		hud.set_action("", false)
@@ -334,6 +341,9 @@ func _unhandled_input(e: InputEvent) -> void:
 	if e.is_action_pressed("pause"):
 		toggle_pause()
 		return
+	# Touch screens also send an emulated mouse click for every tap: with the touch UI that click is not an attack.
+	if e is InputEventMouseButton and e.device == InputEvent.DEVICE_ID_EMULATION and hud.touch.visible:
+		return
 	if paused:
 		return
 	if hud.dialogue.is_open():
@@ -351,6 +361,10 @@ func _unhandled_input(e: InputEvent) -> void:
 		_save_manual()
 	elif e.is_action_pressed("quickload"):
 		_load_manual()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST and not paused:
+		toggle_pause()   # Android Back opens the pause menu instead of quitting
 
 func toggle_pause() -> void:
 	paused = not paused
@@ -409,8 +423,8 @@ func _talk(n: NPC) -> void:
 	var d: Dictionary = n.def
 	for rule in d.get("dialogue", []):
 		if Conditions.check(rule.get("if", {}), GameState):
-			hud.dialogue.open(String(rule.dialogue), n.npc_id)
-			player.controls_enabled = false
+			if hud.dialogue.open(String(rule.dialogue), n.npc_id):
+				player.controls_enabled = false
 			return
 
 func _on_dialogue_finished(_id: String) -> void:
@@ -483,18 +497,35 @@ func _repair_job(it: Interactable) -> void:
 	if GameState.businesses.record_job(biz, job_id):
 		EventBus.toast.emit("TOAST_JOB_DONE", [Ledger.dollars(int(lv.get("job_pay_cents", 0)))])
 
+## The repair bay: a car standing at it is repaired and refuelled (paid once per visit). A car that cannot drive any
+## more (wrecked or out of fuel) anywhere in the district is towed here first, so the story car can never strand
+## the player.
 func _repair_nearby_vehicle(it: Interactable) -> void:
+	var bay_g := Iso.to_grid(it.position) + Vector2(0, 1.2)
 	for v in vehicles.values():
-		if Player.ground_dist(v.position, it.position) < 3.5 * Iso.TILE_H * 2.0 and v.damage > 0:
-			var cost: int = v.repair_cost()
+		if v == _driving():
+			continue
+		var near: bool = v.grid_pos().distance_to(bay_g) < 3.0
+		if not near and (v.condition() <= 0 or v.fuel <= 0):
+			v.position = Iso.to_screen(district.nearest_free(bay_g, 0.6))
+			v.heading = 0.0
+			v.speed = 0.0
+			WorldClock.advance(45)
+			EventBus.toast.emit("TOAST_TOWED", [])
+			EventBus.emit_event("vehicle_towed", {"vehicle": v.instance_id})
+			near = true
+		if near and (v.damage > 0 or v.fuel < int(v.def.get("fuel_max", 100))):
+			var cost: int = v.repair_cost() + (int(v.def.get("fuel_max", 100)) - v.fuel) * FUEL_CENTS_PER_POINT
 			if GameState.pay(-cost, "veh:%s:repair:%d" % [v.instance_id, WorldClock.total_minutes], "veh:repair"):
 				v.repair()
+				v.fuel = int(v.def.get("fuel_max", 100))
 				WorldClock.advance(30)
 				EventBus.toast.emit("TOAST_CAR_REPAIRED", [Ledger.dollars(cost)])
 				EventBus.emit_event("vehicle_repaired", {"vehicle": v.instance_id, "cost": cost})
 			else:
 				EventBus.toast.emit("TOAST_NOT_ENOUGH_MONEY", [])
 			return
+	EventBus.toast.emit("TOAST_NOTHING_TO_FIX", [])
 
 # ================================================================= vehicles
 func _enter_vehicle(v: Vehicle) -> void:
@@ -580,10 +611,15 @@ func sync_to_state() -> void:
 	var g: Vector2 = dv.grid_pos() if dv else player.grid_pos()
 	GameState.location = {"district": district.id, "spawn": GameState.location.get("spawn", ""), "pos": [snappedf(g.x, 0.001), snappedf(g.y, 0.001)],
 		"facing": player.facing, "in_vehicle": dv.instance_id if dv else ""}
+	GameState.player = {"hp": player.hp, "mag": conflict.mag}
 
-func autosave() -> void:
-	if conflict and conflict.has_method("is_unsafe_to_save") and conflict.is_unsafe_to_save():
+## `force`: the OS is about to suspend / close us - save whatever is going on (encounters restart from their
+## checkpoint on load, chases never resume). Otherwise a save in the middle of a fight waits until it is over.
+func autosave(force: bool = false) -> void:
+	if not force and conflict and conflict.is_unsafe_to_save():
+		pending_autosave = true
 		return
+	pending_autosave = false
 	sync_to_state()
 	SaveService.save(AUTOSAVE)
 
@@ -595,11 +631,11 @@ func _save_manual() -> void:
 func _load_manual() -> void:
 	if not SaveService.has_save(MANUAL):
 		return
-	get_tree().paused = false
 	var e := SaveService.load_slot(MANUAL)
 	if e != OK:
 		hud.toast(Loc.t("UI_LOAD_FAILED", [SaveService.last_error]))
 		return
+	get_tree().paused = false
 	get_tree().reload_current_scene()
 
 func _quit_to_menu() -> void:

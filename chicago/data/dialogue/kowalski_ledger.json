@@ -43,6 +43,20 @@
 								"importance": 3,
 								"how": "seen"
 							}
+						},
+						{
+							"faction": {
+								"id": "police",
+								"axis": "trust",
+								"delta": 20
+							}
+						},
+						{
+							"faction": {
+								"id": "valenti_family",
+								"axis": "suspicion",
+								"delta": 40
+							}
 						}
 					],
 					"if": {

@@ -49,6 +49,13 @@
 								"importance": 3,
 								"how": "seen"
 							}
+						},
+						{
+							"faction": {
+								"id": "valenti_family",
+								"axis": "trust",
+								"delta": 20
+							}
 						}
 					],
 					"if": {
@@ -86,6 +93,13 @@
 								"event": "enzo_kept_ledger",
 								"importance": 3,
 								"how": "seen"
+							}
+						},
+						{
+							"faction": {
+								"id": "valenti_family",
+								"axis": "suspicion",
+								"delta": 30
 							}
 						}
 					],

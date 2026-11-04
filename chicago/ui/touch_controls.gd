@@ -40,6 +40,9 @@ func _btn(text: String, s: float) -> Button:
 	b.focus_mode = Control.FOCUS_NONE
 	b.add_theme_font_size_override("font_size", 20)
 	b.modulate = Color(1, 1, 1, 0.85)
+	# Buttons are pressed by touch index in _input (so they work while another finger holds the stick); the
+	# emulated mouse click a tap also produces must not press them a second time.
+	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(b)
 	return b
 
@@ -62,6 +65,20 @@ func set_verb(key: String, enabled: bool) -> void:
 	act_btn.text = tr(key) if key != "" else tr("HUD_ACT_USE")
 	act_btn.disabled = not enabled
 
+func button_at(p: Vector2) -> Button:
+	for b in [act_btn, atk_btn, pause_btn]:
+		if b.visible and not b.disabled and Rect2(b.position, b.size).grow(8.0).has_point(p):
+			return b
+	return null
+
+func _press(b: Button) -> void:
+	if b == act_btn:
+		action_pressed.emit()
+	elif b == atk_btn:
+		attack_pressed.emit()
+	elif b == pause_btn:
+		pause_pressed.emit()
+
 func _over_button(p: Vector2) -> bool:
 	for b in [act_btn, atk_btn, pause_btn]:
 		if b.visible and Rect2(b.position, b.size).grow(8.0).has_point(p):
@@ -71,8 +88,20 @@ func _over_button(p: Vector2) -> bool:
 func _input(e: InputEvent) -> void:
 	if not visible:
 		return
+	# A real mouse (desktop with --touch) presses the buttons too; emulated clicks from touches never do.
+	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and e.device != InputEvent.DEVICE_ID_EMULATION:
+		var mb := button_at(e.position)
+		if mb:
+			_press(mb)
+			get_viewport().set_input_as_handled()
+		return
 	if e is InputEventScreenTouch:
 		if e.pressed:
+			var hit := button_at(e.position)
+			if hit:
+				_press(hit)
+				get_viewport().set_input_as_handled()
+				return
 			var vs := get_viewport().get_visible_rect().size
 			if joy_index == -1 and e.position.x < vs.x * 0.55 and e.position.y > vs.y * 0.22 and not _over_button(e.position):
 				joy_index = e.index

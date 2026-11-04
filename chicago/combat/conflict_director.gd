@@ -37,6 +37,7 @@ var tracers: Array = []            # [from, to, t, color]
 var fx: Node2D
 var aim_assist := true
 var regen_acc := 0.0
+var _crimes_this_session := {}
 
 func _ready() -> void:
 	rng.seed = 4711
@@ -82,7 +83,8 @@ func _aim_point() -> Vector2:
 	var p: Vector2 = world.player.position
 	var best: Node2D = null
 	var best_d := INF
-	if aim_assist and (InputRouter.touch_active or OS.get_cmdline_user_args().has("--touch") or InputRouter.bot_active):
+	var touch_ui: bool = world.hud.touch.visible
+	if aim_assist and (touch_ui or InputRouter.bot_active):
 		for h in hostiles:
 			if is_instance_valid(h) and h.alive() and can_see(world.player, h):
 				var d := Player.ground_dist(p, h.position)
@@ -91,7 +93,7 @@ func _aim_point() -> Vector2:
 					best_d = d
 		if best:
 			return best.position
-	if not InputRouter.bot_active and not InputRouter.touch_active:
+	if not InputRouter.bot_active and not touch_ui:
 		return world.get_global_mouse_position() + Vector2(0, 60)
 	var f := {"E": Vector2(1, 0), "W": Vector2(-1, 0), "N": Vector2(0, -1), "S": Vector2(0, 1), "NE": Vector2(1, -0.5),
 		"NW": Vector2(-1, -0.5), "SE": Vector2(1, 0.5), "SW": Vector2(-1, 0.5)}.get(world.player.facing, Vector2(0, 1)) as Vector2
@@ -241,7 +243,11 @@ func _start_ambush(amb: Dictionary) -> void:
 		GameState.add_item("pistol_ammo", 14)
 		EventBus.toast.emit("TOAST_GLOVEBOX_PISTOL", [])
 	weapon = "m1911"
+	# Encounter checkpoint: a (re)started fight begins with the ammo it was designed for (7 + 14), never less -
+	# a retry must stay winnable. Extra rounds the player had are kept.
 	mag = int(DataRegistry.get_def("weapons", "m1911").mag)
+	if GameState.item_count("pistol_ammo") < 14:
+		GameState.add_item("pistol_ammo", 14 - GameState.item_count("pistol_ammo"))
 	var base := Vector2(float(amb.enemy_spawn[0]), float(amb.enemy_spawn[1]))
 	for i in 2:
 		var h := Hostile.new()
@@ -303,18 +309,23 @@ func _crime(event: String, at: Vector2, noise: float, by_player: bool = true) ->
 		if is_instance_valid(h) and Player.ground_dist(h.position, at) < noise:
 			h.hear()
 	var witnesses: Array[String] = []
+	var hearers: Array[String] = []
 	var heard := 0
 	for n in world.npcs.values():
-		if Player.ground_dist(n.position, at) < noise and (noise >= SHOT_NOISE or _los(n.position, at)):
-			witnesses.append(n.npc_id)
+		if Player.ground_dist(n.position, at) < noise:
+			if _los(n.position, at):
+				witnesses.append(n.npc_id)
+			elif noise >= SHOT_NOISE:
+				hearers.append(n.npc_id)
 	for p in get_tree().get_nodes_in_group("pedestrian"):
 		if world.district.is_ancestor_of(p) and Player.ground_dist(p.position, at) < noise:
 			heard += 1
 			p.scare(6.0)
-	if not witnesses.is_empty() or heard > 0:
-		if not GameState.once.has("crime:%s:%d" % [event, WorldClock.total_minutes]):
-			GameState.once["crime:%s:%d" % [event, WorldClock.total_minutes]] = true
-			EventBus.emit_event(event, {"witnesses": witnesses, "importance": 2, "heard": heard, "by_player": by_player})
+	if not witnesses.is_empty() or not hearers.is_empty() or heard > 0:
+		var key := "%s:%d" % [event, WorldClock.total_minutes]
+		if not _crimes_this_session.has(key):
+			_crimes_this_session[key] = true   # one record per crime per game minute (not saved)
+			EventBus.emit_event(event, {"witnesses": witnesses, "hearers": hearers, "importance": 2, "heard": heard, "by_player": by_player})
 			GameState.flags["neighbors_heard_" + event] = WorldClock.day()
 		_report(at)
 

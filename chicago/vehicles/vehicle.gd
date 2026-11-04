@@ -35,7 +35,7 @@ func _ready() -> void:
 	add_to_group("vehicle")
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	collision_layer = 8
-	collision_mask = 1 | 4
+	collision_mask = 1 | 4 | 16 | 32
 	var cs := CollisionShape2D.new()
 	_shape = ConvexPolygonShape2D.new()
 	cs.shape = _shape

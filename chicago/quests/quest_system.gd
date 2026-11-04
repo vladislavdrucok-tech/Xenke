@@ -76,6 +76,11 @@ func current_objective(id: String) -> Dictionary:
 
 func on_event(ev: String, data: Dictionary) -> void:
 	for id in active_ids():
+		# Conditions first: a "when" objective that became true (a flag set by a dialogue) must not make the
+		# next objective miss this very event.
+		_check_state_objectives(id)
+		if state(id) != ACTIVE:
+			continue
 		var q: Dictionary = defs[id]
 		var ordered: bool = q.get("ordered", true)
 		for o in q.get("objectives", []):

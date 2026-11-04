@@ -77,9 +77,7 @@ func _new_game() -> void:
 	get_tree().change_scene_to_file("res://world/world.tscn")
 
 func _continue() -> void:
-	var slot := "autosave"
-	if SaveService.has_save("slot1") and not SaveService.has_save("autosave"):
-		slot = "slot1"
+	var slot := SaveService.newest_slot()
 	if SaveService.load_slot(slot) != OK:
 		push_error("Continue failed: " + SaveService.last_error)
 		GameState.new_game()

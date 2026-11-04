@@ -96,6 +96,7 @@ func test_homecoming_through_the_real_scene() -> void:
 
 func test_workbench_jobs_limited_and_counted() -> void:
 	GameState.location = {"district": "garage_interior", "spawn": "from_street", "pos": null, "in_vehicle": ""}
+	GameState.businesses.acquire("bellini_garage")
 	await _boot()
 	WorldClock.set_total(9 * 60)
 	var cash := GameState.ledger.balance
@@ -157,7 +158,7 @@ func test_car_needs_keys_then_drives_crashes_repairs_exits() -> void:
 	await frames(8)
 	GameState.pay(5000, "test:cash", "test")
 	var cash := GameState.ledger.balance
-	var cost := car.repair_cost()
+	var cost: int = car.repair_cost() + (100 - car.fuel) * 2
 	world._use(_it("repair_bay"))
 	eq(car.damage, 0, "repaired")
 	eq(cash - GameState.ledger.balance, cost, "paid once")

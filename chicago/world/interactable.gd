@@ -12,6 +12,8 @@ var enabled := true
 
 func _ready() -> void:
 	add_to_group("interactable")
+	# Markers lie on the ground: drawn under everything standing (still above the ground layer at -10).
+	z_index = -5
 
 func verb() -> String:
 	return verb_key

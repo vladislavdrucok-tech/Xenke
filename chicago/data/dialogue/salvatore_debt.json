@@ -58,7 +58,15 @@
 		"d": {
 			"speaker": "salvatore",
 			"text": "DLG_SALVATORE_DEBT_D",
-			"end": true
+			"end": true,
+			"effects": [
+				{
+					"acquire_business": "bellini_garage"
+				},
+				{
+					"toast": "TOAST_SHOP_YOURS"
+				}
+			]
 		}
 	}
 }

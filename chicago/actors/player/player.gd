@@ -21,7 +21,7 @@ var max_hp := 100
 func _ready() -> void:
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	collision_layer = 2
-	collision_mask = 1
+	collision_mask = 1 | 4 | 8 | 16    # world, named NPCs, cars, gunmen
 	var cs := CollisionShape2D.new()
 	var shape := ConvexPolygonShape2D.new()
 	var pts := PackedVector2Array()

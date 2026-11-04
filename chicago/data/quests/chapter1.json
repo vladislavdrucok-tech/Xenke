@@ -77,10 +77,9 @@
 			{
 				"id": "pay_parts",
 				"text": "Q_SHOP_DEBT_O3",
-				"on": {
-					"event": "debt_paid",
-					"match": {
-						"lender": "lakeside_parts"
+				"when": {
+					"debt_lte": {
+						"lakeside_parts": 0
 					}
 				}
 			},

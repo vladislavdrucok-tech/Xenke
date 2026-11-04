@@ -1168,6 +1168,6 @@ if __name__ == "__main__":
     shop_icons()
     collectibles()
     ui()
-    app_icon()
+    # app_icon() — replaced by the owner's icon (docs/store/icon_source_time_post.png)
     extras()
     print("sprites:", len(os.listdir(OUT)))

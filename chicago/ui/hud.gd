@@ -23,6 +23,8 @@ var touch: TouchControls
 var pause_panel: PanelContainer
 var _toast_t := 0.0
 var root: Control
+var perf_label: Label          # F3: frame time and counts (measurements, not targets)
+var _frame_ms: Array[float] = []
 
 func _ready() -> void:
 	layer = 10
@@ -78,13 +80,23 @@ func _ready() -> void:
 	touch.pause_pressed.connect(func(): pause_toggled.emit())
 	root.add_child(touch)
 	dialogue = DialogueBox.new()
-	dialogue.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	# Bottom centre, 760 px wide (or the screen width minus margins on narrow screens), growing upwards.
+	dialogue.anchor_left = 0.5
+	dialogue.anchor_right = 0.5
+	dialogue.anchor_top = 1.0
+	dialogue.anchor_bottom = 1.0
+	dialogue.offset_left = -380.0
+	dialogue.offset_right = 380.0
+	dialogue.offset_bottom = -24.0
+	dialogue.offset_top = -24.0
 	dialogue.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	dialogue.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	dialogue.custom_minimum_size = Vector2(760, 0)
-	dialogue.position = Vector2(-380, -24)
 	root.add_child(dialogue)
 	_build_pause()
+	perf_label = _label(14, Color("#b8f0b0"))
+	perf_label.position = Vector2(16, 120)
+	perf_label.visible = OS.get_cmdline_user_args().has("--perf")
+	root.add_child(perf_label)
 	EventBus.toast.connect(func(k: String, args: Array): toast(Loc.t(k, args)))
 	var lbl := _label(12, Color(1, 1, 1, 0.45))
 	lbl.text = "UI_TEMP_ART"
@@ -155,6 +167,10 @@ func _build_pause() -> void:
 	root.add_child(pause_panel)
 
 func _unhandled_input(e: InputEvent) -> void:
+	if e.is_action_pressed("debug_overlay"):
+		perf_label.visible = not perf_label.visible
+		get_viewport().set_input_as_handled()
+		return
 	# The world is paused with the tree; the HUD keeps running, so it is the one that hears "unpause".
 	if pause_panel.visible and e.is_action_pressed("pause"):
 		pause_toggled.emit()
@@ -197,7 +213,25 @@ func refresh(status_extra: String = "") -> void:
 		t += " (%d/%d)" % [int(GameState.quests.states[q].obj.get(o.id, 0)), need]
 	quest_text.text = "• " + t
 
+## Average / worst frame time over the last 120 frames, and what is alive. Printed by the screenshot tour too.
+func perf_text() -> String:
+	if _frame_ms.is_empty():
+		return ""
+	var s := 0.0
+	var worst := 0.0
+	for v in _frame_ms:
+		s += v
+		worst = maxf(worst, v)
+	return "FPS %d | кадр %.1f мс сер., %.1f мс макс. | вузлів %d | фіз. тіл %d | %s" % [Engine.get_frames_per_second(),
+		s / _frame_ms.size(), worst, int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		int(Performance.get_monitor(Performance.PHYSICS_2D_ACTIVE_OBJECTS)), RenderingServer.get_video_adapter_name()]
+
 func _process(delta: float) -> void:
+	_frame_ms.append(delta * 1000.0)
+	if _frame_ms.size() > 120:
+		_frame_ms.pop_front()
+	if perf_label.visible and Engine.get_process_frames() % 15 == 0:
+		perf_label.text = perf_text()
 	if _toast_t > 0.0:
 		_toast_t -= delta
 		if _toast_t <= 0.0:

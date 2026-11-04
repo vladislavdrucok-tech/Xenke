@@ -265,6 +265,7 @@ func _slow_update() -> void:
 		for v in vehicles.values():
 			v.rain = r
 	rain_fx.emitting = _raining and not district.is_interior
+	rain_fx.visible = not district.is_interior   # no leftover drops indoors
 	_update_light()
 	var extra := ""
 	var dv := _driving()

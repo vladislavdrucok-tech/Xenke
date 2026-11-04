@@ -186,6 +186,8 @@ func _build(rules: Dictionary) -> Dictionary:
 				p["collectible"] = c
 				p["box"] = "gold"
 		_apply_series(p)
+		if has("boomerang") and mode != "record" and p["series"] == "" and rng.randf() < 0.05:
+			p["boomerang"] = true
 	_finish(p, rules)
 	return p
 
@@ -269,11 +271,11 @@ func _pick_collectible() -> String:
 
 func _finish(p: Dictionary, _rules: Dictionary) -> void:
 	for k in ["hazard", "riddle", "riddle_dest", "old_year", "urgent", "series", "series_idx", "series_len",
-			"sender", "collectible", "damaged", "box", "seed"]:
+			"sender", "collectible", "damaged", "box", "seed", "boomerang", "returned"]:
 		if not p.has(k):
 			p[k] = {"hazard": false, "riddle": "", "riddle_dest": -1, "old_year": 0, "urgent": false,
 				"series": "", "series_idx": 0, "series_len": 0, "sender": "", "collectible": "",
-				"damaged": false, "box": "cardboard", "seed": 0}[k]
+				"damaged": false, "box": "cardboard", "seed": 0, "boomerang": false, "returned": false}[k]
 	if not p.has("shown"):
 		p["shown"] = str(p["year"])
 

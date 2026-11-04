@@ -10,6 +10,9 @@ const DEFS := {
 	"cat": {"unlock": "ev_cat", "dur": 6.0, "weight": 0.6, "rule": false},
 	"mirror": {"unlock": "ev_mirror", "dur": 14.0, "weight": 0.8, "rule": true},
 	"storm": {"unlock": "ev_storm", "dur": 14.0, "weight": 0.7, "rule": false},
+	# The room goes dark; a lamp still lights the parcel on the desk, so the
+	# label stays readable. The queue on the belt is hidden.
+	"blackout": {"unlock": "ev_blackout", "dur": 14.0, "weight": 0.6, "rule": false},
 }
 
 var rng := RandomNumberGenerator.new()
@@ -107,7 +110,7 @@ func stop_rules(id: String, rules: Dictionary) -> void:
 func coin_mult() -> float:
 	if is_active("golden"):
 		return 2.0
-	if is_active("storm"):
+	if is_active("storm") or is_active("blackout"):
 		return 1.5
 	return 1.0
 

@@ -84,6 +84,24 @@ func _ready() -> void:
 			h.add_child(nl)
 			iv.add_child(h)
 		body.add_child(it)
+	if not (out.get("achievements", []) as Array).is_empty():
+		var ap := UI.panel("ui_panel")
+		var av := VBoxContainer.new()
+		ap.add_child(av)
+		av.add_child(UI.label(I18n.t("res_achievements"), 30, UI.GOLD, 0, true))
+		for id in out["achievements"]:
+			var d := Achievements.def(id)
+			var h := HBoxContainer.new()
+			h.add_child(UI.image("ic_trophy", 5))
+			var al := UI.wrap(UI.label("%s  (+%d)" % [I18n.pick(d[4]), int(d[3])], 28))
+			al.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			h.add_child(al)
+			av.add_child(h)
+		body.add_child(ap)
+	if not (out.get("letters", []) as Array).is_empty():
+		var lb := UI.button(I18n.t("res_letters", (out["letters"] as Array).size()), "cyan", 80, "ic_mail")
+		lb.pressed.connect(func(): Game.goto("letters"))
+		body.add_child(lb)
 	# next steps
 	var chapter := Story.next_available(Game.profile)
 	if chapter >= 0 and mode != "tutorial":

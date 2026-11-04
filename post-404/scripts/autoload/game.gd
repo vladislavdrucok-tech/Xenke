@@ -114,6 +114,13 @@ func finish_shift(summary: Dictionary) -> Dictionary:
 	return out
 
 
+## Checks achievements outside of shifts (story, purchases) and announces them.
+func check_achievements() -> void:
+	for id in Achievements.check(profile):
+		notice.emit(I18n.t("ach_got", I18n.pick(Achievements.def(id)[4])))
+	save_now()
+
+
 func reset_progress() -> void:
 	var settings: Dictionary = profile["settings"].duplicate()
 	profile = SaveSystem.default_profile()

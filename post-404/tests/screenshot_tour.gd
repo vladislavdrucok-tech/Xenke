@@ -77,6 +77,9 @@ func _tour() -> void:
 	p["story"]["letters"].append({"from": "olena", "uk": StoryData.CHAPTERS[3]["lines"][5]["choice"][0]["letter"][1],
 		"en": StoryData.CHAPTERS[3]["lines"][5]["choice"][0]["letter"][2], "read": false})
 	p["story"]["vars"]["hope"] = 3
+	for m in ["urgent", "damaged", "sender", "collectible", "series", "present", "ev_golden", "ev_storm", "ev_cat", "boomerang", "ev_blackout"]:
+		if not p["seen_tips"].has(m):
+			p["seen_tips"].append(m)
 	Game.goto("menu")
 	await _wait(1.2)
 	await shot("menu")
@@ -87,7 +90,7 @@ func _tour() -> void:
 	await shot("shift_combo")
 	var s: Control = main().current
 	# show special parcels
-	for kind in ["damaged", "paradox", "mystery", "hazard", "series", "collectible"]:
+	for kind in ["damaged", "paradox", "mystery", "hazard", "series", "collectible", "boomerang"]:
 		s.session.paused = true
 		for c in s.get_children():
 			if c == s.overlay:
@@ -126,6 +129,27 @@ func _tour() -> void:
 	s._on_event_started(s.session.events.active)
 	await _wait(0.8)
 	await shot("event_calendar")
+	s.session.events.active["time_left"] = 0.01
+	await _wait(0.8)
+	s.session.events.start("blackout", s.session.rules)
+	s._on_event_started(s.session.events.active)
+	await _wait(1.0)
+	if s.overlay:
+		s._close_overlay()
+		s.session.paused = false
+	await _wait(0.5)
+	await shot("event_blackout")
+	# wrong answer on a boomerang
+	var bp := _special("boomerang", s.session)
+	if s.current_view:
+		s.current_view.queue_free()
+		s.current_view = null
+	s.session.current = bp
+	s._on_parcel_ready(bp)
+	await _wait(0.4)
+	s._try_sort(Rules.Dir.LEFT)
+	await _wait(0.25)
+	await shot("boomerang_back")
 	s._open_pause()
 	await _wait(0.4)
 	await shot("pause")
@@ -134,6 +158,15 @@ func _tour() -> void:
 	s.session.finish(true)
 	await _wait(2.0)
 	await shot("results_shift")
+	Game.goto("collection", {"tab": "achievements"})
+	await _wait(1.0)
+	await shot("achievements")
+	Game.goto("collection", {"tab": "stats"})
+	await _wait(1.0)
+	await shot("stats")
+	Game.goto("shift", {"mode": "daily"})
+	await _wait(2.0)
+	await shot("daily_season")
 	for scr in ["office", "collection", "letters", "settings"]:
 		Game.goto(scr)
 		await _wait(1.0)
@@ -182,6 +215,11 @@ func _special(kind: String, session: ShiftSession) -> Dictionary:
 			p["series_len"] = 3
 			p["sender"] = "olena"
 			p["box"] = "paper"
+		"boomerang":
+			p["boomerang"] = true
+			p["year"] = 2071
+			p["shown"] = "2071"
+			p["box"] = "crate"
 		"collectible":
 			p["collectible"] = "time_crystal"
 			p["box"] = "gold"

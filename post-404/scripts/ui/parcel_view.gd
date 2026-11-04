@@ -125,6 +125,10 @@ func _draw_badges(o: Vector2, sz: Vector2) -> void:
 		if urgent_left > 0.0:
 			draw_arc(r.get_center(), r.size.x * 0.75, -PI / 2, -PI / 2 + TAU * urgent_left, 24, UI.RED, max(2.0, k * 0.7))
 		draw_texture_rect(t, r, false)
+	if p.get("boomerang", false):
+		var bt := UI.tex("ic_boomerang")
+		var br := Rect2(o + Vector2(-k * 1.5, -k * 1.5), bt.get_size() * icon_k * 1.4)
+		draw_texture_rect(bt, br, false, Color(1, 1, 1, 0.45) if p.get("returned", false) else Color.WHITE)
 	var series: String = p.get("series", "")
 	if series != "":
 		var txt := "%s %d/%d" % [series, int(p["series_idx"]), int(p["series_len"])]

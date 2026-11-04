@@ -60,6 +60,9 @@ var hint_label: Label
 var hand: TextureRect
 var cat_btn: TextureButton
 var overlay: Control
+var darkness: TextureRect
+var _lowtime_said := false
+var _season_fx: CPUParticles2D
 
 var current_view: ParcelView
 var belt_views := {}       # parcel id -> ParcelView
@@ -102,7 +105,11 @@ func _ready() -> void:
 	Audio.music("shift")
 	Audio.hum(true)
 	if mode == "daily":
-		_show_banner(I18n.t("mut_" + session.daily_mutator), UI.CYAN, 3.0)
+		var season := Content.season(int(Time.get_date_dict_from_system()["month"]))
+		_show_banner("%s\n%s" % [I18n.t("season_" + season), I18n.t("mut_" + session.daily_mutator)], UI.CYAN, 3.0)
+		_start_season_fx()
+		if session.daily_mutator == "blackout":
+			_set_darkness(true)
 	if session.rules["mirrored"]:
 		_apply_mirror(true, true)
 	_update_today()
@@ -451,6 +458,9 @@ func _refresh_hud() -> void:
 			var t := int(ceil(session.time_left))
 			timer_label.text = "%d:%02d" % [t / 60, t % 60]
 			timer_label.add_theme_color_override("font_color", UI.RED if session.time_left < 10.0 else UI.PAPER)
+			if session.time_left < 10.0 and not _lowtime_said and session.time_total > 20.0:
+				_lowtime_said = true
+				_bit_say(I18n.bit_line("lowtime", rng), "talk")
 			score_label.text = "%s %s" % [UI.fmt(session.score), I18n.t("res_score").to_lower()]
 		"calm":
 			timer_label.text = UI.fmt(session.score)
@@ -543,6 +553,7 @@ func _on_parcel_ready(p: Dictionary) -> void:
 	tw.tween_property(v, "k", BIG_K, 0.22)
 	tw.tween_method(func(_x): v.queue_redraw(), 0.0, 1.0, 0.22)
 	Audio.play("lift", 1.0, -6.0)
+	get_tree().create_timer(0.2).timeout.connect(func(): _dust(pad_pos + Vector2(0, 90), 6))
 	# riddle text
 	if p.get("riddle", "") != "":
 		clue_label.text = I18n.pick(Content.RIDDLES[p["riddle"]])
@@ -682,16 +693,9 @@ func _on_sorted(r: Dictionary) -> void:
 	var correct: int = r["correct"]
 	var fly_to := _dest_point(dest) if dest >= 0 else pad_pos + Vector2(0, 400)
 	if v:
-		var tw := v.create_tween().set_parallel(true)
-		var dur := 0.2
-		if dest == Rules.Dest.QUARANTINE:
-			tw.tween_property(v, "position", fly_to, dur).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		else:
-			tw.tween_property(v, "position", fly_to, dur).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-			tw.tween_property(v, "rotation", (0.6 if fly_to.x > pad_pos.x else -0.6), dur)
-		tw.tween_property(v, "scale", Vector2.ONE * 0.25, dur)
-		tw.tween_property(v, "modulate:a", 0.0, dur).set_delay(dur * 0.6)
-		tw.chain().tween_callback(v.queue_free)
+		_fly_into(v, dest, fly_to)
+	if dest >= 0:
+		_tremble(_dest_node(dest), 0.6 if r["ok"] else 1.0)
 	var sfx_by_dest := {Rules.Dest.PAST: "portal", Rules.Dest.FUTURE: "portal", Rules.Dest.PRESENT: "tube", Rules.Dest.QUARANTINE: "quarantine"}
 	if dest >= 0:
 		Audio.play(sfx_by_dest[dest], 0.9 if dest == Rules.Dest.PAST else 1.1, -3.0)
@@ -705,6 +709,8 @@ func _on_sorted(r: Dictionary) -> void:
 		Game.haptic(12)
 		var tier := session.combo_mult()
 		if tier > _last_combo_tier:
+			if rng.randf() < 0.5:
+				_bit_say(I18n.bit_line("combo", rng), "happy")
 			Audio.play("combo")
 			UI.pop(combo_label, 1.4)
 			_float_text("x%s!" % _mult_text(tier), pad_pos + Vector2(0, -150), UI.AMBER, 52)
@@ -740,11 +746,168 @@ func _on_sorted(r: Dictionary) -> void:
 			_float_text(I18n.t("fb_shield"), pad_pos + Vector2(0, -190), UI.CYAN, 30)
 		elif not r["life_lost"] and mode == "shift":
 			_float_text(I18n.t("fb_free"), pad_pos + Vector2(0, -190), UI.MAGENTA, 26)
-		_bit_say(I18n.bit_line("err", rng), "sad")
+		if r.get("boomerang_back", false):
+			_float_text(I18n.t("fb_boomerang"), pad_pos + Vector2(0, -190), UI.AMBER, 30)
+			_boomerang_return(r["parcel"], fly_to)
+		else:
+			_bit_say(I18n.bit_line("err", rng), "sad")
 		_last_combo_tier = session.combo_mult()
 	if mode == "tutorial":
 		hint_label.visible = false
 		hand.visible = false
+
+
+## The parcel reaches the destination and is pulled in: a spin into a
+## portal, a whoosh up the tube or a drop through the hatch.
+func _fly_into(v: ParcelView, dest: int, target: Vector2) -> void:
+	var tw := v.create_tween()
+	var reduce: bool = Game.setting("reduce_motion")
+	match dest:
+		Rules.Dest.PAST, Rules.Dest.FUTURE:
+			var mouth := target + Vector2(0, 30)
+			tw.set_parallel(true)
+			tw.tween_property(v, "position", mouth, 0.13).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			tw.tween_property(v, "scale", Vector2.ONE * 0.6, 0.13)
+			tw.chain().set_parallel(true)
+			tw.tween_property(v, "position", target, 0.22).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(v, "rotation", (TAU if target.x > pad_pos.x else -TAU) * (0.25 if reduce else 1.0), 0.22)
+			tw.tween_property(v, "scale", Vector2.ONE * 0.02, 0.22).set_ease(Tween.EASE_IN)
+			tw.tween_property(v, "modulate", Color(1.6, 1.6, 1.6, 0.0), 0.22)
+		Rules.Dest.PRESENT:
+			tw.set_parallel(true)
+			tw.tween_property(v, "position", target + Vector2(0, 40), 0.12).set_ease(Tween.EASE_IN)
+			tw.tween_property(v, "scale", Vector2(0.45, 0.55), 0.12)
+			tw.chain().set_parallel(true)
+			tw.tween_property(v, "position", Vector2(target.x, tube_pos.y - 140), 0.16).set_ease(Tween.EASE_IN)
+			tw.tween_property(v, "scale", Vector2(0.3, 0.8), 0.16)
+			tw.tween_property(v, "modulate:a", 0.0, 0.16)
+		Rules.Dest.QUARANTINE:
+			hatch.texture = UI.tex("hatch_open")
+			tw.set_parallel(true)
+			tw.tween_property(v, "position", target, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			tw.tween_property(v, "scale", Vector2(0.5, 0.3), 0.16)
+			tw.chain().tween_property(v, "modulate:a", 0.0, 0.08)
+			tw.chain().tween_callback(func(): hatch.texture = UI.tex("hatch"))
+		_:
+			tw.set_parallel(true)
+			tw.tween_property(v, "position", target, 0.25)
+			tw.tween_property(v, "modulate:a", 0.0, 0.25)
+	tw.chain().tween_callback(v.queue_free)
+
+
+## Chutes shudder when something goes in.
+func _tremble(n: Control, strength: float) -> void:
+	if Game.setting("reduce_motion"):
+		return
+	n.pivot_offset = n.size / 2
+	var tw := n.create_tween()
+	var a := 0.035 * strength
+	tw.tween_property(n, "rotation", a, 0.04)
+	tw.tween_property(n, "rotation", -a, 0.06)
+	tw.tween_property(n, "rotation", a * 0.5, 0.05)
+	tw.tween_property(n, "rotation", 0.0, 0.05)
+
+
+func _dust(pos: Vector2, n: int = 5) -> void:
+	if Game.setting("reduce_motion") or not is_inside_tree():
+		return
+	for i in n:
+		var d := Sprite2D.new()
+		d.texture = UI.tex("fx_dust")
+		d.position = pos + Vector2(rng.randf_range(-60, 60), rng.randf_range(-6, 6))
+		d.scale = Vector2.ONE * rng.randf_range(2.5, 4.0)
+		d.modulate = Color(1, 1, 1, 0.55)
+		fx_layer.add_child(d)
+		var tw := d.create_tween().set_parallel(true)
+		var side := -1.0 if d.position.x < pos.x else 1.0
+		tw.tween_property(d, "position", d.position + Vector2(side * rng.randf_range(20, 50), -rng.randf_range(10, 30)), 0.5).set_ease(Tween.EASE_OUT)
+		tw.tween_property(d, "scale", d.scale * 1.6, 0.5)
+		tw.tween_property(d, "modulate:a", 0.0, 0.5)
+		tw.chain().tween_callback(d.queue_free)
+
+
+func _boomerang_return(p: Dictionary, from: Vector2) -> void:
+	var v: ParcelView = belt_views.get(p["id"])
+	if v == null:
+		return
+	v.position = from
+	v.scale = Vector2.ONE * 0.3
+	var tw := v.create_tween().set_parallel(true)
+	tw.tween_property(v, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(v, "rotation", TAU * 2.0, 0.35)
+	tw.chain().tween_callback(func(): v.rotation = 0.0)
+
+
+func _set_darkness(on: bool) -> void:
+	if on and darkness == null:
+		darkness = TextureRect.new()
+		darkness.texture = _darkness_texture()
+		darkness.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		darkness.stretch_mode = TextureRect.STRETCH_SCALE
+		darkness.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		darkness.size = Vector2(W, H)
+		darkness.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(darkness)
+		move_child(darkness, hud_layer.get_index())
+		darkness.modulate.a = 0.0
+		darkness.create_tween().tween_property(darkness, "modulate:a", 1.0, 0.25)
+	elif not on and darkness != null:
+		var d := darkness
+		darkness = null
+		var tw := d.create_tween()
+		tw.tween_property(d, "modulate:a", 0.0, 0.3)
+		tw.tween_callback(d.queue_free)
+
+
+## Low-resolution dithered darkness with a lit circle over the desk.
+func _darkness_texture() -> Texture2D:
+	var k := 4
+	var w := int(ceil(W / k))
+	var h := int(ceil(H / k))
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	var c := pad_pos / k + Vector2(0, -6)
+	var r_in := 46.0
+	var r_out := 64.0
+	var ink := Color(0.03, 0.03, 0.07)
+	var bayer := [0.0, 0.5, 0.75, 0.25]
+	for y in h:
+		for x in w:
+			var d := Vector2(x, y).distance_to(c)
+			var a := 0.92
+			if d < r_in:
+				a = 0.0
+			elif d < r_out:
+				var t := (d - r_in) / (r_out - r_in)
+				# ordered dither keeps the pixel-art look
+				a = 0.92 if t > float(bayer[(x % 2) + (y % 2) * 2]) else 0.35 * t
+			img.set_pixel(x, y, Color(ink, a))
+	return ImageTexture.create_from_image(img)
+
+
+func _start_season_fx() -> void:
+	if Game.setting("reduce_motion"):
+		return
+	var season := Content.season(int(Time.get_date_dict_from_system()["month"]))
+	var tex: String = {"winter": "fx_snow", "spring": "fx_petal", "summer": "fx_firefly", "autumn": "fx_leaf"}[season]
+	_season_fx = CPUParticles2D.new()
+	_season_fx.texture = UI.tex(tex)
+	_season_fx.amount = 22
+	_season_fx.lifetime = 7.0
+	_season_fx.preprocess = 4.0
+	_season_fx.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	_season_fx.emission_rect_extents = Vector2(W / 2, 10)
+	_season_fx.position = Vector2(W / 2, 100)
+	_season_fx.direction = Vector2(0.2, 1)
+	_season_fx.spread = 25.0
+	_season_fx.gravity = Vector2(0, 25 if season != "summer" else -4)
+	_season_fx.initial_velocity_min = 30.0
+	_season_fx.initial_velocity_max = 70.0
+	_season_fx.angular_velocity_min = -90.0
+	_season_fx.angular_velocity_max = 90.0
+	_season_fx.scale_amount_min = 3.0
+	_season_fx.scale_amount_max = 5.0
+	_season_fx.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	fx_layer.add_child(_season_fx)
 
 
 func _flash_dest(dest: int, col: Color) -> void:
@@ -844,16 +1007,24 @@ func _on_event_started(ev: Dictionary) -> void:
 			cat_btn.visible = true
 			cat_btn.position = Vector2(W + 20, belt_y - 64)
 			Audio.play("meow")
+		"blackout":
+			_show_banner(I18n.t("ev_blackout"), UI.AMBER, 2.0)
+			_set_darkness(true)
+			Audio.play("fail", 0.6, -6.0)
 		"storm":
 			_show_banner(I18n.t("ev_storm"), UI.MAGENTA, 2.0)
 			var tw := backdrop.create_tween().set_loops(6)
 			tw.tween_property(backdrop, "modulate", Color(1.2, 0.9, 1.3), 0.4)
 			tw.tween_property(backdrop, "modulate", Color.WHITE, 0.4)
+	if rng.randf() < 0.7:
+		_bit_say(I18n.bit_line("event:" + id, rng), "talk")
 	_refresh_buttons()
 
 
 func _on_event_ended(id: String) -> void:
 	match id:
+		"blackout":
+			_set_darkness(false)
 		"golden":
 			coins_label.add_theme_color_override("font_color", UI.GOLD)
 		"calendar":

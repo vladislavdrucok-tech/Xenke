@@ -18,10 +18,12 @@ const UNLOCKS := {
 	"ev_mirror": 9,
 	"paradox": 10,
 	"ev_storm": 11,
+	"ev_blackout": 12,
+	"boomerang": 14,
 }
 
 const UNLOCK_ORDER := ["present", "collectibles", "damaged", "urgent", "series", "ev_golden", "mystery",
-	"daily", "hazard", "ev_calendar", "ev_cat", "ev_mirror", "paradox", "ev_storm"]
+	"daily", "hazard", "ev_calendar", "ev_cat", "ev_mirror", "paradox", "ev_storm", "ev_blackout", "boomerang"]
 
 const MAX_LEVEL := 60
 

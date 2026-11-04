@@ -198,6 +198,7 @@ func _finish() -> void:
 			Game.notice.emit("+%d %s" % [int(reward["shards"]), I18n.t("res_shards").to_lower()])
 		if reward.has("item"):
 			Game.notice.emit(I18n.t("fb_found", I18n.pick(Content.COLLECTIBLES[reward["item"]]["name"])))
+		Game.check_achievements()
 		if Story.unread_letters(Game.profile) > 0:
 			Game.notice.emit(I18n.t("new_letter"))
 	if then_screen == "tutorial":

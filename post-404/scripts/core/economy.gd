@@ -17,6 +17,10 @@ static func apply_summary(profile: Dictionary, s: Dictionary) -> Dictionary:
 	st["best_combo"] = max(int(st.get("best_combo", 0)), int(s["best_combo"]))
 	st["play_time"] = float(st.get("play_time", 0.0)) + float(s["duration"])
 	st["coins_earned"] = int(st.get("coins_earned", 0)) + int(s["coins"])
+	st["mistakes"] = int(st.get("mistakes", 0)) + int(s.get("mistakes", 0))
+	st["hazards"] = int(st.get("hazards", 0)) + int(s.get("hazards", 0))
+	st["boomerangs"] = int(st.get("boomerangs", 0)) + int(s.get("boomerangs", 0))
+	st["events"] = int(st.get("events", 0)) + int(s.get("events", 0))
 	profile["stats"] = st
 	if s["mode"] == "shift" or s["mode"] == "tutorial":
 		profile["shifts_done"] = int(profile.get("shifts_done", 0)) + 1
@@ -43,6 +47,7 @@ static func apply_summary(profile: Dictionary, s: Dictionary) -> Dictionary:
 			var sh := int(round(3.0 * mult))
 			profile["shards"] = int(profile["shards"]) + sh
 			out["daily_reward"] = sh
+			st["dailies"] = int(st.get("dailies", 0)) + 1
 		profile["daily"] = daily
 	var col: Dictionary = profile.get("collection", {})
 	out["bonus_shards"] = 0
@@ -74,7 +79,27 @@ static func apply_summary(profile: Dictionary, s: Dictionary) -> Dictionary:
 	var old_level := int(profile.get("level", 1))
 	out["levels"] = Progression.add_xp(profile, int(s["xp"]))
 	out["unlocks"] = Progression.newly_unlocked(old_level, int(profile["level"]))
+	out["letters"] = friend_letters(profile)
+	out["achievements"] = Achievements.check(profile)
 	return out
+
+
+## Characters write when you have delivered enough of their parcels.
+static func friend_letters(profile: Dictionary) -> Array:
+	var story: Dictionary = profile["story"]
+	var sent: Array = story.get("friend_sent", [])
+	var fr: Dictionary = story.get("friendship", {})
+	var new_letters := []
+	for who in StoryData.FRIEND_LETTERS:
+		for entry in StoryData.FRIEND_LETTERS[who]:
+			var key := "%s_%d" % [who, int(entry[0])]
+			if int(fr.get(who, 0)) >= int(entry[0]) and not sent.has(key):
+				sent.append(key)
+				var l := {"from": who, "uk": entry[1], "en": entry[2], "read": false}
+				(story["letters"] as Array).append(l)
+				new_letters.append(l)
+	story["friend_sent"] = sent
+	return new_letters
 
 
 ## Coins earned by the coffee machine while the game was closed.

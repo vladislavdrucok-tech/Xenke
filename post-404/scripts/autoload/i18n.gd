@@ -179,6 +179,40 @@ const STRINGS := {
 	"unlock_ev_mirror": {"uk": "Аномалія: дзеркало", "en": "Anomaly: mirror"},
 	"unlock_paradox": {"uk": "Парадоксальні посилки", "en": "Paradox parcels"},
 	"unlock_ev_storm": {"uk": "Подія: часова буря", "en": "Event: time storm"},
+	"mech_boomerang": {"uk": "Посилка-бумеранг", "en": "Boomerang parcel"},
+	"mech_ev_blackout": {"uk": "Відключення світла", "en": "Blackout"},
+	"unlock_boomerang": {"uk": "Посилки-бумеранги", "en": "Boomerang parcels"},
+	"unlock_ev_blackout": {"uk": "Подія: відключення світла", "en": "Event: blackout"},
+	"tip_boomerang": {"uk": "Посилка-бумеранг: якщо помилишся, вона повернеться — і надійність не впаде. Правильно з першого разу — ×1,5 монет.", "en": "Boomerang parcel: if you get it wrong it comes back and costs no reliability. Right the first time pays ×1.5 coins."},
+	"tip_ev_blackout": {"uk": "Світло зникло! Лампа над столом ще світить — етикетку видно. Черги на стрічці не видно, зате монети ×1,5.", "en": "The lights are out! The desk lamp still works, so the label is readable. You can't see the queue, but coins are ×1.5."},
+	"ev_blackout": {"uk": "ВІДКЛЮЧЕННЯ СВІТЛА: монети ×1,5", "en": "BLACKOUT: coins ×1.5"},
+	"fb_boomerang": {"uk": "Бумеранг повертається — ще одна спроба!", "en": "The boomerang comes back — try again!"},
+	"mut_blackout": {"uk": "День без світла", "en": "Day without light"},
+	"mut_boomerang": {"uk": "День бумерангів", "en": "Boomerang day"},
+	"season_winter": {"uk": "Зимова пошта", "en": "Winter post"},
+	"season_spring": {"uk": "Весняна пошта", "en": "Spring post"},
+	"season_summer": {"uk": "Літня пошта", "en": "Summer post"},
+	"season_autumn": {"uk": "Осіння пошта", "en": "Autumn post"},
+	"tab_items": {"uk": "Предмети", "en": "Items"},
+	"tab_achievements": {"uk": "Досягнення", "en": "Achievements"},
+	"tab_stats": {"uk": "Статистика", "en": "Stats"},
+	"ach_got": {"uk": "Досягнення: %s", "en": "Achievement: %s"},
+	"ach_count": {"uk": "Отримано %d з %d", "en": "Earned %d of %d"},
+	"ach_reward": {"uk": "Нагорода: уламки: %d", "en": "Reward: shards: %d"},
+	"res_achievements": {"uk": "Нові досягнення", "en": "New achievements"},
+	"res_letters": {"uk": "Нові листи від друзів: %d", "en": "New letters from friends: %d"},
+	"st_shifts": {"uk": "Змін відпрацьовано", "en": "Shifts worked"},
+	"st_parcels": {"uk": "Посилок відсортовано", "en": "Parcels sorted"},
+	"st_accuracy": {"uk": "Точність за весь час", "en": "All-time accuracy"},
+	"st_combo": {"uk": "Найдовша серія", "en": "Best combo"},
+	"st_record": {"uk": "Рекорд", "en": "Record run"},
+	"st_calm": {"uk": "Найкраща спокійна зміна", "en": "Best calm shift"},
+	"st_coins": {"uk": "Монет зароблено", "en": "Coins earned"},
+	"st_time": {"uk": "Час у грі", "en": "Time played"},
+	"st_dailies": {"uk": "Щоденних аномалій", "en": "Daily anomalies"},
+	"st_hazards": {"uk": "Артефактів у карантині", "en": "Artefacts quarantined"},
+	"st_events": {"uk": "Подій пережито", "en": "Events survived"},
+	"st_level": {"uk": "Рівень", "en": "Level"},
 	"mech_present": {"uk": "Теперішнє", "en": "The present"},
 	"mech_damaged": {"uk": "Пошкоджена етикетка", "en": "Damaged label"},
 	"mech_urgent": {"uk": "Термінова доставка", "en": "Urgent delivery"},
@@ -197,16 +231,41 @@ const STRINGS := {
 
 ## BIT's comments during a shift.
 const BIT_OK := {
-	"uk": ["Біп! Чудово.", "Мої сенсори задоволені.", "Так тримати, Шефе!", "Ідеально по штемпелю.", "Я б краще не зробив. Хоча ні, зробив би."],
-	"en": ["Beep! Lovely.", "My sensors are pleased.", "Keep it up, Boss!", "Stamp-perfect.", "I couldn't do better. Well, I could."],
+	"uk": ["Біп! Чудово.", "Мої сенсори задоволені.", "Так тримати, Шефе!", "Ідеально по штемпелю.", "Я б краще не зробив. Хоча ні, зробив би.",
+		"Час подякує вам. Колись.", "Ще одна історія врятована.", "Ох, як рівненько пішло!", "Записую у звіт: «геніально»."],
+	"en": ["Beep! Lovely.", "My sensors are pleased.", "Keep it up, Boss!", "Stamp-perfect.", "I couldn't do better. Well, I could.",
+		"Time will thank you. Eventually.", "Another story saved.", "Ooh, smooth delivery!", "Noting in the report: \"genius\"."],
 }
 const BIT_ERR := {
-	"uk": ["Ой. Хтось у 1812-му отримає мікрохвильовку.", "Не страшно, я вдам, що не бачив.", "Рік, Шефе, дивіться на рік!", "Це посилка пішла на екскурсію."],
-	"en": ["Oops. Someone in 1812 just got a microwave.", "No worries, I'll pretend I didn't see.", "The year, Boss, read the year!", "That parcel went sightseeing."],
+	"uk": ["Ой. Хтось у 1812-му отримає мікрохвильовку.", "Не страшно, я вдам, що не бачив.", "Рік, Шефе, дивіться на рік!", "Це посилка пішла на екскурсію.",
+		"Динозаври будуть у захваті від смартфона.", "Нічого, я теж колись відправив сам себе у 1995-й.", "Глибокий вдих. Табло «СЬОГОДНІ» — наш друг."],
+	"en": ["Oops. Someone in 1812 just got a microwave.", "No worries, I'll pretend I didn't see.", "The year, Boss, read the year!", "That parcel went sightseeing.",
+		"The dinosaurs will love that smartphone.", "It's fine, I once mailed myself to 1995.", "Deep breath. The TODAY board is our friend."],
 }
 const BIT_IDLE := {
-	"uk": ["Уся пошта світу — і ми.", "Знаєте, я колись сортував листи для Діда Мороза.", "Ця лампа блимає з 2003-го. Я до неї звик.", "Якщо що — я тут. Завжди тут. Буквально прикручений."],
-	"en": ["All the mail in the world — and us.", "I once sorted letters for Santa, you know.", "That lamp has flickered since 2003. I'm used to it.", "If you need me, I'm here. Always. Literally bolted down."],
+	"uk": ["Уся пошта світу — і ми.", "Знаєте, я колись сортував листи для Діда Мороза.", "Ця лампа блимає з 2003-го. Я до неї звик.", "Якщо що — я тут. Завжди тут. Буквально прикручений.",
+		"Квант знову спав на стрічці. Я не скаржуся, він теплий.", "Мені наснилося, що я тостер. Було страшно.", "Ви помітили, що годинник іде назад по вівторках?",
+		"Олена принесла пиріжки. Я не їм, але пахне правильно.", "ОРАКУЛ сьогодні тихий. Підозріло тихий."],
+	"en": ["All the mail in the world — and us.", "I once sorted letters for Santa, you know.", "That lamp has flickered since 2003. I'm used to it.", "If you need me, I'm here. Always. Literally bolted down.",
+		"Quant slept on the belt again. I don't mind, he's warm.", "I dreamt I was a toaster. It was scary.", "Have you noticed the clock runs backwards on Tuesdays?",
+		"Olena brought pies. I don't eat, but they smell correct.", "The ORACLE is quiet today. Suspiciously quiet."],
+}
+
+const BIT_COMBO := {
+	"uk": ["Серія! Мої шестерні танцюють!", "Не зупиняйтесь, Шефе!", "Це вже не сортування, це музика.", "Конвеєр ледве встигає за вами!"],
+	"en": ["Combo! My gears are dancing!", "Don't stop, Boss!", "This isn't sorting anymore, it's music.", "The belt can barely keep up!"],
+}
+const BIT_LOWTIME := {
+	"uk": ["Десять секунд! Тиснемо!", "Фінішна пряма, Шефе!"],
+	"en": ["Ten seconds! Push!", "Final stretch, Boss!"],
+}
+const BIT_EVENT := {
+	"golden": ["Золото! Хапайте, поки блищить!", "Gold! Grab it while it shines!"],
+	"calendar": ["Календар з'їхав! Дивіться на табло!", "The calendar slipped! Watch the board!"],
+	"mirror": ["Усе навпаки! Минуле праворуч!", "Everything's flipped! Past is on the right!"],
+	"cat": ["Квант! Погладьте його!", "Quant! Pet him!"],
+	"storm": ["Буря! Тримайтеся за штемпель!", "A storm! Hold on to your stamp!"],
+	"blackout": ["Хто вимкнув світло?! Добре, що лампа на батарейках.", "Who turned off the lights?! Good thing the lamp has batteries."],
 }
 
 
@@ -249,6 +308,9 @@ func line(v: Array, offset: int = 1) -> String:
 
 
 func bit_line(kind: String, rng: RandomNumberGenerator) -> String:
-	var src: Dictionary = {"ok": BIT_OK, "err": BIT_ERR, "idle": BIT_IDLE}[kind]
+	if kind.begins_with("event:"):
+		var e: Array = BIT_EVENT.get(kind.substr(6), ["", ""])
+		return e[0] if lang == "uk" else e[1]
+	var src: Dictionary = {"ok": BIT_OK, "err": BIT_ERR, "idle": BIT_IDLE, "combo": BIT_COMBO, "lowtime": BIT_LOWTIME}[kind]
 	var arr: Array = src.get(lang, src["en"])
 	return arr[rng.randi() % arr.size()]

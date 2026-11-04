@@ -14,7 +14,8 @@ func _init() -> void:
 		"test_anti_streak", "test_session_perfect", "test_session_bad_player", "test_session_record",
 		"test_session_calm_and_tutorial", "test_rule_events", "test_upgrades", "test_economy",
 		"test_save_roundtrip", "test_save_corruption", "test_story", "test_balance", "test_daily",
-		"test_robot_and_shield", "test_i18n_keys",
+		"test_robot_and_shield", "test_i18n_keys", "test_boomerang", "test_achievements", "test_friend_letters",
+		"test_seasons",
 	]
 	for t in tests:
 		current = t
@@ -234,7 +235,7 @@ func test_rule_events() -> void:
 				unfair += 1
 			s.sort(Rules.dest_to_dir(Rules.judge(s.current, s.rules), s.rules["mirrored"]))
 	check(unfair == 0, "parcels stay fair across rule events (unfair=%d)" % unfair)
-	for id in ["golden", "calendar", "mirror", "cat", "storm"]:
+	for id in ["golden", "calendar", "mirror", "cat", "storm", "blackout"]:
 		check(seen_events.has(id), "event '%s' happens at high level" % id)
 	# Forced calendar event: judged by the new year.
 	var s2 := ShiftSession.new()
@@ -314,7 +315,10 @@ func test_economy() -> void:
 		"best_combo": 22, "duration": 90.0, "stars": 3, "found": ["floppy", "floppy"], "friends": {"kai": 2},
 		"score": 900, "seen_tips": ["damaged"]}
 	var out := Economy.apply_summary(p, s)
-	check(int(p["coins"]) == 145 and int(p["shards"]) == 1, "currency added: coins + duplicate sold (%d, %d)" % [int(p["coins"]), int(p["shards"])])
+	var ach_shards := 0
+	for id in out["achievements"]:
+		ach_shards += int(Achievements.def(id)[3])
+	check(int(p["coins"]) == 145 and int(p["shards"]) == 1 + ach_shards, "currency added: coins + duplicate sold + achievements (%d, %d)" % [int(p["coins"]), int(p["shards"])])
 	check(int(p["level"]) == 2 and out["levels"] == [2], "level up to 2")
 	check(out["unlocks"].has("present"), "present unlocked at level 2")
 	check(int(p["collection"]["floppy"]) == 2 and out["new_items"].count("floppy") == 1, "collection counted")
@@ -494,6 +498,85 @@ func test_i18n_keys() -> void:
 	for m in Progression.UNLOCK_ORDER:
 		check(i18n.STRINGS.has("unlock_" + m), "unlock text for " + m)
 	for m in ["hazard", "mystery", "damaged", "paradox", "urgent", "series", "collectible", "sender", "present",
-			"ev_golden", "ev_calendar", "ev_mirror", "ev_cat", "ev_storm"]:
+			"ev_golden", "ev_calendar", "ev_mirror", "ev_cat", "ev_storm", "boomerang", "ev_blackout"]:
 		check(i18n.STRINGS.has("tip_" + m), "tip text for " + m)
 	i18n.free()
+
+
+func test_boomerang() -> void:
+	var g := PackageGenerator.new()
+	g.setup(3, 20, ["town"])
+	var n := 0
+	for i in 3000:
+		if g.next_parcel(Rules.make()).get("boomerang", false):
+			n += 1
+	check(n > 30, "boomerangs appear at level 20 (%d)" % n)
+	var g2 := PackageGenerator.new()
+	g2.setup(3, 13, ["town"])
+	var n2 := 0
+	for i in 2000:
+		if g2.next_parcel(Rules.make()).get("boomerang", false):
+			n2 += 1
+	check(n2 == 0, "no boomerangs before level 14")
+	var s := ShiftSession.new()
+	s.setup("shift", profile_at(20), 60)
+	var t := 0.0
+	while s.current.is_empty() and t < 5.0:
+		s.update(0.05)
+		t += 0.05
+	var p := s.current.duplicate()
+	p["boomerang"] = true
+	p["returned"] = false
+	p["hazard"] = false
+	p["riddle"] = ""
+	p["year"] = 1990
+	p["shown"] = "1990"
+	s.current = p
+	var rel := s.reliability
+	var r := s.sort(Rules.Dir.RIGHT)
+	check(not r["ok"] and r["boomerang_back"], "wrong boomerang comes back")
+	check(s.reliability == rel and not r["life_lost"], "boomerang mistake costs no reliability")
+	check(s.queue[0]["id"] == p["id"] and s.queue[0]["returned"], "boomerang is first in the queue")
+	s.lift_timer = 0.0
+	s.update(0.01)
+	var r2 := s.sort(Rules.Dir.RIGHT)
+	check(r2["life_lost"] and not r2["boomerang_back"], "second miss of a boomerang counts")
+
+
+func test_achievements() -> void:
+	var p := SaveSystem.default_profile()
+	check(Achievements.check(p).is_empty(), "fresh profile has no achievements")
+	p["shifts_done"] = 1
+	p["stats"]["best_combo"] = 25
+	var got := Achievements.check(p)
+	check(got.has("first_shift") and got.has("combo_20"), "achievements granted %s" % str(got))
+	check(int(p["shards"]) == 2, "achievement shards granted (%d)" % int(p["shards"]))
+	check(Achievements.check(p).is_empty(), "achievements granted only once")
+	var ids := {}
+	for d in Achievements.DEFS:
+		check(not ids.has(d[0]), "unique achievement " + d[0])
+		ids[d[0]] = true
+		check(d[4].size() == 2 and d[5].size() == 2, "achievement texts uk/en " + d[0])
+
+
+func test_friend_letters() -> void:
+	var p := SaveSystem.default_profile()
+	var s := {"mode": "shift", "coins": 0, "shards": 0, "xp": 0, "sorted": 10, "correct": 10, "best_combo": 3,
+		"duration": 60.0, "stars": 1, "found": [], "friends": {"olena": 9}, "score": 10, "seen_tips": []}
+	var out := Economy.apply_summary(p, s)
+	check(out["letters"].size() == 1 and out["letters"][0]["from"] == "olena", "friend letter at 8 parcels")
+	out = Economy.apply_summary(p, s)
+	check(out["letters"].is_empty(), "same letter not sent twice")
+	for who in StoryData.FRIEND_LETTERS:
+		check(Content.CHARACTERS.has(who), "friend letter sender exists " + who)
+
+
+func test_seasons() -> void:
+	check(Content.season(1) == "winter" and Content.season(12) == "winter", "winter")
+	check(Content.season(4) == "spring" and Content.season(7) == "summer" and Content.season(11) == "autumn", "seasons")
+	var seen := {}
+	for d in 40:
+		var ss := ShiftSession.new()
+		ss.setup("daily", profile_at(6), 20261100 + d)
+		seen[ss.daily_mutator] = true
+	check(seen.size() == 6, "all 6 daily mutators occur (%s)" % str(seen.keys()))

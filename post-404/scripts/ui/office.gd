@@ -115,7 +115,7 @@ func _buy(id: String) -> void:
 		Audio.play("levelup")
 		Game.haptic(25)
 		Game.notice.emit(I18n.t("bought", I18n.pick(Upgrades.DEFS[id]["name"])))
-		Game.save_now()
+		Game.check_achievements()
 		Game.profile_changed.emit()
 		_refresh()
 
@@ -157,7 +157,7 @@ func _route_card(id: String) -> Control:
 				if Economy.buy_route(Game.profile, id):
 					Audio.play("levelup")
 					Game.notice.emit(I18n.t("bought", I18n.pick(r["name"])))
-					Game.save_now()
+					Game.check_achievements()
 					_refresh())
 	b.add_theme_font_size_override("font_size", 26)
 	v.add_child(b)

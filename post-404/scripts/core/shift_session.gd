@@ -52,6 +52,9 @@ var robot_timer := 0.0
 var robot_sorted := 0
 var daily_mutator := ""
 var events_seen: Array = []
+var hazards_done := 0
+var boomerangs_done := 0
+var events_count := 0
 
 
 func setup(p_mode: String, profile: Dictionary, p_seed: int) -> void:
@@ -94,7 +97,7 @@ func setup(p_mode: String, profile: Dictionary, p_seed: int) -> void:
 
 
 func _setup_daily(p_seed: int) -> void:
-	var options := ["mirror", "calendar", "rush", "mystery"]
+	var options := ["mirror", "calendar", "rush", "mystery", "blackout", "boomerang"]
 	daily_mutator = options[abs(p_seed) % options.size()]
 	events.enabled = false
 	match daily_mutator:
@@ -106,6 +109,8 @@ func _setup_daily(p_seed: int) -> void:
 			gen.unlocked["mystery"] = true
 		"rush":
 			gen.unlocked["urgent"] = true
+		"boomerang":
+			gen.unlocked["boomerang"] = true
 	gen.unlocked["present"] = true
 	gen.unlocked["damaged"] = true
 
@@ -183,6 +188,7 @@ func _start_event() -> void:
 		return
 	if EventDirector.DEFS[ev["id"]]["rule"]:
 		_refresh_queue()
+	events_count += 1
 	if not events_seen.has(ev["id"]):
 		events_seen.append(ev["id"])
 	event_started.emit(ev)
@@ -241,6 +247,8 @@ static func mechanics_of(p: Dictionary) -> Array:
 		out.append("sender")
 	if not p.get("hazard", false) and p.get("riddle", "") == "" and int(p.get("year", 0)) == Rules.BASE_YEAR:
 		out.append("present")
+	if p.get("boomerang", false):
+		out.append("boomerang")
 	return out
 
 
@@ -257,7 +265,7 @@ func _resolve(dir: int, timeout: bool, by_robot: bool = false) -> Dictionary:
 	var ok := dest == correct_dest
 	var r := {"ok": ok, "dest": dest, "correct": correct_dest, "dir": dir, "parcel": p, "coins": 0,
 		"points": 0, "timeout": timeout, "robot": by_robot, "urgent_hit": false, "collectible": "",
-		"series_complete": false, "shard": 0, "shield": false, "life_lost": false}
+		"series_complete": false, "shard": 0, "shield": false, "life_lost": false, "boomerang_back": false}
 	sorted_count += 1
 	if ok:
 		correct_count += 1
@@ -277,6 +285,9 @@ func _resolve(dir: int, timeout: bool, by_robot: bool = false) -> Dictionary:
 			r["urgent_hit"] = true
 			c *= 1.6
 			pts += 15.0
+		if p.get("boomerang", false) and not p.get("returned", false):
+			c *= 1.5
+			pts += 10.0
 		if by_robot:
 			c *= 0.5
 			pts = 0.0
@@ -288,6 +299,10 @@ func _resolve(dir: int, timeout: bool, by_robot: bool = false) -> Dictionary:
 		if p.get("collectible", "") != "":
 			r["collectible"] = p["collectible"]
 			found.append(p["collectible"])
+		if p.get("hazard", false):
+			hazards_done += 1
+		if p.get("boomerang", false) and not p.get("returned", false):
+			boomerangs_done += 1
 		if p.get("hazard", false) and stats["lab"] and gen.rng.randf() < 0.25:
 			r["shard"] = 1
 			shards += 1
@@ -306,6 +321,14 @@ func _resolve(dir: int, timeout: bool, by_robot: bool = false) -> Dictionary:
 		else:
 			combo = 0
 		var costs_life := mode == "shift" or mode == "record"
+		# A boomerang parcel comes back once instead of costing reliability.
+		if p.get("boomerang", false) and not p.get("returned", false) and not timeout:
+			var back := p.duplicate()
+			back["returned"] = true
+			queue.push_front(back)
+			r["boomerang_back"] = true
+			costs_life = false
+			queue_changed.emit()
 		if costs_life and mode == "shift" and free_mistake_ready:
 			free_mistake_ready = false
 			costs_life = false
@@ -400,6 +423,7 @@ func finish(by_time: bool) -> void:
 		"mistakes": mistakes, "accuracy": accuracy(), "best_combo": best_combo, "stars": stars(),
 		"found": found.duplicate(), "series_done": series_done, "friends": friends.duplicate(),
 		"duration": elapsed, "robot_sorted": robot_sorted, "daily_mutator": daily_mutator,
-		"seen_tips": seen_tips.keys(),
+		"seen_tips": seen_tips.keys(), "hazards": hazards_done, "boomerangs": boomerangs_done,
+		"events": events_count,
 	}
 	shift_over.emit(summary)

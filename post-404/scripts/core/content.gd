@@ -132,3 +132,14 @@ static func riddle_ids_for(dest: int) -> Array:
 		if int(RIDDLES[k]["dest"]) == dest:
 			out.append(k)
 	return out
+
+
+## Seasonal look of the daily anomaly, by month.
+static func season(month: int) -> String:
+	if month == 12 or month <= 2:
+		return "winter"
+	if month <= 5:
+		return "spring"
+	if month <= 8:
+		return "summer"
+	return "autumn"

@@ -5,7 +5,7 @@
 
 ## Як запустити
 
-**На телефоні (Android):** `builds/POST404-0.1.0-debug.apk` — відкрити файл на GitHub → «Download raw» → встановити
+**На телефоні (Android):** `builds/POST404-0.2.0-debug.apk` — відкрити файл на GitHub → «Download raw» → встановити
 (дозволити встановлення з невідомих джерел). Це debug-підпис; для Google Play потрібен ваш власний ключ (див. нижче).
 
 **На ПК:** Godot 4.3 → Import → `post-404/project.godot` → F5. Мишка працює як палець, стрілки клавіатури — як свайпи, Esc — пауза.
@@ -38,7 +38,7 @@
 ## Перевірки
 ```
 godot --headless --path post-404 --import
-godot --headless --path post-404 -s res://tests/run_tests.gd        # 246 логічних перевірок
+godot --headless --path post-404 -s res://tests/run_tests.gd        # 322 логічні перевірки
 xvfb-run godot --path post-404 --resolution 720x1280 -- --save=user://tour.json --shots=/tmp/shots   # скриншоти всіх екранів
 ```
 Деталі: `docs/TESTING.md`.

@@ -1120,6 +1120,28 @@ def app_icon():
     c.img.resize((432, 432), Image.NEAREST).save(os.path.join(OUT, "icon_432.png"))
 
 
+def extras():
+    c = Canvas(9, 9)            # boomerang badge
+    c.ascii(["...####..", "..#oooo#.", ".#oo##o#.", "#oo#..##.", "#o#......", "#o#......", "#oo#.....", ".#oo#....", "..##....."],
+            {"#": "ink", "o": "am3"})
+    c.save("ic_boomerang")
+    c = Canvas(5, 5)            # dust puff
+    c.ascii([".###.", "#####", "#####", "#####", ".###."], {"#": "paper0"})
+    c.save("fx_dust")
+    c = Canvas(5, 5)            # snowflake
+    c.ascii(["..#..", "#.#.#", ".###.", "#.#.#", "..#.."], {"#": "white"})
+    c.save("fx_snow")
+    c = Canvas(6, 5)            # autumn leaf
+    c.ascii(["...##.", ".####.", "#####.", ".###..", "#....."], {"#": "am2"})
+    c.save("fx_leaf")
+    c = Canvas(4, 4)            # spring petal
+    c.ascii([".##.", "####", "####", ".##."], {"#": "mg3"})
+    c.save("fx_petal")
+    c = Canvas(3, 3)            # summer firefly
+    c.ascii([".#.", "###", ".#."], {"#": "go3"})
+    c.save("fx_firefly")
+
+
 if __name__ == "__main__":
     wall_tile()
     wainscot_tile()
@@ -1147,4 +1169,5 @@ if __name__ == "__main__":
     collectibles()
     ui()
     app_icon()
+    extras()
     print("sprites:", len(os.listdir(OUT)))

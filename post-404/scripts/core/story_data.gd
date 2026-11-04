@@ -160,3 +160,25 @@ const ENDINGS := {
 	"archive": ["Тихий архів", "Quiet Archive"],
 	"balance": ["Пошта всіх часів", "Post of All Times"],
 }
+
+## Letters that arrive when enough parcels from a friend were delivered.
+const FRIEND_LETTERS := {
+	"olena": [
+		[8, "Мені сказали, що мої посилки завжди доходять вчасно. Це ви? Тримайте рецепт вишневих пиріжків.", "They tell me my parcels always arrive on time. Is that you? Here's my cherry pie recipe."],
+		[25, "Онука питає, чи можна прийти до вас на екскурсію. Я сказала: «Пошта — не музей». А тоді подумала: а чому б ні?", "My granddaughter asks if she can visit you. I said, \"A post office isn't a museum.\" Then I thought: why not?"],
+		[60, "Сьогодні вперше за багато років я пишу не Петрові, а вам. Дякую, що тримаєте двері відчиненими.", "Today, for the first time in years, I'm writing not to Petro but to you. Thank you for keeping the door open."],
+	],
+	"kai": [
+		[8, "Шефе, я придумав новий трюк на ховерборді: «Свайп угору». Назвав на вашу честь.", "Boss, I invented a new hoverboard trick: the \"Swipe Up\". Named after you."],
+		[25, "У 2061-му ще троє дітей хочуть бути кур'єрами. Я кажу їм: спершу навчіться читати роки!", "Three more kids in 2061 want to be couriers. I tell them: learn to read years first!"],
+		[60, "Знайшов у майбутньому табличку «Відділення №404 — тут почалося». Не кажіть БІТові, бо загордиться.", "Found a sign in the future: \"Office No. 404 — it started here.\" Don't tell BIT, he'll get conceited."],
+	],
+	"vera": [
+		[8, "Статистика вашого відділення покращилася на 4,04%. Я не жартую. Ну, трохи.", "Your office's numbers improved by 4.04%. I'm not joking. Well, a little."],
+		[25, "Я купила рослину. Назвала Генадієм, як ваш фікус. Вона, здається, мене не боїться.", "I bought a plant. Named it Gennady, like your ficus. It doesn't seem to be afraid of me."],
+		[60, "Я досі не існую у 2057-му. Але тепер мені здається, що це можна виправити. Разом.", "I still don't exist in 2057. But now I feel it can be fixed. Together."],
+	],
+	"future": [
+		[10, "Привіт із 2057-го. Твої доставки тут відчуваються — як тепле повітря з вікна. Продовжуй.", "Hi from 2057. Your deliveries can be felt here — like warm air through a window. Keep going."],
+	],
+}

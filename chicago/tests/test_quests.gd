@@ -26,7 +26,7 @@ func test_shop_debt_full_beat() -> void:
 	GameState.businesses.record_job("bellini_garage", "b")
 	check(GameState.quests.objective_done("ch1_shop_debt", "two_jobs"), "two jobs counted")
 	GameState.pay(20000, "test:gift", "test")
-	GameState.pay_debt("lakeside_parts", 18000, "debt:x")
+	GameState.pay_debt("lakeside_parts", 2000, "debt:x")
 	check(GameState.quests.objective_done("ch1_shop_debt", "pay_parts"), "debt paid")
 	EventBus.emit_event("dialogue_done", {"dialogue": "marco_meet"})
 	eq(GameState.quests.state("ch1_shop_debt"), "completed")

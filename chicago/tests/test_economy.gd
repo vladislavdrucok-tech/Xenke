@@ -33,14 +33,14 @@ func test_repair_job_pays_once_per_id() -> void:
 	var start := GameState.ledger.balance
 	check(GameState.businesses.record_job("bellini_garage", "d1_1"), "job 1")
 	check(not GameState.businesses.record_job("bellini_garage", "d1_1"), "same job id again refused")
-	eq(GameState.ledger.balance - start, 350, "paid once")
+	eq(GameState.ledger.balance - start, 600, "paid once")
 
 func test_day_settlement_once_even_after_reload() -> void:
 	WorldClock.set_total(9 * 60)
 	var b0 := GameState.ledger.balance
 	WorldClock.advance(24 * 60)                 # crosses into day 2 -> day 1 settled
 	var after := GameState.ledger.balance
-	eq(after - b0, 400 - 150, "walk-in minus running cost for day 1")
+	eq(after - b0, 500 - 200, "walk-in minus running cost for day 1")
 	var snap := GameState.to_dict()
 	GameState.from_dict(JSON.parse_string(JSON.stringify(snap)))
 	GameState.businesses.settle_day(1)          # replay: must not pay again
@@ -55,9 +55,9 @@ func test_upgrade_requires_debt_quest() -> void:
 	check(not GameState.businesses.upgrade("bellini_garage"), "no level 2")
 
 func test_pay_debt() -> void:
-	eq(GameState.total_debt(), 18000, "start debt")
+	eq(GameState.total_debt(), 2000, "start debt")
 	GameState.pay(20000, "test:gift", "test")
 	var paid := GameState.pay_debt("lakeside_parts", 99999, "debt:test")
-	eq(paid, 18000)
+	eq(paid, 2000)
 	eq(GameState.total_debt(), 0)
 	eq(GameState.pay_debt("lakeside_parts", 100, "debt:test2"), 0, "nothing left to pay")

@@ -18,6 +18,7 @@ const CATCH_DIST := 70.0
 const CATCH_TIME := 2.5
 const FINE_CENTS := 1000
 const REGEN_PER_S := 1.5
+const BODY_HALF_WIDTH := 22.0      # screen px around the chest line
 
 var world: Node
 var rng := RandomNumberGenerator.new()
@@ -104,12 +105,26 @@ func _fire() -> void:
 	var target := _aim_point() + Vector2(0, -64)
 	var dir := (target - from).normalized().rotated(deg_to_rad(rng.randf_range(-float(w.spread_deg), float(w.spread_deg))))
 	var to := from + dir * float(w.range_px)
-	var hit := _trace(from, to, 1 | 16)
-	var end: Vector2 = hit.get("position", to)
+	# Walls stop bullets (physics ray on layer 1); a gunman is hit if the line passes within his body width before
+	# the wall. Bodies are ~40 px wide on screen: a foot-ellipse test would be far smaller than what the player sees.
+	var wall := _trace(from, to, 1)
+	var end: Vector2 = wall.get("position", to)
+	var best: Hostile = null
+	var best_t := INF
+	for h in hostiles:
+		if not is_instance_valid(h) or h.state == Hostile.S.DEAD:
+			continue
+		var c: Vector2 = h.position + Vector2(0, -64)
+		var seg := end - from
+		var tt := clampf((c - from).dot(seg) / maxf(seg.length_squared(), 0.001), 0.0, 1.0)
+		if (from + seg * tt).distance_to(c) < BODY_HALF_WIDTH and tt < best_t:
+			best = h
+			best_t = tt
+	if best:
+		end = from + (end - from) * best_t
+		best.take_damage(int(w.damage))
 	tracers.append([from, end, 0.12, Color("#ffe9a8")])
 	_fx().queue_redraw()
-	if hit.has("collider") and hit.collider is Hostile:
-		hit.collider.take_damage(int(w.damage))
 	in_combat_t = 6.0
 	_crime("shots_fired_street", world.player.position, SHOT_NOISE)
 

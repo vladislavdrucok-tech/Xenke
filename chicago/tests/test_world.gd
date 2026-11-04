@@ -104,7 +104,7 @@ func test_workbench_jobs_limited_and_counted() -> void:
 	await frames(8)
 	for i in 3:
 		world.interact()
-	eq(GameState.ledger.balance - cash, 700, "two jobs paid (level 0 allows 2 per day)")
+	eq(GameState.ledger.balance - cash, 1200, "two jobs paid (level 0 allows 2 per day)")
 	eq(WorldClock.hour(), 12, "each job takes 90 minutes")
 	await _done()
 

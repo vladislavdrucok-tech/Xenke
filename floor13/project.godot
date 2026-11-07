@@ -1,0 +1,52 @@
+; FLOOR 13: NIGHT SHIFT — a one-finger elevator game for Android (portrait).
+; Separate project; other folders of this repository are not used by it.
+config_version=5
+
+[application]
+
+config/name="Floor 13: Night Shift"
+config/description="Керуй ліфтом у дивному нічному готелі."
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://icon.png"
+config/quit_on_go_back=false
+boot_splash/bg_color=Color(0.067, 0.047, 0.129, 1)
+boot_splash/image="res://assets/sprites/splash.png"
+boot_splash/fullsize=false
+boot_splash/use_filter=false
+
+[autoload]
+
+Save="*res://scripts/save.gd"
+Sfx="*res://scripts/sfx.gd"
+
+[display]
+
+window/size/viewport_width=360
+window/size/viewport_height=640
+window/size/window_width_override=390
+window/size/window_height_override=845
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/stretch/scale_mode="integer"
+window/handheld/orientation=1
+window/energy_saving/keep_screen_on=true
+
+[gui]
+
+common/snap_controls_to_pixels=true
+timers/tooltip_delay_sec=10.0
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=true
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+2d/snap/snap_2d_transforms_to_pixel=true
+2d/snap/snap_2d_vertices_to_pixel=true
+textures/vram_compression/import_etc2_astc=true
+environment/defaults/default_clear_color=Color(0.067, 0.047, 0.129, 1)

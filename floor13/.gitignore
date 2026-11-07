@@ -1,0 +1,4 @@
+.godot/
+*.tmp
+tools/__pycache__/
+builds/*.idsig

@@ -39,7 +39,7 @@ func _ready() -> void:
 			var r: int = Data.rarity_of(id)
 			if r >= 2:
 				var rays := UI.tex_rect(UI.art("fx/rays"), 2)
-				rays.modulate = Data.RARITY_COLORS[r]
+				rays.modulate = Data.RARITY_COLORS[r].lightened(0.35)
 				var rc := UI.center(rays)
 				holder.add_child(UI.full(rc))
 			holder.add_child(UI.full(UI.center(UI.item_icon(id, 4))))

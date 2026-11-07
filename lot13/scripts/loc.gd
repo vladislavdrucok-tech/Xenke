@@ -46,7 +46,6 @@ const T := {
 	"box.locker": "Металевий кейс", "box.trunk": "Скриня", "box.golden": "Золота скриня",
 	"rival.tony": "Великий Тоні", "rival.rose": "Бабуся Роза", "rival.max": "Хитрий Макс",
 	"rival.byte": "Доктор Байт", "rival.gold": "Леді Голд", "rival.kim": "Обережна Кім",
-	"size.small": "малий лот", "size.medium": "середній лот", "size.large": "великий лот",
 	"weight.light": "Вага: легка", "weight.medium": "Вага: середня", "weight.heavy": "Вага: важка",
 
 	"garage.auction": "На аукціон", "garage.open": "Відкрити ({n})", "garage.today": "сьогодні",
@@ -56,7 +55,7 @@ const T := {
 
 	"auctions.title": "Аукціони", "auctions.sub": "Лотів за візит: {n} • Один візит — один день",
 	"auctions.free_today": "Сьогодні вхід усюди безкоштовний!", "auctions.worth": "Лоти: {low}–{high}",
-	"auctions.meta": "Суперники: {n} • Вхід: {fee}", "auctions.free": "безкоштовно", "auctions.go": "Іти",
+	"auctions.meta": "Суперники: {n} • Вхід: {fee}", "auctions.free": "вільний", "auctions.go": "Іти",
 	"auctions.no_fee": "Не вистачає грошей на вхід",
 
 	"auction.leave": "Піти", "auction.header": "{name} • Лот {n}/{total}", "auction.start": "Старт: {price}",
@@ -233,7 +232,6 @@ const T := {
 	"box.locker": "Metal case", "box.trunk": "Old trunk", "box.golden": "Golden chest",
 	"rival.tony": "Big Tony", "rival.rose": "Granny Rose", "rival.max": "Slick Max", "rival.byte": "Dr. Byte",
 	"rival.gold": "Lady Gold", "rival.kim": "Careful Kim",
-	"size.small": "small lot", "size.medium": "medium lot", "size.large": "large lot",
 	"weight.light": "Weight: light", "weight.medium": "Weight: medium", "weight.heavy": "Weight: heavy",
 
 	"garage.auction": "To auction", "garage.open": "Open ({n})", "garage.today": "today", "garage.demand": "Demand:",

@@ -48,13 +48,13 @@ func _card(i: int) -> Control:
 	row.add_child(UI.center(ic))
 	var info := UI.vbox(2)
 	UI.fill(info)
-	info.add_child(UI.label(L.t("auction." + str(a["id"])), 16, UI.C_GOLD if unlocked else UI.C_DIM))
+	info.add_child(_line(L.t("auction." + str(a["id"])), 16, UI.C_GOLD if unlocked else UI.C_DIM))
 	var rng_v: Array = a["range"]
 	var sep := L.t("num.sep")
-	info.add_child(UI.label(L.t("auctions.worth", {"low": UI.money(int(rng_v[0]), sep), "high": UI.money(int(rng_v[1]), sep)}), 12, UI.C_TEXT))
+	info.add_child(_line(L.t("auctions.worth", {"low": UI.money(int(rng_v[0]), sep), "high": UI.money(int(rng_v[1]), sep)}), 12, UI.C_TEXT))
 	var fee := Game.auction_fee(i)
 	var fee_text := L.t("auctions.free") if fee == 0 else UI.money(fee, sep)
-	info.add_child(UI.label(L.t("auctions.meta", {"n": Game.rival_count(i), "fee": fee_text}), 12, UI.C_DIM))
+	info.add_child(_line(L.t("auctions.meta", {"n": Game.rival_count(i), "fee": fee_text}), 12, UI.C_DIM))
 	row.add_child(info)
 	if unlocked:
 		var go := UI.button(L.t("auctions.go"), "green", 16, 52)
@@ -68,6 +68,15 @@ func _card(i: int) -> Control:
 		lock.custom_minimum_size = Vector2(72, 0)
 		row.add_child(UI.center(lock))
 	return p
+
+
+## A one-line label that never pushes the buttons off the screen.
+func _line(text: String, size_px: int, color: Color) -> Label:
+	var l := UI.label(text, size_px, color)
+	l.clip_text = true
+	l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	l.custom_minimum_size = Vector2(40, 0)
+	return l
 
 
 func _enter(i: int) -> void:

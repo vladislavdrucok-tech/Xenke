@@ -39,6 +39,7 @@ var day_label: Label
 var _shown_money := 0
 var _money_tween: Tween
 var _toasts := 0
+var _toast_nodes: Array = []
 var _nav_pulse: Tween
 
 
@@ -304,8 +305,13 @@ func toast(text: String, color: Color = Color("f2f0f5"), icon_name: String = "")
 	p.add_child(row)
 	p.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	p.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	p.offset_top = 58 + _toasts * 48
+	var y := 58.0
+	for t in _toast_nodes:
+		if is_instance_valid(t):
+			y = maxf(y, t.offset_top + maxf(t.size.y, 44.0) + 6.0)
+	p.offset_top = y
 	toast_layer.add_child(p)
+	_toast_nodes.append(p)
 	_toasts += 1
 	p.modulate.a = 0.0
 	var tw := p.create_tween()
@@ -317,6 +323,7 @@ func toast(text: String, color: Color = Color("f2f0f5"), icon_name: String = "")
 
 func _toast_done(p: Control) -> void:
 	_toasts = maxi(0, _toasts - 1)
+	_toast_nodes.erase(p)
 	if is_instance_valid(p):
 		p.queue_free()
 

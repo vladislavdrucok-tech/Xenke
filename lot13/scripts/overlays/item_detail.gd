@@ -62,7 +62,7 @@ func refresh() -> void:
 	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if r >= 2:
 		var rays := UI.tex_rect(UI.art("fx/rays"), 2)
-		rays.modulate = Data.RARITY_COLORS[r]
+		rays.modulate = Data.RARITY_COLORS[r].lightened(0.35)
 		rays.pivot_offset = Vector2(64, 64)
 		pic.add_child(UI.full(UI.center(rays)))
 		var spin := rays.create_tween().set_loops()

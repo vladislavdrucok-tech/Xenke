@@ -235,7 +235,9 @@ func strike_now() -> void:
 		UI.shake(panel, 6.0, 0.25)
 	cond = clampf(cond + gain, 0.05, maxf(cap, start_cond))
 	UI.punch(icon_rect, 0.2 if gain > 0.0 else 0.08)
-	main.float_text(text, at, color, 24)
+	if gain > 0.2:
+		main.float_text(text, at, color, 24)
+	UI.punch(result_label, 0.25)
 	result_label.text = text
 	result_label.add_theme_color_override("font_color", color)
 	var pip: ColorRect = pips[strike]

@@ -426,10 +426,9 @@ func _fill_hints(reveal: bool) -> void:
 	for c in hint_grid.get_children():
 		c.queue_free()
 	var n := int(lot["count"])
-	var size_key := "size.small" if n <= 2 else ("size.medium" if n <= 4 else "size.large")
 	var weight_key := "weight.light" if n <= 2 else ("weight.medium" if n <= 4 else "weight.heavy")
 	var scanner := Game.upgrade_level("scanner")
-	_hint("box", "%s, %s" % [L.t("box." + str(lot["kind"])), L.t(size_key)])
+	_hint("box", L.t("box." + str(lot["kind"])))
 	_hint("hand", L.t(weight_key))
 	var lot_theme := str(lot["theme"])
 	_hint("tag", L.t("hint.label", {"cat": L.t("cat." + lot_theme) if lot_theme != "" else L.t("cat.mixed")}))

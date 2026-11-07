@@ -63,18 +63,19 @@ const ITEM_ORDER := [
 const CATEGORIES := ["tools", "home", "media", "toys", "clothing", "electronics", "sports", "music",
 	"antiques", "jewelry", "art", "collectibles"]
 
-## Auction houses. weights = chance per rarity; items = [min, max] per lot; boxes = container pool.
+## Auction houses. weights = chance per rarity; items = [min, max] per lot; boxes = container pool;
+## rival_k = how close the rivals' valuations get to the real value (pros at the expensive houses).
 const AUCTIONS := [
 	{"id": "flea", "rep": 1, "fee": 0, "weights": [66.0, 28.0, 5.3, 0.6, 0.1], "items": [3, 4],
-		"boxes": ["cardboard", "cardboard", "cardboard", "crate"], "rivals": ["tony", "kim", "rose", "byte"], "count": 2, "range": [30, 250]},
+		"boxes": ["cardboard", "cardboard", "cardboard", "crate"], "rivals": ["tony", "kim", "rose", "byte"], "count": 2, "range": [30, 250], "rival_k": 1.0},
 	{"id": "storage", "rep": 3, "fee": 25, "weights": [50.0, 36.0, 11.5, 2.3, 0.2], "items": [3, 5],
-		"boxes": ["cardboard", "crate", "crate", "suitcase"], "rivals": ["tony", "kim", "rose", "byte", "max"], "count": 3, "range": [80, 700]},
+		"boxes": ["cardboard", "crate", "crate", "suitcase"], "rivals": ["tony", "kim", "rose", "byte", "max"], "count": 3, "range": [80, 700], "rival_k": 1.04},
 	{"id": "estate", "rep": 6, "fee": 100, "weights": [30.0, 40.0, 22.0, 7.2, 0.8], "items": [3, 5],
-		"boxes": ["crate", "suitcase", "suitcase", "locker"], "rivals": ["rose", "max", "byte", "gold", "tony"], "count": 3, "range": [250, 2000]},
+		"boxes": ["crate", "suitcase", "suitcase", "locker"], "rivals": ["rose", "max", "byte", "gold", "tony"], "count": 3, "range": [250, 2000], "rival_k": 1.1},
 	{"id": "antique", "rep": 10, "fee": 300, "weights": [14.0, 34.0, 34.0, 15.5, 2.5], "items": [4, 6],
-		"boxes": ["suitcase", "locker", "trunk", "trunk"], "rivals": ["rose", "max", "gold", "tony"], "count": 3, "range": [700, 6000]},
+		"boxes": ["suitcase", "locker", "trunk", "trunk"], "rivals": ["rose", "max", "gold", "tony"], "count": 3, "range": [700, 6000], "rival_k": 1.16},
 	{"id": "midnight", "rep": 15, "fee": 800, "weights": [5.0, 24.0, 40.0, 25.0, 6.0], "items": [4, 6],
-		"boxes": ["locker", "trunk", "trunk", "golden"], "rivals": ["max", "gold", "rose", "tony"], "count": 3, "range": [2000, 20000]},
+		"boxes": ["locker", "trunk", "trunk", "golden"], "rivals": ["max", "gold", "rose", "tony"], "count": 3, "range": [2000, 20000], "rival_k": 1.22},
 ]
 
 ## Upgrades: base cost grows x2.6 per level. vals are shown to the player and used by the game.

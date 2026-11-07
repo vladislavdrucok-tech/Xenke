@@ -96,6 +96,23 @@ jobs:
           ls -la "$GITHUB_WORKSPACE/out"
           test -s "$GITHUB_WORKSPACE/out/LOT13-Lucky-Garage.apk"
 
+      - name: Screenshots (real renderer under Xvfb)
+        run: |
+          which xvfb-run || (sudo apt-get update -q && sudo apt-get install -y -q xvfb)
+          mkdir -p shots
+          xvfb-run -a -s "-screen 0 400x700x24" timeout 180 $GODOT --rendering-driver opengl3 --resolution 360x640 \
+            --fixed-fps 60 --path lot13 -- --shots "$GITHUB_WORKSPACE/shots" > shots.log 2>&1 || true
+          tail -n 25 shots.log
+          ls -la shots
+          ! grep -E "SCRIPT ERROR|Parse Error" shots.log
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lot13-screenshots
+          path: shots/*.png
+
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -108,3 +125,10 @@ jobs:
         with:
           name: LOT13-Lucky-Garage-apk
           path: out/LOT13-Lucky-Garage.apk
+
+      # Last step on purpose: screenshots as text, readable from the end of the job log.
+      - name: Print screenshots
+        if: always()
+        run: |
+          pip install -q pillow 2>/dev/null || pip install -q --user pillow
+          python3 lot13/tools/shots_b64.py shots || true

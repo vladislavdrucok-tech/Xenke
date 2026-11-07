@@ -45,6 +45,12 @@ var _nav_pulse: Tween
 func _ready() -> void:
 	theme = _make_theme()
 	add_child(UI.full(UI.color_rect(UI.C_BG)))
+	var tile := TextureRect.new()
+	tile.texture = UI.art("ui/bg_tile")
+	tile.stretch_mode = TextureRect.STRETCH_TILE
+	tile.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(UI.full(tile))
 	var root := UI.vbox(0)
 	add_child(UI.full(root))
 	_build_top_bar(root)
@@ -71,7 +77,7 @@ func _ready() -> void:
 	_refresh_badges()
 
 	var args := OS.get_cmdline_user_args()
-	if args.has("--selftest") or args.has("--smoke"):
+	if args.has("--selftest") or args.has("--smoke") or args.has("--shots"):
 		var t = load("res://scripts/tests.gd").new()
 		t.main = self
 		add_child(t)

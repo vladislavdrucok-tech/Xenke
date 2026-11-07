@@ -20,11 +20,11 @@ for part in RAW.replace("\n", "").split("|"):
     ITEMS[i] = (int(r), c, int(v))
 
 AUCTIONS = [
-    dict(rep=1, fee=0, w=[66, 28, 5.3, 0.6, 0.1], n=(3, 4), golden=0.0, rivals=2, low=20),
-    dict(rep=3, fee=25, w=[50, 36, 11.5, 2.3, 0.2], n=(3, 5), golden=0.0, rivals=3, low=80),
-    dict(rep=6, fee=100, w=[30, 40, 22, 7.2, 0.8], n=(3, 5), golden=0.0, rivals=3, low=250),
-    dict(rep=10, fee=300, w=[14, 34, 34, 15.5, 2.5], n=(4, 6), golden=0.0, rivals=3, low=700),
-    dict(rep=15, fee=800, w=[5, 24, 40, 25, 6], n=(4, 6), golden=0.25, rivals=3, low=2000),
+    dict(rep=1, fee=0, w=[66, 28, 5.3, 0.6, 0.1], n=(3, 4), golden=0.0, rivals=2, low=20, k=1.0),
+    dict(rep=3, fee=25, w=[50, 36, 11.5, 2.3, 0.2], n=(3, 5), golden=0.0, rivals=3, low=80, k=1.04),
+    dict(rep=6, fee=100, w=[30, 40, 22, 7.2, 0.8], n=(3, 5), golden=0.0, rivals=3, low=250, k=1.1),
+    dict(rep=10, fee=300, w=[14, 34, 34, 15.5, 2.5], n=(4, 6), golden=0.0, rivals=3, low=700, k=1.16),
+    dict(rep=15, fee=800, w=[5, 24, 40, 25, 6], n=(4, 6), golden=0.25, rivals=3, low=2000, k=1.22),
 ]
 UPG = {"shelves": (100, 4, [10, 14, 20, 28, 40]), "bench": (120, 4, [85, 90, 95, 98, 100]),
        "scanner": (180, 4, [0, 1, 2, 3, 4]), "showroom": (250, 4, [0, 8, 16, 25, 35]),
@@ -108,7 +108,7 @@ class Sim:
             maxes = []
             for _ in range(a["rivals"]):
                 m0, m1 = self.r.choice(RIVAL_MULT)
-                maxes.append(v * self.r.uniform(0.8, 1.15) * self.r.uniform(m0, m1) * (1.2 if self.r.random() < 0.25 else 1) * (1.08 if golden else 1))
+                maxes.append(v * self.r.uniform(0.8, 1.15) * self.r.uniform(m0, m1) * (1.2 if self.r.random() < 0.25 else 1) * (1.08 if golden else 1) * a["k"])
             mine = min(self.money, center * self.bid_k)
             top_rival = max(maxes) if maxes else 0
             if mine >= start and mine > top_rival:

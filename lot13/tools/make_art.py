@@ -1019,6 +1019,20 @@ def make_ui():
     save(scale(c.img, 2), "ui", "bar_bg.png")
 
 
+def make_bg():
+    """Subtle dark brick tile behind the menus (pre-scaled 2x, drawn tiled)."""
+    c = C(32, 32, "#18151f")
+    for row in range(4):
+        y = row * 8
+        c.hl(0, 31, y, "#1d1926")
+        off = 0 if row % 2 == 0 else 8
+        for x in range(off, 32 + off, 16):
+            c.vl(x % 32, y + 1, y + 7, "#1d1926")
+    for (x, y) in ((5, 3), (21, 12), (12, 27), (28, 20)):
+        c.px(x, y, "#211c2b")
+    save(scale(c.img, 2), "ui", "bg_tile.png")
+
+
 # ------------------------------------------------------------------ effects
 def make_fx():
     # light rays
@@ -1483,6 +1497,7 @@ if __name__ == "__main__":
     portraits = make_portraits()
     icons = make_icons()
     make_ui()
+    make_bg()
     make_fx()
     make_garage()
     make_auction()

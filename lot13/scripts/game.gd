@@ -44,7 +44,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	rng.randomize()
 	var args := OS.get_cmdline_user_args()
-	test_mode = args.has("--selftest") or args.has("--smoke")
+	test_mode = args.has("--selftest") or args.has("--smoke") or args.has("--shots")
 	if test_mode:
 		save_path = TEST_SAVE_PATH
 	_save_timer = Timer.new()

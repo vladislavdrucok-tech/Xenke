@@ -20,6 +20,7 @@ var rivals: Array = []
 var won: Array = []
 var spent := 0
 var _call := 0
+var _glow_tw: Tween
 
 var stage_area: Control
 var stage: Control
@@ -222,9 +223,11 @@ func _after_intro() -> void:
 		var best := int(lot["best"])
 		glow_rect.modulate = Data.RARITY_COLORS[best] * Color(1, 1, 1, 0.75)
 		glow_rect.visible = best >= 1 or bool(lot.get("golden", false))
-		var tw := glow_rect.create_tween().set_loops()
-		tw.tween_property(glow_rect, "scale", Vector2(2.4, 2.4), 0.6).set_trans(Tween.TRANS_SINE)
-		tw.tween_property(glow_rect, "scale", Vector2(2.0, 2.0), 0.6).set_trans(Tween.TRANS_SINE)
+		if _glow_tw != null and _glow_tw.is_valid():
+			_glow_tw.kill()
+		_glow_tw = glow_rect.create_tween().set_loops()
+		_glow_tw.tween_property(glow_rect, "scale", Vector2(2.4, 2.4), 0.6).set_trans(Tween.TRANS_SINE)
+		_glow_tw.tween_property(glow_rect, "scale", Vector2(2.0, 2.0), 0.6).set_trans(Tween.TRANS_SINE)
 	phase = "bidding"
 	countdown = START_TIME
 	_update_buttons()
@@ -240,7 +243,7 @@ func _rival_max(id: String) -> int:
 		v *= 1.2
 	if bool(lot.get("golden", false)):
 		v *= 1.08
-	v *= Game.rival_bonus()
+	v *= Game.rival_bonus() * float(Data.auction(tier).get("rival_k", 1.0))
 	return int(v)
 
 

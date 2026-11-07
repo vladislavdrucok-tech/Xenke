@@ -12,8 +12,12 @@ var failures := 0
 
 
 func _ready() -> void:
-	if OS.get_cmdline_user_args().has("--selftest"):
+	var args := OS.get_cmdline_user_args()
+	if args.has("--selftest"):
 		call_deferred("_selftest")
+	elif args.has("--shots"):
+		var i: int = args.find("--shots")
+		call_deferred("_shots", args[i + 1] if i + 1 < args.size() else "user://shots")
 	else:
 		call_deferred("_smoke")
 
@@ -209,7 +213,8 @@ func _economy() -> void:
 			var top := 0.0
 			for r in Game.pick_rivals(tier):
 				var d: Dictionary = Data.RIVALS[r]
-				top = maxf(top, float(lot["value"]) * randf_range(0.8, 1.15) * randf_range(float(d["mult"][0]), float(d["mult"][1])))
+				top = maxf(top, float(lot["value"]) * randf_range(0.8, 1.15) * randf_range(float(d["mult"][0]), float(d["mult"][1]))
+					* float(Data.auction(tier)["rival_k"]))
 			if mine >= float(lot["start"]) and mine > top:
 				var price := maxi(int(lot["start"]), mini(Game.money, roundi(top * 1.04)))
 				if Game.spend(price):
@@ -397,3 +402,81 @@ func _smoke() -> void:
 	main.on_back()
 	await frames(2)
 	_finish("SMOKE")
+
+
+# ------------------------------------------------------------------ screenshots (needs a real renderer)
+func shot(dir: String, shot_name: String) -> void:
+	await frames(40)
+	var img := get_viewport().get_texture().get_image()
+	img.save_png(dir.path_join(shot_name + ".png"))
+	print("shot saved: ", shot_name, " ", img.get_size())
+
+
+func _shots(dir: String) -> void:
+	DirAccess.make_dir_recursive_absolute(dir)
+	Game.reset_state()
+	Game.money = 1840
+	Game.day = 6
+	Game.level = 4
+	Game.upgrades["shelves"] = 2
+	Game.upgrades["bench"] = 3
+	Game.upgrades["showroom"] = 2
+	Game.upgrades["truck"] = 1
+	Game.upgrades["charm"] = 1
+	Game.upgrades["scanner"] = 2
+	for id in ["toy_car", "pocket_watch", "vinyl_record", "gold_ring", "tin_robot", "typewriter", "desk_lamp", "skateboard"]:
+		Game.items.append({"uid": Game._uid(), "id": id, "cond": randf_range(0.25, 0.9), "paid": 20, "fixed": 0})
+		Game.found[id] = 0
+	Game.add_box(Game.make_lot(1), 60)
+	Game.add_box(Game.make_lot(2), 140)
+	Game.apply_event("collector")
+	Game.tutorial_done = true
+	main.show_screen("garage")
+	await shot(dir, "01_garage")
+	main.show_screen("auction", {"tier": 2})
+	var scr = main.screen
+	var guard := 0
+	while scr.phase != "bidding" and guard < 300:
+		guard += 1
+		await get_tree().process_frame
+	scr.call("_on_bid")
+	await frames(50)
+	await shot(dir, "02_auction")
+	main.show_screen("storage")
+	await shot(dir, "03_storage")
+	var lot := Game.make_lot(4)
+	Game.add_box(lot, 900)
+	var o = main.open_overlay("open_box", {"uid": int(Game.boxes[Game.boxes.size() - 1]["uid"])})
+	await frames(10)
+	for i in range(3):
+		o.tap()
+		await frames(8)
+	await frames(30)
+	await shot(dir, "04_open_box")
+	main.close_overlay(o)
+	await frames(2)
+	var uid := int(Game.items[3]["uid"])
+	Game.items[3]["cond"] = 0.3
+	main.open_overlay("item", {"uid": uid})
+	await shot(dir, "05_item")
+	var rep = main.open_overlay("repair", {"uid": uid})
+	await frames(5)
+	rep.call("_on_action")
+	await frames(20)
+	rep.strike_now()
+	await frames(10)
+	await shot(dir, "06_repair")
+	main.close_overlay(rep)
+	await frames(2)
+	main.open_overlay("sell", {"uid": uid})
+	await shot(dir, "07_sell")
+	while main.overlay_count() > 0:
+		main.close_overlay(main.top_overlay())
+		await frames(2)
+	main.show_screen("upgrades")
+	await shot(dir, "08_upgrades")
+	main.show_screen("collection", {"tab": "book"})
+	await shot(dir, "09_collection")
+	main.show_screen("auctions")
+	await shot(dir, "10_auctions")
+	_finish("SHOTS")

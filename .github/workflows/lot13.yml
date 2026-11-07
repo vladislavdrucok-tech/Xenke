@@ -13,6 +13,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: write
     env:
       GODOT_VERSION: "4.3"
     steps:
@@ -95,6 +97,19 @@ jobs:
           tail -n 40 export.log
           ls -la "$GITHUB_WORKSPACE/out"
           test -s "$GITHUB_WORKSPACE/out/LOT13-Lucky-Garage.apk"
+
+      # Only for manual runs or commits with [apk] in the message: put the APK into the branch,
+      # so it can be downloaded straight from GitHub (lot13/builds/LOT13-Lucky-Garage.apk).
+      - name: Commit the APK to the branch
+        if: success() && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[apk]'))
+        run: |
+          mkdir -p lot13/builds
+          cp out/LOT13-Lucky-Garage.apk lot13/builds/LOT13-Lucky-Garage.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lot13/builds/LOT13-Lucky-Garage.apk
+          git commit -m "LOT 13: APK build of ${GITHUB_SHA::7}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - name: Screenshots (real renderer under Xvfb)
         run: |

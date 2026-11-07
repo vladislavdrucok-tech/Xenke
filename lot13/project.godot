@@ -1,0 +1,43 @@
+; LOT 13: Lucky Garage — a portrait 2D pixel-art mobile game (Godot 4.3, GDScript).
+; Independent from the other prototypes in this repository.
+config_version=5
+
+[application]
+
+config/name="LOT 13: Lucky Garage"
+config/description="Buy mystery boxes at auctions, open, repair and sell what you find, grow your garage."
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://icon.png"
+config/quit_on_go_back=false
+run/low_processor_mode=true
+
+[autoload]
+
+L="*res://scripts/loc.gd"
+Game="*res://scripts/game.gd"
+Sfx="*res://scripts/sfx.gd"
+UI="*res://scripts/ui.gd"
+
+[display]
+
+window/size/viewport_width=360
+window/size/viewport_height=640
+window/size/window_width_override=405
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=1
+
+[gui]
+
+common/drop_mouse_on_gui_input_disabled=true
+timers/tooltip_delay_sec=10.0
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
+textures/vram_compression/import_etc2_astc=true
+environment/defaults/default_clear_color=Color(0.086, 0.075, 0.122, 1)

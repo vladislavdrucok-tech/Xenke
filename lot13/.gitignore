@@ -1,0 +1,5 @@
+.godot/
+*.aab
+*.idsig
+__pycache__/
+builds/web/

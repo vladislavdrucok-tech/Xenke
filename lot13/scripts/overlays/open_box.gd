@@ -331,8 +331,8 @@ func _particles(pos: Vector2, amount: int, colors: Array, speed: float, life: fl
 	p.initial_velocity_min = speed * 0.4
 	p.initial_velocity_max = speed
 	p.gravity = Vector2(0, gravity)
-	p.scale_amount_min = 3.0
-	p.scale_amount_max = 6.0
+	p.scale_amount_min = 1.5
+	p.scale_amount_max = 3.0
 	p.texture = UI.art("fx/pixel")
 	var g := Gradient.new()
 	var offs := PackedFloat32Array()
@@ -369,8 +369,8 @@ func _confetti() -> void:
 	p.gravity = Vector2(0, 120)
 	p.angular_velocity_min = -180.0
 	p.angular_velocity_max = 180.0
-	p.scale_amount_min = 3.0
-	p.scale_amount_max = 5.0
+	p.scale_amount_min = 2.0
+	p.scale_amount_max = 3.5
 	p.texture = UI.art("fx/pixel")
 	var g := Gradient.new()
 	g.offsets = PackedFloat32Array([0.0, 0.25, 0.5, 0.75, 1.0])

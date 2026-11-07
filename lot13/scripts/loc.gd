@@ -139,6 +139,8 @@ const T := {
 	"event.stranger.yes": "Продати", "event.stranger.no": "Ні",
 	"event.sale_day.title": "День покупців",
 	"event.sale_day.text": "У місті ярмарок — покупці сьогодні пропонують на 15% більше.",
+	"event.lou_help.title": "Дядько Лу допомагає",
+	"event.lou_help.text": "«Бачу, справи кепські. Тримай {amount} — і не здавайся!»",
 
 	"lou.name": "Дядько Лу",
 	"tut.0": "Привіт, малий! Я дядько Лу. Цей гараж — «Лот 13» — тепер твій. Ось $500 на старт.",
@@ -322,6 +324,8 @@ const T := {
 	"event.stranger.yes": "Sell", "event.stranger.no": "No",
 	"event.sale_day.title": "Shoppers' day",
 	"event.sale_day.text": "There's a fair in town — buyers offer 15% more today.",
+	"event.lou_help.title": "Uncle Lou helps out",
+	"event.lou_help.text": "\"Rough patch, huh? Here's {amount} — don't give up!\"",
 
 	"lou.name": "Uncle Lou",
 	"tut.0": "Hey kid! I'm Uncle Lou. This garage — Lot 13 — is yours now. Here's $500 to get started.",

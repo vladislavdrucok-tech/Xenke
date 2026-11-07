@@ -703,6 +703,10 @@ func end_day() -> void:
 	stats["auctions"] = int(stats["auctions"]) + 1
 	_roll_trends()
 	_roll_event()
+	if money < 25 and items.is_empty() and boxes.is_empty():
+		# never leave the player stuck: Uncle Lou helps out
+		event = {"id": "lou_help", "amount": 100}
+		add_money(100)
 	pending_event = not event.is_empty()
 	request_save()
 	state_changed.emit()

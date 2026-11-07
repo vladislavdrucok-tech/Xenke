@@ -106,7 +106,7 @@ const EVENTS := {
 
 const EVENT_ICONS := {"collector": "trophy", "rain": "rain", "bidding_war": "gavel", "free_entry": "tag",
 	"found_cash": "coin", "leak": "rain", "tv": "star", "ticket": "calendar", "lucky": "cat",
-	"stranger": "hand", "sale_day": "tag"}
+	"stranger": "hand", "sale_day": "tag", "lou_help": "coin"}
 
 ## Long-term goals for the endless mode: kind, target, reward $.
 const GOALS := [

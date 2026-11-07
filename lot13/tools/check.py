@@ -146,6 +146,7 @@ dyn |= {"auction." + a for a in auction_ids}
 dyn |= {"box." + b for b in box_kinds}
 dyn |= {"rival." + r for r in rivals}
 dyn |= {f"event.{e}.title" for e in events} | {f"event.{e}.text" for e in events}
+dyn |= {"event.lou_help.title", "event.lou_help.text"}
 dyn |= {f"tut.{i}" for i in range(5)}
 dyn |= {f"up.{u}.name" for u, _ in upgrades} | {f"up.scanner.fx{i}" for i in range(5)}
 dyn |= {f"up.{u}.desc" for u, _ in upgrades if u != "scanner"}

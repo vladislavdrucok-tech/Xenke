@@ -208,7 +208,7 @@ func strike_now() -> void:
 	var text := ""
 	var color: Color = UI.C_TEXT
 	var pip_color := Color("e05a60")
-	var at := icon_rect.global_position + icon_rect.size * 0.5
+	var at := bar_ctrl.global_position + Vector2(bar_ctrl.size.x * 0.5, -6)
 	if d <= perf_w * 0.5:
 		gain = 0.24
 		perfects += 1
@@ -235,7 +235,7 @@ func strike_now() -> void:
 		UI.shake(panel, 6.0, 0.25)
 	cond = clampf(cond + gain, 0.05, maxf(cap, start_cond))
 	UI.punch(icon_rect, 0.2 if gain > 0.0 else 0.08)
-	main.float_text(text, at + Vector2(0, -50), color, 24)
+	main.float_text(text, at, color, 24)
 	result_label.text = text
 	result_label.add_theme_color_override("font_color", color)
 	var pip: ColorRect = pips[strike]
@@ -288,8 +288,8 @@ func _sparks(col: Color, amount: int) -> void:
 	p.initial_velocity_min = 90.0
 	p.initial_velocity_max = 240.0
 	p.gravity = Vector2(0, 420)
-	p.scale_amount_min = 2.0
-	p.scale_amount_max = 4.0
+	p.scale_amount_min = 1.5
+	p.scale_amount_max = 3.0
 	p.texture = UI.art("fx/pixel")
 	p.color = col
 	add_child(p)

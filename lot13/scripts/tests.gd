@@ -172,6 +172,15 @@ func _selftest() -> void:
 		var n_items := Game.items.size()
 		check(Game.accept_stranger() and Game.items.size() == n_items - 1, "stranger buys the item")
 
+	# never stuck without money
+	var keep_items := Game.items.duplicate(true)
+	Game.items = []
+	Game.boxes = []
+	Game.money = 3
+	Game.end_day()
+	check(Game.money >= 100 and str(Game.event.get("id", "")) == "lou_help", "Uncle Lou helps a broke player")
+	Game.items = keep_items
+
 	# goals
 	Game.stats["boxes"] = 1
 	var g: Dictionary = Data.goal("first_box")
@@ -431,7 +440,12 @@ func _shots(dir: String) -> void:
 	Game.add_box(Game.make_lot(2), 140)
 	Game.apply_event("collector")
 	Game.tutorial_done = true
+	Game.money_changed.emit(Game.money)
+	L.set_lang("uk")
 	main.show_screen("garage")
+	main.call("_tutorial_step", 1)
+	await shot(dir, "00_tutorial")
+	main.close_overlay(main.top_overlay())
 	await shot(dir, "01_garage")
 	main.show_screen("auction", {"tier": 2})
 	var scr = main.screen
@@ -479,4 +493,12 @@ func _shots(dir: String) -> void:
 	await shot(dir, "09_collection")
 	main.show_screen("auctions")
 	await shot(dir, "10_auctions")
+	Game.add_xp(Game.xp_needed(Game.level))
+	await shot(dir, "11_levelup")
+	while main.overlay_count() > 0:
+		main.close_overlay(main.top_overlay())
+		await frames(2)
+	L.set_lang("en")
+	main.show_screen("garage")
+	await shot(dir, "12_garage_en")
 	_finish("SHOTS")

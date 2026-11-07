@@ -1124,6 +1124,18 @@ def make_garage():
         c.px(x, y, "#4e4954" if rnd.random() < 0.6 else "#66606c")
     for i in range(18):
         c.px(30 + i, 230 + (i % 5 == 0), "#45404c")
+    # a stack of old tyres and an oil drum on the floor
+    for (tx, ty) in ((6, 214), (8, 205)):
+        c.ellipse(tx, ty, tx + 30, ty + 14, "#1f1d28")
+        c.ellipse(tx + 2, ty + 2, tx + 28, ty + 12, "#2e2b38")
+        c.ellipse(tx + 9, ty + 4, tx + 21, ty + 10, "#141824")
+        c.hl(tx + 6, tx + 24, ty + 2, "#46424f")
+    c.rect(150, 196, 170, 226, "#2f7f45")
+    c.rect(150, 196, 170, 198, "#72c04c")
+    c.hl(150, 170, 206, "#235e33"), c.hl(150, 170, 216, "#235e33")
+    c.rect(167, 199, 168, 224, "#4f9a5c")
+    c.rect(156, 194, 160, 195, "#2b2b3a")
+    c.hl(150, 170, 226, "#1f1d28")
     c.ellipse(130, 236, 160, 244, "#45404c")
     c.ellipse(134, 237, 154, 242, "#3c3844")
     # light pool under the lamp

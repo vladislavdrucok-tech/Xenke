@@ -20,7 +20,7 @@
 | Ремонт-мінігра: стрілка, зелена зона, золота «ідеально», 3 удари | `overlays/repair.gd` |
 | Продаж і торг: пропозиція, «прошу більше», терпіння-сердечка, до 3–4 покупців на день; ломбард | `overlays/sell.gd`, `overlays/item_detail.gd` |
 | 6 покращень (полиці, верстат, сканер, вітрина, фургон, кіт-талісман), видно в гаражі | `screens/upgrades.gd`, `screens/garage.gd` |
-| Попит на категорії щодня, 11 випадкових подій (колекціонер, злива, незнайомець…) | `scripts/game.gd` |
+| Попит на категорії щодня, 11 випадкових подій (колекціонер, злива, незнайомець…); якщо гроші й речі скінчились — дядько Лу дає $100 | `scripts/game.gd` |
 | Колекція 40 речей (кожна знахідка +0,5% до цін), 14 довгих цілей з нагородами, статистика | `screens/collection.gd` |
 | Репутація (рівні), нескінченні дні | `scripts/game.gd` |
 | Автозбереження (`user://lot13_save.json`, запис через тимчасовий файл), офлайн | `scripts/game.gd` |
@@ -40,8 +40,11 @@
 - `godot --headless --fixed-fps 60 --path lot13 -- --selftest` — правила гри, дані, збереження, бот-економіка на 40 днів.
 - `godot --headless --fixed-fps 60 --path lot13 -- --smoke` — проходить усі екрани й вікна як гравець
   (аукціон, відкривання, ремонт, торг, ломбард, події, покращення, «Назад»).
+- `godot --rendering-driver opengl3 --resolution 360x640 --path lot13 -- --shots <тека>` — знімки 10 ключових екранів
+  (у CI під Xvfb; `tools/shots_b64.py` / `tools/shots_decode.py` передають їх через лог завдання).
 - `python3 tools/balance_sim.py 200 60` — симуляція економіки (темп відкриття аукціонів, гроші по днях).
-- GitHub Actions `.github/workflows/lot13.yml`: імпорт → selftest → smoke → APK (артефакт `LOT13-Lucky-Garage-apk`).
+- GitHub Actions `.github/workflows/lot13.yml`: імпорт → selftest → smoke → APK (артефакт `LOT13-Lucky-Garage-apk`)
+  → знімки екранів (артефакт `lot13-screenshots`).
 
 ## Графіка та звук (генеруються, можна перегенерувати)
 - `python3 tools/make_art.py [тека_прев'ю]` — усі PNG: предмети (`tools/art_items.py`), коробки, портрети, іконки,

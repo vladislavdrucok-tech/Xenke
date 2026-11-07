@@ -605,7 +605,7 @@ func pawn_item(uid: int) -> int:
 
 
 func buyer_mult() -> float:
-	var m := 1.0 + float(upgrade_val("showroom")) / 100.0
+	var m := (1.0 + float(upgrade_val("showroom")) / 100.0) * (1.0 + float(upgrade_val("ads")) / 100.0)
 	if str(event.get("id", "")) == "sale_day":
 		m *= 1.15
 	return m

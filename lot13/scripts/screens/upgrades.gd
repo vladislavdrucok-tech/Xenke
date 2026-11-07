@@ -42,7 +42,7 @@ func _fmt(id: String, lvl: int) -> String:
 	match id:
 		"bench":
 			return "%d%%" % v
-		"showroom", "charm":
+		"showroom", "charm", "ads":
 			return "+%d%%" % v
 	return str(v)
 
@@ -76,7 +76,7 @@ func _row(u: Dictionary) -> Control:
 	var pips := UI.hbox(3)
 	for i in range(int(u["max"])):
 		var pip := UI.color_rect(Color("72c04c") if i < lvl else Color("221d2e"))
-		pip.custom_minimum_size = Vector2(9, 9)
+		pip.custom_minimum_size = Vector2(9, 9) if int(u["max"]) <= 5 else Vector2(6, 9)
 		pips.add_child(UI.center(pip))
 	top.add_child(pips)
 	info.add_child(top)

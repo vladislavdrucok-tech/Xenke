@@ -95,6 +95,7 @@ const T := {
 	"up.showroom.name": "Вітрина", "up.showroom.desc": "Покупці дають",
 	"up.truck.name": "Фургон", "up.truck.desc": "Лотів на аукціоні",
 	"up.charm.name": "Кіт-талісман", "up.charm.desc": "Рідкісні знахідки",
+	"up.ads.name": "Реклама", "up.ads.desc": "Покупці дають ще",
 
 	"coll.tab_book": "Колекція", "coll.tab_goals": "Цілі", "coll.found": "Знайдено: {n}/{max}",
 	"coll.bonus": "Знання ринку: +{n}% до цін продажу", "coll.unknown": "Ще не знайдено ({r})",
@@ -281,6 +282,7 @@ const T := {
 	"up.showroom.name": "Showroom", "up.showroom.desc": "Buyers pay",
 	"up.truck.name": "Truck", "up.truck.desc": "Lots per auction",
 	"up.charm.name": "Lucky Cat", "up.charm.desc": "Rare finds",
+	"up.ads.name": "Advertising", "up.ads.desc": "Buyers pay extra",
 
 	"coll.tab_book": "Collection", "coll.tab_goals": "Goals", "coll.found": "Found: {n}/{max}",
 	"coll.bonus": "Market expertise: +{n}% sale prices", "coll.unknown": "Not found yet ({r})",

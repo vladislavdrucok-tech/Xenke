@@ -86,6 +86,7 @@ const UPGRADES := [
 	{"id": "showroom", "icon": "sign", "base": 250, "max": 4, "vals": [0, 8, 16, 25, 35]},
 	{"id": "truck", "icon": "truck", "base": 400, "max": 3, "vals": [4, 5, 6, 7]},
 	{"id": "charm", "icon": "cat", "base": 500, "max": 4, "vals": [0, 15, 30, 50, 75]},
+	{"id": "ads", "icon": "star", "base": 1500, "max": 10, "vals": [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30]},
 ]
 
 ## Rival bidders. aggr = chance to bid when thinking; mult = valuation range; likes = categories they overpay for.

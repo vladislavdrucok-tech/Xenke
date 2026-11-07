@@ -54,6 +54,11 @@ func _ready() -> void:
 	add_child(UI.full(tile))
 	var root := UI.vbox(0)
 	add_child(UI.full(root))
+	var insets := _safe_insets()
+	if insets.x > 0.0:
+		var top_pad := UI.color_rect(Color("16131f"))
+		top_pad.custom_minimum_size = Vector2(0, insets.x)
+		root.add_child(top_pad)
 	_build_top_bar(root)
 	content = Control.new()
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -61,6 +66,10 @@ func _ready() -> void:
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(content)
 	_build_nav(root)
+	if insets.y > 0.0:
+		var bottom_pad := UI.color_rect(Color("16131f"))
+		bottom_pad.custom_minimum_size = Vector2(0, insets.y)
+		root.add_child(bottom_pad)
 	overlay_layer = Control.new()
 	overlay_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(UI.full(overlay_layer))
@@ -88,6 +97,20 @@ func _ready() -> void:
 		call_deferred("_tutorial_step", 0)
 	elif Game.pending_event:
 		call_deferred("show_event")
+
+
+## Top and bottom insets (camera cut-outs, gesture bar) in viewport units; zero on desktop.
+func _safe_insets() -> Vector2:
+	if not OS.has_feature("mobile"):
+		return Vector2.ZERO
+	var win := DisplayServer.window_get_size()
+	var safe := DisplayServer.get_display_safe_area()
+	if win.y <= 0 or safe.size.y <= 0:
+		return Vector2.ZERO
+	var k := get_viewport_rect().size.y / float(win.y)
+	var top := clampf(float(safe.position.y) * k, 0.0, 48.0)
+	var bottom := clampf(float(win.y - safe.end.y) * k, 0.0, 32.0)
+	return Vector2(top, bottom)
 
 
 func _make_theme() -> Theme:

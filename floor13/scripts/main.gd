@@ -206,6 +206,8 @@ func _tour(dir: String) -> void:
 	await _wait(0.8)
 	await _shot(dir, "07_intro_shift9")
 	game._begin_play()
+	await _wait(0.7)
+	await _shot(dir, "07b_unlock")
 	await _play_bot(6.0)
 	game.sim.start_event("party")
 	await _play_bot(4.0)

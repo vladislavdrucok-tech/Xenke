@@ -843,23 +843,39 @@ def make_logo(font_path):
     return img
 
 
-def make_app_icon(font_path):
-    s = 48
+def icon_sky(s, moon=(39, 9)):
     c = Canvas(s, s)
     for y in range(s):
         for x in range(s):
             t = y / s
             c.set(x, y, (int(30 + 40 * t), int(16 + 10 * t), int(70 + 30 * t), 255))
+    k = s / 48.0
     for (x, y) in ((5, 6), (40, 4), (44, 14), (8, 20), (36, 9), (3, 32), (45, 30)):
-        c.set(x, y, C('fff4d6'))
-    c.disc(39, 9, 4, C('fff4d6'))
-    c.disc(41, 8, 3.5, (int(30 + 40 * 8 / 48), int(16 + 10 * 8 / 48), int(70 + 30 * 8 / 48), 255))
+        c.set(int(x * k), int(y * k), C('fff4d6'))
+    mx, my = int(moon[0] * k), int(moon[1] * k)
+    c.disc(mx, my, 4, C('fff4d6'))
+    t = (my - 1) / s
+    c.disc(mx + 2, my - 1, 3.5, (int(30 + 40 * t), int(16 + 10 * t), int(70 + 30 * t), 255))
+    return c
+
+
+def make_adaptive_icon(font_path):
+    fg = Image.new('RGBA', (432, 432), (0, 0, 0, 0))
+    art = make_app_icon(font_path, with_sky=False, size=48)
+    fg.alpha_composite(art.resize((288, 288), Image.NEAREST), (72, 72))
+    bg = icon_sky(72, moon=(37, 13)).img.resize((432, 432), Image.NEAREST)
+    return fg, bg
+
+
+def make_app_icon(font_path, with_sky=True, size=192):
+    s = 48
+    c = icon_sky(s) if with_sky else Canvas(s, s)
     # elevator frame
     fx, fy, fw, fh = 10, 12, 28, 32
     rounded(c, fx - 2, fy - 6, fw + 4, fh + 8, K, 3)
     c.rect(fx - 1, fy - 5, fw + 2, fh + 6, C('d8a040'))
     c.rect(fx - 1, fy - 5, fw + 2, 1, C('ffe08a'))
-    c.rect(fx + 8, fy - 4, 12, 5, C('1a0e0a'))
+    c.rect(fx + 8, fy - 5, 12, 7, C('1a0e0a'))
     c.rect(fx, fy + 2, fw, fh - 3, C('fff0c0'))
     for y in range(fy + 2, fy + fh - 1):
         c.rect(fx + 11, y, 6, 1, C('ffe8a0'))
@@ -875,8 +891,14 @@ def make_app_icon(font_path):
     c.px(gx + 1, gy + 3, K)
     c.px(gx + 4, gy + 3, K)
     c.rect(gx + 2, gy + 6, 2, 1, K)
+    amber = C('ffa82e')
+    one = ['.#.', '##.', '.#.', '.#.', '###']
+    three = ['###', '..#', '.##', '..#', '###']
+    for j in range(5):
+        for i in range(3):
+            if one[j][i] == '#':
+                c.set(fx + 10 + i, fy - 4 + j, amber)
+            if three[j][i] == '#':
+                c.set(fx + 15 + i, fy - 4 + j, amber)
     img = c.img
-    d = ImageDraw.Draw(img)
-    ft = ImageFont.truetype(font_path, 8)
-    d.text((fx + 8, fy - 4), "13", font=ft, fill=(255, 168, 46, 255))
-    return img.resize((192, 192), Image.NEAREST)
+    return img if size == 48 else img.resize((size, size), Image.NEAREST)

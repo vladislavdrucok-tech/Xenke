@@ -22,6 +22,7 @@ var _last_tick := -1
 var _new_floor := false
 var _intro_shown_at := 0
 var _greeted := {}
+var task := {}
 
 
 func _ready() -> void:
@@ -102,6 +103,12 @@ func start_shift(s: int, tutorial_mode := false) -> void:
 	_last_tick = -1
 	_new_floor = s > 1 and floors > Defs.floors_for_shift(s - 1) and not tutorial_mode
 	_greeted.clear()
+	task = {}
+	if not tutorial_mode:
+		var r := RandomNumberGenerator.new()
+		r.randomize()
+		task = Defs.make_task(s, floors, r)
+	hud.task = task
 	_clear_overlay()
 	if tutorial != null:
 		tutorial.queue_free()
@@ -129,6 +136,11 @@ func _begin_play() -> void:
 			Save.see_type(t)
 	if _new_floor:
 		world.unlock_anim = 1.0
+		world.manual_t = 2.4
+		world.cam_y = world.world_top() + world.size.y / 2.0
+		for i in 10:
+			world.steam(Vector2(110 + i * 24, world.floor_top(sim.floors) + 6))
+		world.float_text(Vector2(230, world.floor_top(sim.floors) + 40), "НОВИЙ ПОВЕРХ!", Art.GREEN, 2.2)
 		Sfx.play("unlock")
 	else:
 		Sfx.play("shift_start")
@@ -250,6 +262,7 @@ func _drain_events() -> void:
 						elif dp.type == "inspector" and e.frac >= 0.5 and not dp.grumpy:
 							Save.add_record("inspectors", 1)
 				if not sim.tutorial:
+					_task_on_deliver(dp, e)
 					_check_achievements()
 				var pitch := 1.0 + minf(float(e.streak), 10.0) * 0.04
 				Sfx.play("coins_big" if e.coins >= 30 else "coin", pitch)
@@ -294,6 +307,35 @@ func _drain_events() -> void:
 			"fail":
 				Sfx.play("fail")
 	sim.out.clear()
+
+
+func _task_on_deliver(p: Dictionary, e: Dictionary) -> void:
+	if task.is_empty() or task.done:
+		return
+	match task.kind:
+		"deliver":
+			task.progress += 1
+		"streak":
+			task.progress = maxi(task.progress, int(e.streak))
+		"coins":
+			task.progress = sim.coins
+		"type":
+			if not p.is_empty() and p.type == task.type:
+				task.progress += 1
+		"express":
+			if not p.is_empty() and p.stops == 0:
+				task.progress += 1
+	if task.kind != "clean" and task.progress >= task.goal:
+		_task_done()
+
+
+func _task_done() -> void:
+	task.done = true
+	task.progress = task.goal
+	Save.add_coins(task.reward)
+	hud.bump_coins()
+	Sfx.play("unlock")
+	get_tree().call_group("app", "toast", "ЗАВДАННЯ ВИКОНАНО!", "%s  +%d монет" % [task.text, task.reward])
 
 
 func _check_achievements() -> void:
@@ -437,6 +479,8 @@ func _show_intro() -> void:
 		_row(box, Art.RULE_ICONS.get(sim.rule_id, "star"), "ПРАВИЛО НОЧІ: " + String(rd["name"]).to_upper(), desc, Art.PINK)
 	elif shift == 2:
 		_row(box, "siren", "ВИПАДКОВІ ПОДІЇ", "Від сьогодні вночі трапляються дива. Читай табличку зверху.", Art.PINK)
+	if not task.is_empty():
+		_row(box, "check", "ЗАВДАННЯ НОЧІ: +%d МОНЕТ" % task.reward, task.text, Art.GREEN)
 	_row(box, "heart", "СКАРГИ: %d" % sim.hearts, "Гість, що не дочекався, пише скаргу. Усі серця втрачено — зміну провалено.", Art.RED)
 	var b := Art.button("ПОЧАТИ ЗМІНУ", "btn_gold", "play", 8)
 	b.custom_minimum_size.y = 40
@@ -502,6 +546,8 @@ func _show_results() -> void:
 	if ok and sim.delivered > 0:
 		stars = 3 - mini(sim.complaints, 2)
 	# records and progress
+	if not task.is_empty() and task.kind == "clean" and not task.done and ok and sim.complaints == 0 and sim.delivered >= 8:
+		_task_done()
 	var new_records := []
 	if Save.best("best_coins", sim.coins):
 		new_records.append("монети за зміну")
@@ -550,6 +596,9 @@ func _show_results() -> void:
 	_row(box, "heart_broken", "СКАРГИ: %d / %d" % [sim.complaints, sim.hearts], "", Art.RED)
 	if not new_records.is_empty():
 		_row(box, "trophy", "НОВИЙ РЕКОРД!", _cap(", ".join(new_records)), Art.GOLD)
+	if not task.is_empty():
+		_row(box, "check" if task.done else "cross", ("ЗАВДАННЯ ВИКОНАНО: +%d" % task.reward) if task.done else "ЗАВДАННЯ НЕ ВИКОНАНО",
+			task.text, Art.GREEN if task.done else Art.DIM)
 	if unlocked_floor > 0:
 		_row(box, "up", "НАСТУПНОЇ НОЧІ: %d-Й ПОВЕРХ" % unlocked_floor, Defs.FLOOR_NAMES[unlocked_floor], Art.GREEN)
 	var hb := HBoxContainer.new()

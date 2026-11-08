@@ -2,7 +2,7 @@ class_name Defs
 extends RefCounted
 ## Static game data: layout, passenger types, upgrades, events, night rules.
 
-const VERSION := "0.2"
+const VERSION := "0.3"
 const MAX_FLOORS := 13
 const START_FLOORS := 5
 
@@ -241,3 +241,48 @@ const ACHIEVEMENTS := [
 	["treasure", "Скарбошукач", "Збери 10 розсипаних куп монет", "pickups", 10, 150],
 	["style", "Стиляга", "Маєш 3 оздоблення кабіни", "skins_owned", 3, 200],
 ]
+
+
+# Night tasks: one optional goal per shift with a coin reward.
+const TASK_TEXT := {
+	"deliver": "Довези %d гостей",
+	"streak": "Зроби серію з %d доставок",
+	"type": "Довези: %s ×%d",
+	"clean": "Без скарг (і хоча б 8 гостей)",
+	"coins": "Зароби %d монет за зміну",
+	"express": "%d доставок без проміжних зупинок",
+}
+
+
+static func make_task(shift: int, floors: int, rng: RandomNumberGenerator) -> Dictionary:
+	var kinds := ["deliver", "streak", "coins", "type", "express"]
+	if shift >= 2:
+		kinds.append("clean")
+	var kind: String = kinds[rng.randi_range(0, kinds.size() - 1)]
+	var goal := 0
+	var type_id := ""
+	match kind:
+		"deliver":
+			goal = mini(12 + 3 * (shift - 1), 45)
+		"streak":
+			goal = mini(5 + shift, 20)
+		"coins":
+			goal = mini(100 + 60 * (shift - 1), 1100)
+		"express":
+			goal = mini(4 + shift / 2, 12)
+		"clean":
+			goal = 1
+		"type":
+			var pool := []
+			for t in TYPE_ORDER:
+				if t != "guest" and float(TYPES[t]["weight"]) > 0.0 and type_unlocked(t, floors):
+					pool.append(t)
+			type_id = pool[rng.randi_range(0, pool.size() - 1)]
+			goal = 4 if ["business", "granny", "kid", "cat"].has(type_id) else 2
+	var text := String(TASK_TEXT[kind])
+	if kind == "type":
+		text = text % [String(TYPES[type_id]["name"]), goal]
+	elif kind != "clean":
+		text = text % goal
+	return {"kind": kind, "goal": goal, "type": type_id, "progress": 0, "done": false,
+		"reward": 40 + 15 * shift, "text": text}

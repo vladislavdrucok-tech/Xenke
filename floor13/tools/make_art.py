@@ -53,6 +53,9 @@ def main():
     save(splash, 'splash.png')
     icon = art_ui.make_app_icon(FONT)
     icon.save(os.path.join(HERE, '..', 'icon.png'))
+    fg, bg = art_ui.make_adaptive_icon(FONT)
+    save(fg, 'icon_fg.png')
+    save(bg, 'icon_bg.png')
     print('sprites written to', os.path.normpath(OUT))
 
 

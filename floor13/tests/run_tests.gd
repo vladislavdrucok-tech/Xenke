@@ -16,6 +16,7 @@ func _init() -> void:
 	test_routes_valid()
 	test_events_safe()
 	test_grumpy_rider_self_presses()
+	test_tasks()
 	if args.has("--campaign") or args.has("--all"):
 		campaign(int(_arg(args, "--shifts", "16")), int(_arg(args, "--seed", "7")))
 	print("TESTS: ", "OK" if failures == 0 else "%d FAILED" % failures)
@@ -197,6 +198,21 @@ func test_grumpy_rider_self_presses() -> void:
 	check(s.riders().size() == 1, "boarded")
 	run(s, 60.0)
 	check(s.delivered == 1, "grumpy rider pressed own floor and was delivered")
+
+
+func test_tasks() -> void:
+	var r := RandomNumberGenerator.new()
+	r.seed = 3
+	var kinds := {}
+	for shift in range(1, 20):
+		for i in 20:
+			var t := Defs.make_task(shift, Defs.floors_for_shift(shift), r)
+			kinds[t.kind] = true
+			check(t.goal > 0 and t.reward > 0, "task goal/reward positive")
+			check(String(t.text).find("%") == -1, "task text formatted: " + String(t.text))
+			if t.kind == "type":
+				check(Defs.type_unlocked(t.type, Defs.floors_for_shift(shift)), "task type unlocked")
+	check(kinds.size() == 6, "all task kinds appear (%d)" % kinds.size())
 
 
 # ------------------------------------------------------------------ bot & campaign

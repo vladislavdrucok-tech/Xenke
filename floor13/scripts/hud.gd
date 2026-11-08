@@ -13,6 +13,7 @@ var heart_shake := 0.0
 var t := 0.0
 var show_pause := true
 var highlight := ""
+var task := {}
 
 
 func _ready() -> void:
@@ -91,8 +92,29 @@ func _draw() -> void:
 		draw_string(font, Vector2(right - sw, 30), st, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color("ff9a3a"))
 	if show_pause:
 		Art.draw_icon(self, "pause", Vector2(size.x - 30, 10))
+	_draw_task()
 	_draw_banner()
 	lw = lw
+
+
+func _task_h() -> float:
+	return 0.0 if task.is_empty() else 21.0
+
+
+func _draw_task() -> void:
+	if task.is_empty():
+		return
+	var font := Art.body()
+	var prog := "" if task.kind == "clean" else "  %d/%d" % [mini(task.progress, task.goal), task.goal]
+	var text: String = String(task.text) + prog
+	if task.done:
+		text = "Виконано: " + String(task.text)
+	var w := minf(ceilf(font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x) + 24.0, size.x - 8.0)
+	var r := Rect2(4, H + 1, w, 19)
+	draw_rect(r, Color(0.06, 0.04, 0.12, 0.9))
+	draw_rect(Rect2(r.position.x, r.end.y - 1, r.size.x, 1), Art.GREEN if task.done else Color("3a2e58"))
+	Art.draw_icon(self, "check", r.position + Vector2(3, 1), Color.WHITE if task.done else Color(1, 1, 1, 0.6), 16)
+	draw_string(font, r.position + Vector2(21, 14), text, HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 24.0, 16, Art.GREEN if task.done else Color("d8d0f0"))
 
 
 func _draw_banner() -> void:
@@ -100,7 +122,7 @@ func _draw_banner() -> void:
 		return
 	var e: Dictionary = Defs.EVENTS[sim.ev_id]
 	var good: bool = e["good"]
-	var r := Rect2(6, H + 4, size.x - 12, 36)
+	var r := Rect2(6, H + 4 + _task_h(), size.x - 12, 36)
 	var appear := clampf(sim.ev_t / 0.3, 0.0, 1.0)
 	r.position.y -= (1.0 - appear) * 20.0
 	draw_style_box(Art.style("banner_good" if good else "banner"), r)

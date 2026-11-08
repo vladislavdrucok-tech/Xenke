@@ -187,3 +187,25 @@ static func patience_color(frac: float) -> Color:
 	if frac > 0.3:
 		return YELLOW
 	return RED
+
+
+## Safe-area insets (camera cutouts, gesture bar) in viewport pixels: [top, bottom].
+static func safe_insets() -> Vector2:
+	var fake := OS.get_environment("F13_INSETS")   # dev: "top,bottom" to preview a phone with a cutout
+	if fake != "":
+		var parts := fake.split(",")
+		return Vector2(float(parts[0]), float(parts[1]) if parts.size() > 1 else 0.0)
+	if not OS.has_feature("mobile"):
+		return Vector2.ZERO
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return Vector2.ZERO
+	var ws := Vector2(DisplayServer.window_get_size())
+	var sa := DisplayServer.get_display_safe_area()
+	var vs := tree.root.get_visible_rect().size
+	if ws.y <= 0.0 or sa.size.y <= 0:
+		return Vector2.ZERO
+	var k := vs.y / ws.y
+	var top := maxf(0.0, float(sa.position.y)) * k
+	var bottom := maxf(0.0, ws.y - float(sa.position.y + sa.size.y)) * k
+	return Vector2(ceilf(minf(top, 60.0)), ceilf(minf(bottom, 60.0)))

@@ -2,7 +2,7 @@ class_name Defs
 extends RefCounted
 ## Static game data: layout, passenger types, upgrades, events, night rules.
 
-const VERSION := "0.3"
+const VERSION := "0.4"
 const MAX_FLOORS := 13
 const START_FLOORS := 5
 

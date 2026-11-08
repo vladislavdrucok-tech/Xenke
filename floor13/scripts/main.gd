@@ -133,7 +133,7 @@ func _next_toast() -> void:
 	Sfx.play("unlock")
 	Sfx.vibe(40)
 	var tw := pc.create_tween()
-	tw.tween_property(pc, "position:y", 42.0, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(pc, "position:y", 42.0 + Art.safe_insets().x, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_interval(2.4)
 	tw.tween_property(pc, "position:y", -70.0, 0.25)
 	tw.tween_callback(func():

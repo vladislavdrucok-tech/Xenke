@@ -21,6 +21,9 @@ func _ready() -> void:
 	root.offset_right = -8
 	root.offset_top = 8
 	root.offset_bottom = -8
+	var ins := Art.safe_insets()
+	root.offset_top += ins.x
+	root.offset_bottom -= ins.y
 	root.add_theme_constant_override("separation", 6)
 	add_child(root)
 	var head := HBoxContainer.new()

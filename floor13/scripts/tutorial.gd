@@ -46,8 +46,9 @@ func _layout() -> void:
 	var w := minf(game.size.x - 16.0, 344.0)
 	box.custom_minimum_size = Vector2(w, 0)
 	box.size = Vector2(w, 0)
-	box.position = Vector2((game.size.x - w) / 2.0, Hud.H + 8)
-	_skip.position = Vector2(game.size.x - _skip.size.x - 8, game.size.y - FloorPanel.panel_height() - 34)
+	var ins := Art.safe_insets()
+	box.position = Vector2((game.size.x - w) / 2.0, ins.x + Hud.H + 8)
+	_skip.position = Vector2(game.size.x - _skip.size.x - 8, game.size.y - FloorPanel.panel_height() - ins.y - 34)
 
 
 func _exit_tree() -> void:

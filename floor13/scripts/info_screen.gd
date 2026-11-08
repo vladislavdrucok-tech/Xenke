@@ -22,6 +22,9 @@ func _ready() -> void:
 	root.offset_right = -10
 	root.offset_top = 10
 	root.offset_bottom = -10
+	var ins := Art.safe_insets()
+	root.offset_top += ins.x
+	root.offset_bottom -= ins.y
 	root.add_theme_constant_override("separation", 8)
 	add_child(root)
 	root.add_child(Art.title_label("РЕКОРДИ" if mode == "records" else "НАЛАШТУВАННЯ", 16, Art.GOLD))

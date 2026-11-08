@@ -47,6 +47,19 @@ func _ready() -> void:
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(overlay)
+	_apply_insets()
+	get_viewport().size_changed.connect(_apply_insets)
+
+
+func _apply_insets() -> void:
+	var ins := Art.safe_insets()
+	var ph := FloorPanel.panel_height()
+	hud.offset_top = ins.x
+	hud.offset_bottom = ins.x + Hud.H
+	world.offset_top = ins.x + Hud.H
+	world.offset_bottom = -(ph + ins.y)
+	panel.offset_top = -(ph + ins.y)
+	panel.offset_bottom = -ins.y
 
 
 # ------------------------------------------------------------------ shift lifecycle
@@ -346,7 +359,7 @@ func _check_achievements() -> void:
 ## Coins fly from a point of the hotel (building coordinates) to the HUD counter.
 func _fly_coins(world_pos: Vector2, n: int) -> void:
 	var start := world.position + Vector2(world.bx() + world_pos.x, world.sy(world_pos.y))
-	var target := Vector2(size.x - 44.0 - 46.0, 8.0)
+	var target := Vector2(size.x - 44.0 - 46.0, 8.0 + hud.offset_top)
 	for i in n:
 		var c := TextureRect.new()
 		c.texture = Art.icon_texture("coin")

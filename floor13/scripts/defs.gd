@@ -2,7 +2,7 @@ class_name Defs
 extends RefCounted
 ## Static game data: layout, passenger types, upgrades, events, night rules.
 
-const VERSION := "0.1"
+const VERSION := "0.2"
 const MAX_FLOORS := 13
 const START_FLOORS := 5
 
@@ -188,3 +188,56 @@ static func clock_text(frac: float) -> String:
 	var h := (minutes / 60) % 24
 	var m := minutes % 60
 	return "%02d:%02d" % [h, m]
+
+
+# Cabin decorations: cosmetic only, a long-term use for coins.
+const SKINS := {
+	"classic": {"name": "Класика", "cost": 0, "floors": 0, "gate": ["d8a040", "8a5a22", "ffe08a"]},
+	"neon": {"name": "Неон", "cost": 1500, "floors": 0, "gate": ["ff6ad5", "6a1a8a", "6af0ff"]},
+	"mint": {"name": "Ретро-м'ята", "cost": 2500, "floors": 0, "gate": ["c8d4e0", "6a7888", "ffffff"]},
+	"gold": {"name": "Золото", "cost": 4000, "floors": 0, "gate": ["f2c14e", "a87a1a", "fff0a0"]},
+	"haunted": {"name": "Привидна", "cost": 6000, "floors": 13, "gate": ["a8b8a8", "3a4a42", "d8f0d8"]},
+}
+const SKIN_ORDER := ["classic", "neon", "mint", "gold", "haunted"]
+
+# What passengers say (short, shown in a speech bubble). Keys: hello, thanks, angry.
+const LINES := {
+	"guest": {"hello": ["Який готель!", "Де тут басейн?", "Я у відпустці!"], "thanks": ["Дякую!", "Супер ліфт!"], "angry": ["Жахливий сервіс!"]},
+	"business": {"hello": ["Час — гроші!", "Швидше, прошу!", "У мене нарада!"], "thanks": ["Тримай чайові", "Вчасно!"], "angry": ["Я спізнююсь!", "Пишу скаргу!"]},
+	"granny": {"hello": ["Добрий вечір, синку", "Не поспішай...", "Ох, ці ліфти..."], "thanks": ["Ось тобі цукерка", "Дай Боже здоров'я"], "angry": ["Не діждуся..."]},
+	"kid": {"hello": ["А можна кнопку?", "Ліфт! Ура!"], "thanks": ["Ще раз!"], "angry": ["Мамо-о-о!"], "press": ["Хі-хі!", "Я натиснув!", "Ой..."]},
+	"cat": {"hello": ["Мяу?", "Мррр"], "thanks": ["Мур-мур"], "angry": ["Ш-ш-ш!"]},
+	"rocker": {"hello": ["Йе-е-е!", "Рок-н-рол!"], "thanks": ["Ти рок-зірка!"], "angry": ["Скасовую тур!"]},
+	"robot": {"hello": ["БІП. ДОСТАВКА.", "МАРШРУТ ЗАДАНО"], "thanks": ["ДОСТАВЛЕНО"], "angry": ["ПОМИЛКА 404"]},
+	"couple": {"hello": ["Ми одружилися!", "Медовий місяць!"], "thanks": ["Ти найкращий!"], "angry": ["Зіпсував свято!"]},
+	"inspector": {"hello": ["Хм... перевірка", "Записую..."], "thanks": ["Задовільно."], "angry": ["Неприпустимо!"]},
+	"bellhop": {"hello": ["Обережно, валізи!", "Багаж прибув!"], "thanks": ["Дякую, колего"], "angry": ["Валізи важкі!"]},
+	"ghost": {"hello": ["Бу-у-у...", "У-у-у..."], "thanks": ["Дякую-у-у"], "angry": ["БУ!"]},
+}
+
+
+static func line(type_id: String, key: String) -> String:
+	var l: Dictionary = LINES.get(type_id, {})
+	var a: Array = l.get(key, [])
+	if a.is_empty():
+		return ""
+	return String(a[randi() % a.size()])
+
+
+# Achievements: [id, name, description, record key, goal, coin reward]
+const ACHIEVEMENTS := [
+	["first", "Перша зміна", "Заверши першу нічну зміну", "best_shift", 1, 50],
+	["veteran", "Нічний ветеран", "Заверши 5 змін", "best_shift", 5, 150],
+	["floor13", "Тринадцятий", "Відкрий 13-й поверх", "best_shift", 8, 300],
+	["iron", "Залізні нерви", "Заверши 15-ту зміну", "best_shift", 15, 1000],
+	["guests100", "Сотня гостей", "Довези 100 гостей", "total_delivered", 100, 100],
+	["guests1000", "Тисяча гостей", "Довези 1000 гостей", "total_delivered", 1000, 500],
+	["streak15", "У ритмі", "Серія з 15 доставок", "best_streak", 15, 150],
+	["streak40", "Ліфт-віртуоз", "Серія з 40 доставок", "best_streak", 40, 400],
+	["perfect", "Бездоганно", "3 зміни без жодної скарги", "perfect_shifts", 3, 200],
+	["ghosts", "Друг привидів", "Довези 25 привидів", "ghosts", 25, 300],
+	["robots", "Пунктуальність", "Довези 10 роботів без зупинок", "robots_direct", 10, 200],
+	["inspect", "Перевірку пройдено", "Вчасно довези 5 інспекторів", "inspectors", 5, 300],
+	["treasure", "Скарбошукач", "Збери 10 розсипаних куп монет", "pickups", 10, 150],
+	["style", "Стиляга", "Маєш 3 оздоблення кабіни", "skins_owned", 3, 200],
+]

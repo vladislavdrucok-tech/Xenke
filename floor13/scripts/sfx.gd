@@ -83,7 +83,7 @@ func music(n: String) -> void:
 
 
 func _music_db() -> float:
-	return -9.0 if Save.setting("music") else -80.0
+	return -12.0 if Save.setting("music") else -80.0
 
 
 func _apply_music_volume() -> void:

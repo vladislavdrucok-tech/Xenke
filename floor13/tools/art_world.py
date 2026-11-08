@@ -533,27 +533,53 @@ def make_shaft_tile():
     return c.img
 
 
-def make_cabin():
+CABIN_SKINS = {
+    # wall, wall panel, wall top, light, rail, rail dark, floor, floor edge, frame, frame dark, frame light
+    'classic': ('6b3f2a', '7d4c33', '3a2418', 'fff0c0', 'f2c14e', 'b8862a', '2a1a14', '4a3024', 'c9963b', '8a5a22', 'f2c66d'),
+    'neon': ('2a1640', '341c50', '160a26', 'ff9ae6', '6af0ff', '2a8aa0', '120a1e', 'ff4fa0', 'b03ac8', '5a1a70', 'ff6ad5'),
+    'mint': ('5ab89a', '6cc8aa', '2a6a5a', 'f0fff8', 'e8eef4', '8a98a8', '2a3a38', 'd8e0e8', 'b8c4d0', '6a7888', 'f4f8fc'),
+    'gold': ('d8b060', 'e8c470', '8a6420', 'fff8e0', 'fff4d0', 'c8a040', 'f0ece4', 'c8a040', 'f2c14e', 'a87a1a', 'fff0a0'),
+    'haunted': ('2a3434', '323e3e', '141c1c', 'a8ffc8', 'd8d0b8', '8a8470', '1a1e1e', '4a5a50', '7a8a7a', '3a4a42', 'c8d8c0'),
+}
+
+
+def make_cabin(skin='classic'):
     """Two images: back wall (behind passengers) and front frame (over the gate)."""
+    pal = [C(x) for x in CABIN_SKINS[skin]]
+    wall, panel, top, light, rail, rail_d, floor, floor_e, brass, brass_d, brass_l = pal
     w, h = 88, 46
     back = Canvas(w, h)
-    wood, wood2 = C('6b3f2a'), C('7d4c33')
-    back.rect(2, 4, w - 4, h - 6, wood)
+    back.rect(2, 4, w - 4, h - 6, wall)
     for x in range(4, w - 4, 10):
-        back.rect(x, 8, 8, 28, wood2)
-        back.rect(x, 8, 8, 1, shade(wood2, 1.2))
-        back.rect(x, 35, 8, 1, shade(wood, 0.8))
-    back.rect(2, 4, w - 4, 3, C('3a2418'))
-    back.rect(w // 2 - 8, 6, 16, 2, C('fff0c0'))                      # ceiling light
+        back.rect(x, 8, 8, 28, panel)
+        back.rect(x, 8, 8, 1, shade(panel, 1.2))
+        back.rect(x, 35, 8, 1, shade(wall, 0.8))
+    if skin == 'neon':
+        for y, col in ((12, C('ff4fa0')), (31, C('6af0ff'))):
+            back.rect(4, y, w - 8, 1, col)
+            back.rect(4, y + 1, w - 8, 1, shade(col, 0.5))
+    if skin == 'gold':
+        for x in range(9, w - 4, 10):
+            back.px(x, 20, WHITE)
+    if skin == 'haunted':
+        for (x, y) in ((4, 8), (82, 8)):
+            for r in range(1, 7):
+                back.px(x + (r if x < 40 else -r), y, C('c8c8c8', 140))
+                back.px(x, y + r, C('c8c8c8', 140))
+                back.px(x + (r // 2 if x < 40 else -r // 2), y + r // 2, C('c8c8c8', 140))
+        back.rect(40, 14, 8, 10, C('1a2222'))
+        back.px(42, 18, C('ff4a4a'))
+        back.px(45, 18, C('ff4a4a'))
+    back.rect(2, 4, w - 4, 3, top)
+    back.rect(w // 2 - 8, 6, 16, 2, light)                             # ceiling light
     for r in range(10):
-        back.rect(w // 2 - 8 - r, 8 + r, 16 + r * 2, 1, C('fff0c0', max(0, 40 - r * 4)))
-    back.rect(4, 26, w - 8, 2, GOLD)                                   # handrail
-    back.rect(4, 27, w - 8, 1, GOLD_D)
-    back.rect(2, h - 4, w - 4, 2, C('2a1a14'))                         # floor
-    back.rect(2, h - 4, w - 4, 1, C('4a3024'))
+        back.rect(w // 2 - 8 - r, 8 + r, 16 + r * 2, 1, (light[0], light[1], light[2], max(0, 40 - r * 4)))
+    back.rect(4, 26, w - 8, 2, rail)                                   # handrail
+    back.rect(4, 27, w - 8, 1, rail_d)
+    back.rect(2, h - 4, w - 4, 2, floor)                               # floor
+    back.rect(2, h - 4, w - 4, 1, floor_e)
 
     front = Canvas(w, h)
-    brass, brass_d, brass_l = C('c9963b'), C('8a5a22'), C('f2c66d')
     front.rect(0, 0, w, 6, brass)                                       # header
     front.rect(0, 0, w, 1, brass_l)
     front.rect(0, 5, w, 1, brass_d)

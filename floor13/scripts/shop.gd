@@ -64,6 +64,10 @@ func _refresh() -> void:
 		c.queue_free()
 	for id in Defs.UPGRADE_ORDER:
 		list.add_child(_card(id))
+	var t := Art.title_label("ОЗДОБЛЕННЯ КАБІНИ", 8, Art.CYAN)
+	list.add_child(t)
+	for id in Defs.SKIN_ORDER:
+		list.add_child(_skin_card(id))
 
 
 func _card(id: String) -> Control:
@@ -114,6 +118,60 @@ func _card(id: String) -> Control:
 		b.disabled = not can
 		b.pressed.connect(func(): _buy(id))
 	b.custom_minimum_size = Vector2(84, 36)
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hb.add_child(b)
+	return pc
+
+
+func _skin_card(id: String) -> Control:
+	var d: Dictionary = Defs.SKINS[id]
+	var pc := PanelContainer.new()
+	pc.add_theme_stylebox_override("panel", Art.style("panel_light", 8))
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 8)
+	pc.add_child(hb)
+	var pv := Control.new()
+	pv.custom_minimum_size = Vector2(66, 35)
+	var suffix := "" if id == "classic" else "_" + id
+	for part in ["cabin_back", "cabin_front"]:
+		var tr := TextureRect.new()
+		tr.texture = Art.tex(part + suffix)
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_SCALE
+		tr.size = Vector2(66, 35)
+		pv.add_child(tr)
+	hb.add_child(pv)
+	var name := Art.title_label(String(d["name"]).to_upper(), 8, Art.GOLD)
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hb.add_child(name)
+	var b: Button
+	var locked := Defs.floors_for_shift(Save.shift()) < int(d["floors"])
+	if Save.skin() == id:
+		b = Art.button("ОБРАНО", "btn_grey", "check")
+		b.disabled = true
+	elif Save.owns_skin(id):
+		b = Art.button("ОБРАТИ", "btn")
+		b.pressed.connect(func():
+			Save.wear_skin(id)
+			Sfx.play("buy")
+			_refresh())
+	elif locked:
+		b = Art.button("13-Й ПОВ.", "btn_grey", "lock")
+		b.disabled = true
+	else:
+		var cost := int(d["cost"])
+		var can := Save.coins() >= cost
+		b = Art.button(str(cost), "btn_green" if can else "btn_grey", "coin")
+		b.disabled = not can
+		b.pressed.connect(func():
+			if Save.buy_skin(id):
+				Sfx.play("upgrade")
+				Sfx.vibe(30)
+				for a in Save.check_achievements():
+					get_tree().call_group("app", "toast", "ДОСЯГНЕННЯ: " + String(a[1]).to_upper(), "+%d монет" % int(a[5]))
+				_refresh())
+	b.custom_minimum_size = Vector2(96, 34)
 	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hb.add_child(b)
 	return pc

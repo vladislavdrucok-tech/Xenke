@@ -35,6 +35,9 @@ var unlock_anim := 0.0
 var highlight_floor := 0
 var _cam_ready := false
 var _off := Vector2.ZERO
+var skin := "classic"
+var gate_cols: Array = [BRASS, BRASS_D, BRASS_L]
+var speech: Array = []
 
 
 func _ready() -> void:
@@ -51,7 +54,30 @@ func set_sim(s: ShiftSim) -> void:
 	vis.clear()
 	fx.clear()
 	doors.clear()
+	speech.clear()
+	set_skin(Save.skin())
 	_cam_ready = false
+
+
+func set_skin(id: String) -> void:
+	skin = id if Defs.SKINS.has(id) else "classic"
+	var g: Array = Defs.SKINS[skin]["gate"]
+	gate_cols = [Color(g[0]), Color(g[1]), Color(g[2])]
+
+
+## A short speech bubble over a passenger (follows them; at most 3 at a time).
+func say(pid: int, text: String, life := 2.4) -> void:
+	if text == "":
+		return
+	for s in speech:
+		if s.pid == pid:
+			s.text = text
+			s.t = 0.0
+			s.life = life
+			return
+	if speech.size() >= 3:
+		speech.pop_front()
+	speech.append({"pid": pid, "text": text, "t": 0.0, "life": life})
 
 
 # ------------------------------------------------------------------ coordinates
@@ -167,6 +193,9 @@ func _process(delta: float) -> void:
 			taxi_x = -999.0
 	_update_vis(delta)
 	_update_fx(delta)
+	for sp in speech:
+		sp.t += delta
+	speech = speech.filter(func(sp): return sp.t < sp.life and vis.has(sp.pid))
 	for d in doors:
 		d[2] -= delta
 	doors = doors.filter(func(d): return d[2] > 0.0)
@@ -325,6 +354,7 @@ func _draw() -> void:
 	if dark > 0.0:
 		_draw_blackout(ox)
 	_draw_bubbles(ox)
+	_draw_speech(ox)
 	_draw_fx(ox)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
@@ -460,14 +490,15 @@ func _draw_cabin(ox: float) -> void:
 	# warm light spilling around the cabin
 	var glow := Color(1.0, 0.85, 0.5, 0.06) if sim.ev_id != "blackout" else Color(1.0, 0.2, 0.2, 0.08)
 	draw_rect(Rect2(cx - 3, top - 2, 94, 50), glow)
-	draw_texture(Art.tex("cabin_back"), Vector2(cx, top))
+	var sfx := "" if skin == "classic" else "_" + skin
+	draw_texture(Art.tex("cabin_back" + sfx), Vector2(cx, top))
 	# riders
 	var feet := top + 43
 	for p in sim.riders():
 		_draw_person(p, ox, feet)
 	# boarding passengers walk in behind the gate too
 	_draw_gate(cx + 3, top + 6, 82, 38, sim.door)
-	draw_texture(Art.tex("cabin_front"), Vector2(cx, top))
+	draw_texture(Art.tex("cabin_front" + sfx), Vector2(cx, top))
 	var num := str(sim.lift_floor())
 	var w := Art.digits_width(num)
 	var col := AMBER if sim.ev_id != "blackout" else Art.RED
@@ -499,21 +530,21 @@ func _draw_gate(x0: float, y0: float, w: float, h: float, door: float) -> void:
 		var a1 := pts[n] as float
 		var l := minf(a0, a1)
 		var r := maxf(a0, a1)
-		draw_rect(Rect2(l, y0, r - l + 1, 1), BRASS)
-		draw_rect(Rect2(l, y0 + h - 1, r - l + 1, 1), BRASS_D)
+		draw_rect(Rect2(l, y0, r - l + 1, 1), gate_cols[0])
+		draw_rect(Rect2(l, y0 + h - 1, r - l + 1, 1), gate_cols[1])
 		var sp := hw / n
 		if sp > 2.5:
 			for i in n:
 				var xa: float = pts[i]
 				var xb: float = pts[i + 1]
 				var ym := y0 + h / 2.0
-				draw_line(Vector2(xa, y0 + 2), Vector2(xb, ym), BRASS_D)
-				draw_line(Vector2(xb, y0 + 2), Vector2(xa, ym), BRASS_D)
-				draw_line(Vector2(xa, ym), Vector2(xb, y0 + h - 2), BRASS_D)
-				draw_line(Vector2(xb, ym), Vector2(xa, y0 + h - 2), BRASS_D)
+				draw_line(Vector2(xa, y0 + 2), Vector2(xb, ym), gate_cols[1])
+				draw_line(Vector2(xb, y0 + 2), Vector2(xa, ym), gate_cols[1])
+				draw_line(Vector2(xa, ym), Vector2(xb, y0 + h - 2), gate_cols[1])
+				draw_line(Vector2(xb, ym), Vector2(xa, y0 + h - 2), gate_cols[1])
 		for i in n + 1:
 			var px: float = pts[i]
-			draw_rect(Rect2(px, y0, 1, h), BRASS if i % 2 == 0 else BRASS_L)
+			draw_rect(Rect2(px, y0, 1, h), gate_cols[0] if i % 2 == 0 else gate_cols[2])
 
 
 func _draw_floor_people(ox: float) -> void:
@@ -638,8 +669,6 @@ func _draw_bubbles(ox: float) -> void:
 		var bxp := roundf(cx - bw / 2.0)
 		draw_rect(Rect2(bxp - 1, bottom + 1, bw + 2, 3), Color(Art.INK, 0.8))
 		draw_rect(Rect2(bxp, bottom + 2, roundf(bw * clampf(frac, 0.0, 1.0)), 1), Art.patience_color(frac))
-		if p.type == "robot":
-			Art.draw_icon(self, "bolt", Vector2(cx + 6, bottom - 16), Color.WHITE, 8)
 	# riders: tags inside the cabin above their heads
 	var top := sy(feet_y(sim.pos) - 43.0)
 	var i := 0
@@ -661,6 +690,43 @@ func _draw_bubbles(ox: float) -> void:
 		i += 1
 
 
+func _draw_speech(ox: float) -> void:
+	var font := Art.body()
+	var taken: Array = []
+	for sp in speech:
+		var p := {}
+		for q in sim.passengers:
+			if q.id == sp.pid:
+				p = q
+				break
+		if p.is_empty():
+			continue
+		var v: Dictionary = vis.get(p.id, {"x": p.x})
+		var in_cab: bool = p.state == ShiftSim.P_RIDING or p.state == ShiftSim.P_BOARDING or p.state == ShiftSim.P_EXITING
+		var feet := sy(feet_y(sim.pos) if in_cab else feet_y(p.floor))
+		var bottom := feet - (54.0 if in_cab else 46.0)
+		if p.state == ShiftSim.P_WALK_OUT or p.state == ShiftSim.P_LEAVING:
+			bottom = feet - 32.0
+		var text: String = sp.text
+		var w := ceilf(font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x) + 6.0
+		var cx: float = ox + v.x
+		var x := roundf(clampf(cx - w / 2.0, ox + 2.0, ox + Defs.BUILDING_W - w - 2.0))
+		var y := roundf(bottom - 10.0)
+		var guard := 0
+		while guard < 4 and taken.any(func(r): return r.intersects(Rect2(x - 1, y - 1, w + 2, 12))):
+			y -= 12.0
+			guard += 1
+		taken.append(Rect2(x - 1, y - 1, w + 2, 12))
+		var a := clampf((sp.life - sp.t) / 0.3, 0.0, 1.0) * clampf(sp.t / 0.12, 0.0, 1.0)
+		draw_rect(Rect2(x, y - 1, w, 11), Color(Art.INK, a))
+		draw_rect(Rect2(x - 1, y, w + 2, 9), Color(Art.INK, a))
+		draw_rect(Rect2(x, y, w, 9), Color(1, 1, 1, a))
+		var tx := roundf(clampf(cx, x + 3.0, x + w - 4.0))
+		draw_rect(Rect2(tx - 1, y + 9, 3, 2), Color(Art.INK, a))
+		draw_rect(Rect2(tx, y + 9, 1, 1), Color(1, 1, 1, a))
+		draw_string(font, Vector2(x + 3, y + 7), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(Art.INK, a))
+
+
 func _draw_fx(ox: float) -> void:
 	var font := Art.title()
 	for e in fx:
@@ -670,7 +736,7 @@ func _draw_fx(ox: float) -> void:
 			"text":
 				var s: String = e.text
 				var w := font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
-				var pos := Vector2(roundf(p.x - w / 2.0), p.y)
+				var pos := Vector2(roundf(clampf(p.x - w / 2.0, ox + 4.0, ox + Defs.BUILDING_W - w - 4.0)), p.y)
 				draw_string_outline(font, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, 2, Color(Art.INK, k))
 				draw_string(font, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(e.col, minf(1.0, k * 2.0)))
 			"coin":

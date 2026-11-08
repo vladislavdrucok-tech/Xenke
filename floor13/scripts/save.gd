@@ -26,11 +26,15 @@ func defaults() -> Dictionary:
 		"upgrades": up,
 		"tutorial_done": false,
 		"seen_types": [],
+		"skin": "classic",
+		"skins": ["classic"],
 		"last_rule": "",
 		"records": {
 			"best_shift": 0, "best_coins": 0, "best_streak": 0, "total_delivered": 0,
-			"total_coins": 0, "shifts_done": 0, "perfect_shifts": 0,
+			"total_coins": 0, "shifts_done": 0, "perfect_shifts": 0, "ghosts": 0, "robots_direct": 0,
+			"inspectors": 0, "pickups": 0,
 		},
+		"achievements": [],
 		"settings": {"sfx": true, "music": true, "vibe": true},
 	}
 
@@ -75,6 +79,18 @@ func _validate() -> void:
 		if Defs.TYPES.has(String(t)) and not seen.has(String(t)):
 			seen.append(String(t))
 	data["seen_types"] = seen
+	var owned := ["classic"]
+	for k in data["skins"]:
+		if Defs.SKINS.has(String(k)) and not owned.has(String(k)):
+			owned.append(String(k))
+	data["skins"] = owned
+	var ach := []
+	for a in data["achievements"]:
+		if not ach.has(String(a)):
+			ach.append(String(a))
+	data["achievements"] = ach
+	if not owned.has(String(data["skin"])):
+		data["skin"] = "classic"
 
 
 func _process(delta: float) -> void:
@@ -140,6 +156,31 @@ func buy(id: String) -> bool:
 	return true
 
 
+func skin() -> String:
+	return String(data["skin"])
+
+
+func owns_skin(id: String) -> bool:
+	return (data["skins"] as Array).has(id)
+
+
+func buy_skin(id: String) -> bool:
+	var cost := int(Defs.SKINS[id]["cost"])
+	if owns_skin(id) or cost > coins():
+		return false
+	data["coins"] = coins() - cost
+	(data["skins"] as Array).append(id)
+	data["skin"] = id
+	flush()
+	return true
+
+
+func wear_skin(id: String) -> void:
+	if owns_skin(id):
+		data["skin"] = id
+		mark()
+
+
 func setting(key: String) -> bool:
 	return bool(data["settings"].get(key, true))
 
@@ -178,6 +219,31 @@ func see_type(t: String) -> bool:
 	seen.append(t)
 	mark()
 	return true
+
+
+func progress(key: String) -> int:
+	if key == "skins_owned":
+		return (data["skins"] as Array).size()
+	return record(key)
+
+
+func has_achievement(id: String) -> bool:
+	return (data["achievements"] as Array).has(id)
+
+
+## Unlocks finished achievements, pays their rewards; returns the new ones.
+func check_achievements() -> Array:
+	var out := []
+	for a in Defs.ACHIEVEMENTS:
+		if has_achievement(a[0]):
+			continue
+		if progress(a[3]) >= int(a[4]):
+			(data["achievements"] as Array).append(a[0])
+			data["coins"] = coins() + int(a[5])
+			out.append(a)
+	if not out.is_empty():
+		mark()
+	return out
 
 
 func reset_progress() -> void:

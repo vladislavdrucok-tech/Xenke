@@ -26,9 +26,11 @@ def main():
         floors.alpha_composite(art_world.make_floor(i), (0, (i - 1) * art_world.FH))
     save(floors, 'floors.png')
     save(art_world.make_shaft_tile(), 'shaft.png')
-    back, front = art_world.make_cabin()
-    save(back, 'cabin_back.png')
-    save(front, 'cabin_front.png')
+    for skin in art_world.CABIN_SKINS:
+        back, front = art_world.make_cabin(skin)
+        suffix = '' if skin == 'classic' else '_' + skin
+        save(back, 'cabin_back%s.png' % suffix)
+        save(front, 'cabin_front%s.png' % suffix)
     save(art_world.make_roof(), 'roof.png')
     save(art_world.make_neon(FONT), 'neon.png')
     save(art_world.make_street(), 'street.png')

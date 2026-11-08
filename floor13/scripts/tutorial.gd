@@ -126,6 +126,14 @@ func _next() -> void:
 
 
 func on_event(e: Dictionary) -> void:
+	# a guest who gave up is replaced, so a step can always be finished
+	if e.t == "complaint" or e.t == "vanish":
+		var p := _find_any(e.pid)
+		if not p.is_empty():
+			var np := game.sim.spawn(p.type, p.origin, p.dest, {"patience_mult": 3.0})
+			if step == 1:
+				_guest = np
+			game.world.float_text(Vector2(200, game.world.feet_y(p.origin) - 30), "ЩЕ ГІСТЬ", Art.CYAN)
 	match step:
 		1:
 			if e.t == "board" and not _guest.is_empty() and e.pid == _guest.id:
@@ -138,6 +146,13 @@ func on_event(e: Dictionary) -> void:
 				_delivered += 1
 				if _delivered >= 2:
 					_next()
+
+
+func _find_any(pid: int) -> Dictionary:
+	for p in game.sim.passengers:
+		if p.id == pid:
+			return p
+	return {}
 
 
 func _finish() -> void:

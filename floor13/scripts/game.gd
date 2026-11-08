@@ -21,6 +21,7 @@ var _end_t := 0.0
 var _last_tick := -1
 var _new_floor := false
 var _intro_shown_at := 0
+var _greeted := {}
 
 
 func _ready() -> void:
@@ -100,6 +101,7 @@ func start_shift(s: int, tutorial_mode := false) -> void:
 	_end_t = 0.0
 	_last_tick = -1
 	_new_floor = s > 1 and floors > Defs.floors_for_shift(s - 1) and not tutorial_mode
+	_greeted.clear()
 	_clear_overlay()
 	if tutorial != null:
 		tutorial.queue_free()
@@ -193,6 +195,7 @@ func _on_floor(f: int) -> void:
 	if state != S_PLAY or sim == null or sim.over:
 		return
 	if tutorial != null and not tutorial.allow_press(f):
+		Sfx.play("deny")
 		return
 	var r := sim.press(f)
 	if r != 0:
@@ -221,13 +224,33 @@ func _drain_events() -> void:
 				Sfx.play("door_open", 1.0, -6.0)
 			"closing":
 				Sfx.play("door_close", 1.0, -6.0)
+			"spawn":
+				var p := _find(e.pid)
+				if not p.is_empty():
+					var first := not _greeted.has(p.type)
+					if first or randf() < 0.3:
+						_greeted[p.type] = true
+						world.say(p.id, Defs.line(p.type, "hello"))
 			"board":
 				var p := _find(e.pid)
 				if not p.is_empty() and randf() < 0.7:
 					Sfx.play("v_" + String(p.type), 1.0, -4.0, 0.08)
 			"deliver":
 				Save.add_coins(e.coins)
-				hud.bump_coins()
+				_fly_coins(world.passenger_pos(e.pid), 1 + mini(int(e.coins) / 12, 4))
+				var dp := _find(e.pid)
+				if not dp.is_empty():
+					if e.good and randf() < 0.35:
+						world.say(dp.id, Defs.line(dp.type, "thanks"), 1.8)
+					if not sim.tutorial:
+						if dp.type == "ghost":
+							Save.add_record("ghosts", 1)
+						elif dp.type == "robot" and dp.stops == 0:
+							Save.add_record("robots_direct", 1)
+						elif dp.type == "inspector" and e.frac >= 0.5 and not dp.grumpy:
+							Save.add_record("inspectors", 1)
+				if not sim.tutorial:
+					_check_achievements()
 				var pitch := 1.0 + minf(float(e.streak), 10.0) * 0.04
 				Sfx.play("coins_big" if e.coins >= 30 else "coin", pitch)
 				Sfx.vibe(10)
@@ -237,18 +260,25 @@ func _drain_events() -> void:
 					Sfx.play("streak", 1.0 + e.streak * 0.02)
 					world.float_text(world.passenger_pos(e.pid) + Vector2(0, -16), "СЕРІЯ %d!" % e.streak, Color("ff9a3a"), 1.6)
 			"complaint":
+				var cp := _find(e.pid)
+				if not cp.is_empty():
+					world.say(cp.id, Defs.line(cp.type, "angry"), 2.0)
 				Sfx.play("complaint")
 				Sfx.play("heart_break", 1.0, -4.0)
 				Sfx.vibe(70)
 				hud.break_heart()
 			"grumpy":
+				world.say(e.pid, "Сам натисну!", 2.0)
 				Sfx.play("complaint", 1.4, -6.0)
 			"kid":
+				world.say(e.pid, Defs.line("kid", "press"), 1.6)
 				Sfx.play("kid")
 				panel.ping(e.floor)
 			"pickup":
 				Save.add_coins(e.coins)
-				hud.bump_coins()
+				_fly_coins(Vector2(160, world.feet_y(e.floor) - 6), 5)
+				Save.add_record("pickups", 1)
+				_check_achievements()
 				Sfx.play("pickup")
 			"vanish":
 				Sfx.play("vanish")
@@ -264,6 +294,31 @@ func _drain_events() -> void:
 			"fail":
 				Sfx.play("fail")
 	sim.out.clear()
+
+
+func _check_achievements() -> void:
+	for a in Save.check_achievements():
+		get_tree().call_group("app", "toast", "ДОСЯГНЕННЯ: " + String(a[1]).to_upper(), "+%d монет" % int(a[5]))
+
+
+## Coins fly from a point of the hotel (building coordinates) to the HUD counter.
+func _fly_coins(world_pos: Vector2, n: int) -> void:
+	var start := world.position + Vector2(world.bx() + world_pos.x, world.sy(world_pos.y))
+	var target := Vector2(size.x - 44.0 - 46.0, 8.0)
+	for i in n:
+		var c := TextureRect.new()
+		c.texture = Art.icon_texture("coin")
+		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		c.position = start + Vector2(randf_range(-6, 6), randf_range(-6, 6))
+		add_child(c)
+		var mid := c.position.lerp(target, 0.4) + Vector2(randf_range(-40, 40), randf_range(-30, 10))
+		var tw := c.create_tween()
+		tw.tween_interval(i * 0.06)
+		tw.tween_property(c, "position", mid, 0.22).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		tw.tween_property(c, "position", target, 0.3).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		tw.tween_callback(func():
+			hud.bump_coins()
+			c.queue_free())
 
 
 static func _cap(s: String) -> String:
@@ -374,10 +429,6 @@ func _show_intro() -> void:
 	for t in Defs.types_new_at(sim.floors):
 		if not (Save.data["seen_types"] as Array).has(t):
 			_portrait_row(box, t)
-	if shift == 1:
-		for t in ["guest", "business", "granny"]:
-			if not (Save.data["seen_types"] as Array).has(t):
-				_portrait_row(box, t)
 	if shift >= 3:
 		var rd: Dictionary = Defs.RULES[sim.rule_id]
 		var desc := String(rd["desc"])
@@ -468,6 +519,7 @@ func _show_results() -> void:
 			Save.data["shift"] = shift + 1
 			if Defs.floors_for_shift(shift + 1) > sim.floors:
 				unlocked_floor = Defs.floors_for_shift(shift + 1)
+	_check_achievements()
 	Save.flush()
 	var box := _card(0.55)
 	_title(box, "ЗМІНУ ЗАВЕРШЕНО!" if ok else "ЗМІНУ ПРОВАЛЕНО", Art.GOLD if ok else Art.RED, 8 if size.x < 380 else 16)

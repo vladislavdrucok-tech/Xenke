@@ -68,6 +68,30 @@ func _records() -> void:
 	_stat("pile", "Усього зароблено монет", str(Save.record("total_coins")))
 	_stat("check", "Успішних змін", str(Save.record("shifts_done")))
 	_stat("star", "Змін без жодної скарги", str(Save.record("perfect_shifts")))
+	box.add_child(Art.title_label("ДОСЯГНЕННЯ  %d / %d" % [(Save.data["achievements"] as Array).size(), Defs.ACHIEVEMENTS.size()], 8, Art.CYAN))
+	for a in Defs.ACHIEVEMENTS:
+		var done := Save.has_achievement(a[0])
+		var pc := PanelContainer.new()
+		pc.add_theme_stylebox_override("panel", Art.style("panel_light", 8))
+		var hb := HBoxContainer.new()
+		hb.add_theme_constant_override("separation", 8)
+		var ic := TextureRect.new()
+		ic.texture = Art.icon_texture("trophy" if done else "lock")
+		ic.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		ic.modulate = Color.WHITE if done else Color(1, 1, 1, 0.5)
+		hb.add_child(ic)
+		var vb := VBoxContainer.new()
+		vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		vb.add_theme_constant_override("separation", 1)
+		vb.add_child(Art.title_label(String(a[1]).to_upper(), 8, Art.GOLD if done else Art.DIM))
+		var d := Art.label(String(a[2]), 16, Art.WHITE if done else Art.DIM)
+		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		vb.add_child(d)
+		hb.add_child(vb)
+		var prog := mini(Save.progress(a[3]), int(a[4]))
+		hb.add_child(Art.title_label("+%d" % int(a[5]) if done else "%d/%d" % [prog, a[4]], 8, Art.GREEN if done else Art.DIM))
+		pc.add_child(hb)
+		box.add_child(pc)
 	box.add_child(Art.title_label("ГОСТІ ГОТЕЛЮ", 8, Art.CYAN))
 	var grid := GridContainer.new()
 	grid.columns = 4

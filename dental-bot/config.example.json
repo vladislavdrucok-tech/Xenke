@@ -1,0 +1,26 @@
+{
+  "seller": {
+    "name": "Ім'я Прізвище",
+    "phone": "+38 (0XX) XXX-XX-XX",
+    "telegram": "@your_username",
+    "email": ""
+  },
+  "offer": {
+    "setupUsd": 1500,
+    "monthlyUsd": 120,
+    "launchHours": 48,
+    "guaranteeDays": 30,
+    "slots": 3,
+    "uahPerUsd": 42
+  },
+  "ai": {
+    "model": "claude-opus-5-5",
+    "effort": "low",
+    "dailyMessageCap": 2000
+  },
+  "limits": {
+    "messagesPerConversation": 60,
+    "messagesPerIpPer10Min": 30,
+    "maxMessageChars": 1000
+  }
+}

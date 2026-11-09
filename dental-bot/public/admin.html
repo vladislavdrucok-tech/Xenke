@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Кабінет AI-адміністратора</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--ink:#14212b;--muted:#5d6c78;--line:#e1e7ec;--accent:#0f7c8a;--ok:#1d8a4e;--warn:#b26a00;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f161c;--card:#172129;--ink:#e6edf2;--muted:#93a3b0;--line:#26333d;--accent:#3fb6c4}}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;padding:14px 20px;background:var(--card);border-bottom:1px solid var(--line)}
+header h1{font-size:17px;margin:0}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;background:var(--line)}
+.badge.ai{background:#d7f1e2;color:#11613a}.badge.local{background:#fde9c8;color:#7a4a00}
+.kpis{display:flex;gap:20px;margin-left:auto;flex-wrap:wrap}.kpis div{font-size:12px;color:var(--muted)}.kpis b{display:block;font-size:18px;color:var(--ink)}
+nav{display:flex;gap:4px;padding:10px 20px 0;flex-wrap:wrap}
+nav button{border:0;background:none;padding:8px 14px;border-radius:8px 8px 0 0;cursor:pointer;color:var(--muted);font-size:14px}
+nav button.on{background:var(--card);color:var(--ink);font-weight:600}
+main{padding:0 20px 40px}
+.panel{background:var(--card);border-radius:0 12px 12px 12px;padding:16px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:720px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600}
+tr.click{cursor:pointer}tr.click:hover td{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+a{color:var(--accent)}
+select,input,textarea{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+button.btn{border:0;border-radius:8px;padding:8px 14px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+button.btn.ghost{background:none;color:var(--accent);border:1px solid var(--line)}
+.muted{color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.card{border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h3{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:8px}
+.swatch{width:14px;height:14px;border-radius:4px;display:inline-block}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.field{display:flex;flex-direction:column;gap:3px;margin:6px 0}.field span{font-size:12px;color:var(--muted)}
+code.embed{display:block;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;word-break:break-all;margin:6px 0}
+details summary{cursor:pointer;color:var(--accent);margin-top:6px}
+.bar{display:flex;align-items:center;gap:10px;margin:6px 0}.bar i{display:block;height:10px;border-radius:5px;background:var(--accent)}
+.bar span{width:240px;flex:none}
+dialog{border:0;border-radius:14px;padding:0;width:min(680px,94vw);max-height:86vh;background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dhead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.dbody{padding:14px 16px;overflow:auto;max-height:72vh;display:flex;flex-direction:column;gap:8px}
+.m{max-width:85%;padding:8px 12px;border-radius:12px;white-space:pre-wrap}
+.m.user{align-self:flex-end;background:var(--accent);color:#fff}.m.assistant{align-self:flex-start;background:var(--bg)}
+.m small{display:block;opacity:.7;font-size:11px;margin-top:2px}
+.warn{color:var(--warn)}.err{color:var(--bad)}.okc{color:var(--ok)}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+@media (max-width:640px){header{padding:12px}.kpis{margin-left:0}main{padding:0 8px 30px}.bar span{width:130px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>AI-адміністратор · кабінет</h1>
+  <span id="mode" class="badge"></span>
+  <div class="kpis">
+    <div><b id="k-conv">–</b>діалогів</div>
+    <div><b id="k-leads">–</b>заявок</div>
+    <div><b id="k-cost">–</b>витрати AI (оцінка)</div>
+  </div>
+</header>
+<nav id="tabs">
+  <button data-tab="leads" class="on">Заявки</button>
+  <button data-tab="convs">Діалоги</button>
+  <button data-tab="clinics">Клініки й демо</button>
+  <button data-tab="new">+ Нове демо</button>
+  <button data-tab="topics">Про що питають</button>
+</nav>
+<main><div class="panel" id="view"></div></main>
+<dialog id="dlg"><div class="dhead"><b id="dlg-title"></b><button class="btn ghost" onclick="dlg.close()">Закрити</button></div><div class="dbody" id="dlg-body"></div></dialog>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const dt = (iso) => iso ? new Date(iso).toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+const phoneFmt = (p) => { const m = /^\+38(0\d{2})(\d{3})(\d{2})(\d{2})$/.exec(p || ''); return m ? `+38 (${m[1]}) ${m[2]}-${m[3]}-${m[4]}` : (p || ''); };
+const STATUS = { new: 'Нова', called: 'Передзвонили', booked: 'Записаний', lost: 'Не вийшло' };
+const CHANNEL = { web: 'сайт', telegram: 'Telegram', form: 'форма', sample: 'приклад' };
+let data = null, tab = 'leads';
+
+async function load() {
+  const r = await fetch('/admin/api/overview');
+  data = await r.json();
+  $('#mode').textContent = data.mode === 'ai' ? `AI · ${data.model}` : 'локальний режим (без ключа API)';
+  $('#mode').className = 'badge ' + data.mode;
+  $('#k-conv').textContent = data.totals.conversations;
+  $('#k-leads').textContent = data.totals.leads;
+  $('#k-cost').textContent = '$' + data.totals.aiCostUsd.toFixed(2);
+  render();
+}
+
+function clinicName(slug) { return data.clinics.find((c) => c.slug === slug)?.name || slug; }
+
+function render() {
+  document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
+  const v = $('#view');
+  if (tab === 'leads') {
+    if (!data.leads.length) { v.innerHTML = '<div class="empty">Заявок поки немає. Відкрийте демо й напишіть у чат ім\'я та телефон, щоб перевірити.</div>'; return; }
+    v.innerHTML = `<div class="row"><a class="btn ghost" href="/admin/leads.csv" style="text-decoration:none;padding:6px 12px;border-radius:8px">Експорт CSV</a></div>
+    <table><thead><tr><th>Коли</th><th>Клініка</th><th>Ім'я</th><th>Телефон</th><th>Послуга / час</th><th>Канал</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${data.leads.map((l) => `<tr><td>${dt(l.createdAt)}</td><td>${esc(l.clinicName || clinicName(l.clinic))}</td><td>${esc(l.name)}</td>
+      <td><a href="tel:${esc(l.phone)}">${esc(phoneFmt(l.phone))}</a></td><td>${esc(l.service)}${l.preferredTime ? `<div class="muted">${esc(l.preferredTime)}</div>` : ''}${l.notes ? `<div class="muted">${esc(l.notes)}</div>` : ''}</td>
+      <td>${CHANNEL[l.channel] || esc(l.channel)}</td>
+      <td><select data-lead="${esc(l.id)}">${Object.entries(STATUS).map(([k, t]) => `<option value="${k}" ${l.status === k ? 'selected' : ''}>${t}</option>`).join('')}</select></td>
+      <td>${l.conversationId ? `<a href="#conv/${esc(l.clinic)}/${esc(l.conversationId)}">діалог</a>` : ''}</td></tr>`).join('')}
+    </tbody></table>`;
+    v.querySelectorAll('select[data-lead]').forEach((s) => s.onchange = async () => {
+      await fetch('/admin/api/lead/' + s.dataset.lead, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: s.value }) });
+    });
+  } else if (tab === 'convs') {
+    if (!data.conversations.length) { v.innerHTML = '<div class="empty">Діалогів поки немає.</div>'; return; }
+    v.innerHTML = `<table><thead><tr><th>Оновлено</th><th>Клініка</th><th>Канал</th><th>Повідомлень</th><th>Перше питання</th><th>Заявка</th><th>AI, $</th></tr></thead><tbody>
+    ${data.conversations.map((c) => `<tr class="click" data-c="${esc(c.clinic)}/${esc(c.id)}"><td>${dt(c.updatedAt)}</td><td>${esc(clinicName(c.clinic))}</td><td>${CHANNEL[c.channel] || esc(c.channel)}</td>
+      <td>${c.messages}</td><td>${esc(c.first.slice(0, 90))}</td><td>${c.leadIds.length ? '<span class="okc">✓</span>' : ''}</td><td>${c.cost ? c.cost.toFixed(3) : ''}</td></tr>`).join('')}
+    </tbody></table>`;
+    v.querySelectorAll('tr[data-c]').forEach((tr) => tr.onclick = () => { location.hash = 'conv/' + tr.dataset.c; });
+  } else if (tab === 'clinics') {
+    if (!data.clinics.length) { v.innerHTML = '<div class="empty">Ще немає жодної клініки. Створіть демо на вкладці «+ Нове демо».</div>'; return; }
+    v.innerHTML = `<div class="cards">${data.clinics.map(clinicCard).join('')}</div>`;
+    v.querySelectorAll('form[data-slug]').forEach((f) => f.onsubmit = saveClinic);
+    v.querySelectorAll('button[data-copy]').forEach((b) => b.onclick = () => { navigator.clipboard?.writeText(b.dataset.copy); b.textContent = 'Скопійовано'; });
+  } else if (tab === 'new') {
+    v.innerHTML = `<form id="newf" style="max-width:560px">
+      <p class="muted">Вставте адресу сайту клініки. Бот обійде до 25 сторінок (ціни, послуги, контакти), збере базу знань, зробить скріншот і приклад діалогу. Займає 20–90 секунд.</p>
+      <label class="field"><span>Сайт клініки</span><input name="url" placeholder="https://clinic.kyiv.ua" required></label>
+      <label class="field"><span>Назва (необов'язково — інакше визначиться із сайту)</span><input name="name" placeholder="Стоматологія «…»"></label>
+      <label class="field"><span>Максимум сторінок</span><input name="maxPages" type="number" value="25" min="3" max="60"></label>
+      <label class="row"><input type="checkbox" name="screenshot" checked> Скріншот сайту для демо (потрібен playwright)</label>
+      <button class="btn">Створити демо</button></form><div id="newres" style="margin-top:14px"></div>`;
+    $('#newf').onsubmit = createDemo;
+  } else if (tab === 'topics') {
+    const entries = Object.entries(data.topics).sort((a, b) => b[1] - a[1]);
+    const max = Math.max(1, ...entries.map((e) => e[1]));
+    v.innerHTML = `<p class="muted">Скільки діалогів торкалися кожної теми (усі клініки, без прикладів для презентацій).</p>
+      ${entries.map(([n, c]) => `<div class="bar"><span>${esc(n)}</span><i style="width:${Math.round((c / max) * 320)}px"></i><b>${c}</b></div>`).join('')}`;
+  }
+}
+
+function clinicCard(c) {
+  const s = c.kbStats || {};
+  const embed = `<script src="${data.publicUrl}/widget.js" data-clinic="${c.slug}" defer><\/script>`;
+  const a = c.audit || {};
+  const local = (iso) => iso ? new Date(new Date(iso).getTime() - new Date(iso).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
+  return `<div class="card">
+    <h3><span class="swatch" style="background:${esc(c.brandColor)}"></span>${esc(c.name)}</h3>
+    <div class="muted"><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.url)}</a></div>
+    <div class="muted">${s.pages || 0} стор. · ${s.prices || 0} рядків цін · ${c.phones.map(phoneFmt).join(', ') || 'телефон не знайдено'}</div>
+    ${c.implantPrice ? `<div class="muted">Імплант: ${esc(c.implantPrice.text.slice(0, 80))}</div>` : ''}
+    ${s.omittedPages?.length ? `<div class="warn">${s.omittedPages.length} стор. не влізли в базу знань</div>` : ''}
+    <div class="row"><a href="/demo/${esc(c.slug)}" target="_blank">Демо ↗</a><a href="/pitch/${esc(c.slug)}" target="_blank">Презентація ↗</a>
+      <button class="btn ghost" type="button" data-copy="${esc(data.publicUrl + '/demo/' + c.slug)}">Копіювати посилання на демо</button></div>
+    <details><summary>Код для сайту клініки</summary><code class="embed">${esc(embed)}</code><button class="btn ghost" type="button" data-copy="${esc(embed)}">Копіювати код</button></details>
+    <details><summary>Налаштування</summary>
+      <form data-slug="${esc(c.slug)}">
+        <label class="field"><span>Назва</span><input name="name" value="${esc(c.name)}"></label>
+        <label class="field"><span>Привітання в чаті</span><textarea name="greeting" rows="3">${esc(c.greeting)}</textarea></label>
+        <label class="field"><span>Колір</span><input name="brandColor" value="${esc(c.brandColor)}"></label>
+        <label class="field"><span>Telegram chat id адміністратора (куди слати заявки; дізнатися — /id у боті)</span><input name="adminChatId" value="${esc(c.telegram?.adminChatId || '')}"></label>
+        <label class="field"><span>Етап</span><select name="status">${['demo', 'sent', 'call', 'client', 'lost'].map((x) => `<option ${c.status === x ? 'selected' : ''} value="${x}">${{ demo: 'Демо готове', sent: 'Надіслали', call: 'Дзвінок/зустріч', client: 'Клієнт', lost: 'Відмова' }[x]}</option>`).join('')}</select></label>
+        <fieldset style="border:1px solid var(--line);border-radius:8px"><legend class="muted">Таємний покупець (для 1-го слайда)</legend>
+          <label class="field"><span>Канал</span><input name="auditChannel" value="${esc(a.channel || '')}" placeholder="Instagram / Telegram / Viber / форма на сайті"></label>
+          <label class="field"><span>Коли написали</span><input type="datetime-local" name="askedAt" value="${local(a.askedAt)}"></label>
+          <label class="field"><span>Коли відповіли (порожньо — не відповіли)</span><input type="datetime-local" name="answeredAt" value="${local(a.answeredAt)}"></label>
+        </fieldset>
+        <div class="row"><button class="btn">Зберегти</button><span class="muted" data-saved></span></div>
+      </form></details>
+  </div>`;
+}
+
+async function saveClinic(e) {
+  e.preventDefault();
+  const f = e.target, el = f.elements;
+  const iso = (v) => v ? new Date(v).toISOString() : null;
+  const body = {
+    name: el.namedItem('name').value, greeting: el.namedItem('greeting').value, brandColor: el.namedItem('brandColor').value, status: el.namedItem('status').value,
+    telegram: { adminChatId: el.namedItem('adminChatId').value },
+    audit: { channel: el.namedItem('auditChannel').value, askedAt: iso(el.namedItem('askedAt').value), answeredAt: iso(el.namedItem('answeredAt').value) },
+  };
+  const r = await fetch('/admin/api/clinic/' + f.dataset.slug, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  f.querySelector('[data-saved]').textContent = r.ok ? 'Збережено' : 'Помилка';
+  if (r.ok) setTimeout(load, 500);
+}
+
+async function createDemo(e) {
+  e.preventDefault();
+  const el = e.target.elements, res = $('#newres'), btn = e.target.querySelector('button');
+  btn.disabled = true; btn.textContent = 'Обходжу сайт…';
+  res.innerHTML = '<p class="muted">Це займе до півтори хвилини.</p>';
+  try {
+    const r = await fetch('/admin/api/demo', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: el.namedItem('url').value, name: el.namedItem('name').value, maxPages: el.namedItem('maxPages').value, screenshot: el.namedItem('screenshot').checked }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.status);
+    res.innerHTML = `<p class="okc"><b>Готово: ${esc(j.name)}</b> · ${j.stats.pages} стор., ${j.stats.prices} рядків цін</p>
+      <p><a href="${esc(j.demoUrl)}" target="_blank">${esc(j.demoUrl)}</a><br><a href="${esc(j.pitchUrl)}" target="_blank">${esc(j.pitchUrl)}</a></p>
+      ${j.warnings.map((w) => `<p class="warn">⚠ ${esc(w)}</p>`).join('')}`;
+    load();
+  } catch (err) {
+    res.innerHTML = `<p class="err">Не вдалося: ${esc(err.message)}</p>`;
+  } finally { btn.disabled = false; btn.textContent = 'Створити демо'; }
+}
+
+async function openConv(slug, id) {
+  const r = await fetch(`/admin/api/conversation/${slug}/${id}`);
+  if (!r.ok) return;
+  const c = await r.json();
+  $('#dlg-title').textContent = `${clinicName(slug)} · ${CHANNEL[c.channel] || c.channel} · ${dt(c.createdAt)}${c.cost ? ` · AI $${c.cost.toFixed(3)}` : ''}`;
+  $('#dlg-body').innerHTML = (c.transcript || []).map((t) => `<div class="m ${t.role}">${esc(t.text)}<small>${dt(t.at)}${t.mode === 'local' ? ' · локальний режим' : ''}${t.leadId ? ' · заявку збережено' : ''}</small></div>`).join('') || '<div class="empty">Порожньо</div>';
+  if (!$('#dlg').open) $('#dlg').showModal();
+}
+
+$('#dlg').addEventListener('close', () => { if (location.hash.startsWith('#conv/')) history.replaceState(null, '', location.pathname); });
+function route() {
+  const m = /^#conv\/([\w-]+)\/([\w-]+)$/.exec(location.hash);
+  if (m) openConv(m[1], m[2]);
+}
+addEventListener('hashchange', route);
+$('#tabs').onclick = (e) => { const b = e.target.closest('button'); if (b) { tab = b.dataset.tab; render(); } };
+load().then(route);
+setInterval(() => { if (!$('#dlg').open && tab !== 'new' && tab !== 'clinics') load(); }, 30000);
+</script>
+</body>
+</html>

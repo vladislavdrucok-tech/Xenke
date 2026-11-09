@@ -1,0 +1,20 @@
+{
+  "name": "dental-assistant-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-адміністратор для приватних стоматологій: відповідає пацієнтам за прайсом клініки, збирає заявки в Telegram. Генератор демо й презентацій для продажу.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "demo": "node scripts/new-demo.mjs",
+    "batch": "node scripts/batch-demos.mjs",
+    "sample": "node scripts/sample.mjs",
+    "test": "node test.mjs"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0"
+  }
+}

@@ -209,3 +209,23 @@ static func safe_insets() -> Vector2:
 	var top := maxf(0.0, float(sa.position.y)) * k
 	var bottom := maxf(0.0, ws.y - float(sa.position.y + sa.size.y)) * k
 	return Vector2(ceilf(minf(top, 60.0)), ceilf(minf(bottom, 60.0)))
+
+
+static var _people := {}
+
+
+## Sprite-sheet layout of the passengers (written by tools/art_people.py).
+static func people() -> Dictionary:
+	if _people.is_empty():
+		_people = {"cell": [32, 32], "feet": 30, "top": {},
+			"anims": {"idle": [0, 4], "walk": [4, 6], "wait": [10, 4], "angry": [14, 2], "happy": [16, 2]}}
+		var f := FileAccess.open("res://assets/sprites/passengers.json", FileAccess.READ)
+		if f:
+			var d = JSON.parse_string(f.get_as_text())
+			if typeof(d) == TYPE_DICTIONARY:
+				_people.merge(d, true)
+	return _people
+
+
+static func person_top(type_id: String) -> float:
+	return float(people()["top"].get(type_id, 26))

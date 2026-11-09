@@ -1,0 +1,42 @@
+{
+ "cell": [
+  32,
+  32
+ ],
+ "feet": 30,
+ "anims": {
+  "idle": [
+   0,
+   4
+  ],
+  "walk": [
+   4,
+   6
+  ],
+  "wait": [
+   10,
+   4
+  ],
+  "angry": [
+   14,
+   2
+  ],
+  "happy": [
+   16,
+   2
+  ]
+ },
+ "top": {
+  "guest": 28,
+  "business": 26,
+  "granny": 26,
+  "kid": 24,
+  "cat": 15,
+  "rocker": 31,
+  "robot": 27,
+  "couple": 26,
+  "inspector": 31,
+  "bellhop": 28,
+  "ghost": 24
+ }
+}

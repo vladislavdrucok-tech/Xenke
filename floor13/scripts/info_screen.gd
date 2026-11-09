@@ -107,9 +107,9 @@ func _records() -> void:
 		var tr := TextureRect.new()
 		var at := AtlasTexture.new()
 		at.atlas = Art.tex("passengers")
-		at.region = Rect2(0, Defs.TYPE_ORDER.find(t) * 28, 24, 28)
+		at.region = Rect2(0, Defs.TYPE_ORDER.find(t) * 32, 32, 32)
 		tr.texture = at
-		tr.custom_minimum_size = Vector2(48, 56)
+		tr.custom_minimum_size = Vector2(64, 64)
 		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		var known := seen.has(t)

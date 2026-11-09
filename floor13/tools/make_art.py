@@ -20,7 +20,7 @@ def save(img, name):
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    save(art_people.make_sheet(), 'passengers.png')
+    art_people.write(OUT)
     floors = Image.new('RGBA', (art_world.W, art_world.FH * 13), (0, 0, 0, 0))
     for i in range(1, 14):
         floors.alpha_composite(art_world.make_floor(i), (0, (i - 1) * art_world.FH))

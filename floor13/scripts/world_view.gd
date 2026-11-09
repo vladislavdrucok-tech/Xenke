@@ -208,7 +208,7 @@ func rider_slots() -> Dictionary:
 	var total := 0.0
 	for p in rs:
 		var s := int(Defs.TYPES[p.type]["seats"])
-		var w := 10.0 if s == 0 else (12.0 if s == 1 else (20.0 if s == 2 else 24.0))
+		var w := 12.0 if s <= 1 else (22.0 if s == 2 else 26.0)
 		widths.append(w)
 		total += w
 	var inner := 76.0
@@ -229,7 +229,8 @@ func _update_vis(delta: float) -> void:
 		alive[p.id] = true
 		var v: Dictionary = vis.get(p.id, {})
 		if v.is_empty():
-			v = {"x": p.x, "from": p.x, "state": p.state, "walk": 0.0, "face": -1.0, "moving": false}
+			v = {"x": p.x, "from": p.x, "state": p.state, "walk": 0.0, "face": -1.0, "moving": false,
+				"act": -1.0, "act_cd": randf_range(1.5, 5.0), "phase": randf() * 9.0}
 			vis[p.id] = v
 		if v.state != p.state:
 			v.from = v.x
@@ -250,6 +251,17 @@ func _update_vis(delta: float) -> void:
 		elif p.state == ShiftSim.P_WAITING:
 			v.face = -1.0
 		v.x = target
+		# fidget: every few seconds a waiting or riding passenger plays its own little action
+		if p.state == ShiftSim.P_WAITING or p.state == ShiftSim.P_RIDING:
+			if v.act >= 0.0:
+				v.act += delta
+				if v.act >= 1.1:
+					v.act = -1.0
+			else:
+				v.act_cd -= delta * (2.0 if p.pat / p.pmax < 0.6 else 1.0)
+				if v.act_cd <= 0.0:
+					v.act = 0.0
+					v.act_cd = randf_range(3.0, 7.0)
 	for id in vis.keys():
 		if not alive.has(id):
 			vis.erase(id)
@@ -561,27 +573,30 @@ func _draw_floor_people(ox: float) -> void:
 		_draw_person(p, ox, y)
 
 
+const IDLE_SEQ := [0, 0, 1, 2, 2, 1, 0, 0, 3]
+
+
 func _frame_for(p: Dictionary, v: Dictionary) -> int:
-	if p.type == "ghost":
-		return int(t * 6.0 + p.id) % 6
+	var A: Dictionary = Art.people()["anims"]
 	var moving: bool = v.get("moving", false)
+	var walk := int(A["walk"][0]) + int(v.get("walk", 0.0) / 3.0) % int(A["walk"][1])
+	var angry := int(A["angry"][0]) + int(t * 3.0 + p.id) % 2
+	var happy := int(A["happy"][0]) + int(t * 5.0 + p.id) % 2
 	match p.state:
 		ShiftSim.P_EXITING:
-			return 6 if p.coins > 0 else 0
+			return angry if p.grumpy else happy
 		ShiftSim.P_LEAVING:
-			return 2 + int(v.walk / 4.0) % 4 if moving else 7
+			return walk if moving else angry
 		ShiftSim.P_WALK_OUT:
-			if moving:
-				return 2 + int(v.walk / 4.0) % 4
-			return 6
+			return walk if moving else happy
 	if moving:
-		return 2 + int(v.walk / 4.0) % 4
+		return walk
 	var frac: float = p.pat / p.pmax
-	if p.state == ShiftSim.P_WAITING and frac < 0.3 and int(t * 2.0 + p.id) % 2 == 0:
-		return 7
-	if p.state == ShiftSim.P_RIDING and p.grumpy:
-		return 7
-	return int(t * 1.6 + p.id * 0.7) % 2
+	if (p.state == ShiftSim.P_WAITING and frac < 0.25) or (p.state == ShiftSim.P_RIDING and p.grumpy):
+		return angry
+	if float(v.get("act", -1.0)) >= 0.0:
+		return int(A["wait"][0]) + mini(int(v.act / 1.1 * 4.0), 3)
+	return int(A["idle"][0]) + IDLE_SEQ[int(t * 3.0 + v.get("phase", 0.0)) % IDLE_SEQ.size()]
 
 
 func _draw_person(p: Dictionary, ox: float, feet: float) -> void:
@@ -592,12 +607,16 @@ func _draw_person(p: Dictionary, ox: float, feet: float) -> void:
 	var mod := Color.WHITE
 	if p.state == ShiftSim.P_LEAVING:
 		mod = Color(1.0, 0.75, 0.75)
-	var reg := Rect2(fr * 24, row * 28, 24, 28)
+	var reg := Rect2(fr * 32, row * 32, 32, 32)
+	var sw := 12.0 if p.type != "couple" and p.type != "bellhop" else 22.0
+	var sa := 0.28 if p.type != "ghost" else 0.14
+	draw_rect(Rect2(x - sw / 2.0, feet, sw, 1), Color(0, 0, 0, sa))
+	draw_rect(Rect2(x - sw / 2.0 + 2, feet + 1, sw - 4, 1), Color(0, 0, 0, sa * 0.6))
 	if v.face < 0.0:
-		draw_set_transform(Vector2(x + 12, feet - 27) + _off, 0.0, Vector2(-1, 1))
+		draw_set_transform(Vector2(x + 16, feet - 30) + _off, 0.0, Vector2(-1, 1))
 	else:
-		draw_set_transform(Vector2(x - 12, feet - 27) + _off, 0.0, Vector2.ONE)
-	draw_texture_rect_region(Art.tex("passengers"), Rect2(0, 0, 24, 28), reg, mod)
+		draw_set_transform(Vector2(x - 16, feet - 30) + _off, 0.0, Vector2.ONE)
+	draw_texture_rect_region(Art.tex("passengers"), Rect2(0, 0, 32, 32), reg, mod)
 	draw_set_transform(_off, 0.0, Vector2.ONE)
 
 
@@ -640,14 +659,7 @@ func _draw_bubbles(ox: float) -> void:
 		var v: Dictionary = vis.get(p.id, {"x": p.x})
 		var frac: float = p.pat / p.pmax
 		var cx: float = ox + v.x
-		var head := 30.0
-		if p.type == "kid":
-			head = 24.0
-		elif p.type == "cat":
-			head = 16.0
-		elif p.type == "ghost" or p.type == "robot":
-			head = 27.0
-		var bottom := feet - head
+		var bottom := feet - Art.person_top(p.type) - 2.0
 		if frac < 0.25:
 			cx += roundf(sin(t * 30.0 + p.id) * 1.0)
 		var border := Art.patience_color(frac)
@@ -669,9 +681,19 @@ func _draw_bubbles(ox: float) -> void:
 		var bxp := roundf(cx - bw / 2.0)
 		draw_rect(Rect2(bxp - 1, bottom + 1, bw + 2, 3), Color(Art.INK, 0.8))
 		draw_rect(Rect2(bxp, bottom + 2, roundf(bw * clampf(frac, 0.0, 1.0)), 1), Art.patience_color(frac))
-	# riders: tags inside the cabin above their heads
+	# riders: a destination display above the cabin, one tag over each rider
 	var top := sy(feet_y(sim.pos) - 43.0)
 	var i := 0
+	var shown := 0
+	for p in sim.riders():
+		if p.state != ShiftSim.P_EXITING:
+			shown += 1
+	if shown > 0:
+		var bh := 21.0 if shown > 1 else 12.0
+		var br := Rect2(ox + 14, top - bh - 1, 84, bh)
+		draw_rect(br.grow(1), Color(gate_cols[1], 0.9))
+		draw_rect(br, Color(0.05, 0.03, 0.08, 0.92))
+		draw_rect(Rect2(br.position.x + 40, br.end.y + 1, 4, 1), gate_cols[1])
 	for p in sim.riders():
 		if p.state == ShiftSim.P_EXITING:
 			continue
@@ -680,7 +702,7 @@ func _draw_bubbles(ox: float) -> void:
 		var text := str(p.dest)
 		var w := Art.digits_width(text) + 4
 		var x := roundf(ox + v.x - w / 2.0)
-		var y := top + 8 + (i % 2) * 7
+		var y := top - 11 - (i % 2) * 9 if shown > 1 else top - 11
 		var col := Art.patience_color(frac)
 		if p.grumpy and int(t * 5.0) % 2 == 0:
 			col = Color.WHITE
@@ -704,7 +726,7 @@ func _draw_speech(ox: float) -> void:
 		var v: Dictionary = vis.get(p.id, {"x": p.x})
 		var in_cab: bool = p.state == ShiftSim.P_RIDING or p.state == ShiftSim.P_BOARDING or p.state == ShiftSim.P_EXITING
 		var feet := sy(feet_y(sim.pos) if in_cab else feet_y(p.floor))
-		var bottom := feet - (54.0 if in_cab else 46.0)
+		var bottom := feet - (66.0 if in_cab else 46.0)
 		if p.state == ShiftSim.P_WALK_OUT or p.state == ShiftSim.P_LEAVING:
 			bottom = feet - 32.0
 		var text: String = sp.text

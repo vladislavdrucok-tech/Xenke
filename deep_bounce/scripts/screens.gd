@@ -42,7 +42,12 @@ func close() -> void:
 
 func back() -> void:
 	if _stack.is_empty():
-		close()
+		if current in ["settings", "cosmetics"] and main.mode == main.M_MENU:
+			show_menu()
+		elif current in ["settings", "confirm"] and main.mode == main.M_GAME:
+			show_pause()
+		else:
+			close()
 		return
 	var prev: Array = _stack.pop_back()
 	_open(prev[0], prev[1], false)
@@ -340,7 +345,7 @@ func _upgrade_card(id: String) -> Control:
 	var s: Sim = main.sim
 	var b := Button.new()
 	b.theme_type_variation = "TealButton"
-	b.custom_minimum_size = Vector2(620, 168)
+	b.custom_minimum_size = Vector2(620, 196)
 	b.focus_mode = Control.FOCUS_NONE
 	b.add_theme_stylebox_override("normal", UK.sbt("card.png", 40))
 	b.add_theme_stylebox_override("hover", UK.sbt("card.png", 40))
@@ -378,13 +383,8 @@ func _upgrade_card(id: String) -> Control:
 			name = G.t("up_electric")
 			lvl = G.t("level_to", [s.electric, s.electric + 1])
 			desc = G.t("up_electric_d", [Sim.ZAP_DMG[s.electric + 1]])
-	var top := HBoxContainer.new()
-	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var nl := UK.label(name, 32)
-	nl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(nl)
-	top.add_child(UK.label(lvl, 24, UK.TEAL, 6))
-	v.add_child(top)
+	v.add_child(UK.label(name, 31))
+	v.add_child(UK.label(lvl, 23, UK.TEAL, 6))
 	var dl := UK.label(desc, 21, Color(0.9, 0.95, 0.92), 4, "Rubik-Bold")
 	dl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dl.custom_minimum_size = Vector2(420, 0)

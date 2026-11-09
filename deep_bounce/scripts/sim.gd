@@ -233,6 +233,9 @@ func _roll_hp(rng: RandomNumberGenerator, area: int, abs_row: int) -> int:
 		mult = 1.7
 	elif area >= 4:
 		mult = 2.7
+	# rows right after the opening ramp up instead of jumping
+	if abs_row < 28:
+		mult *= lerpf(0.45, 1.0, float(abs_row - 14) / 14.0)
 	var v := base * mult * rng.randf_range(0.6, 1.3)
 	if rng.randf() < 0.09:
 		v *= 1.6

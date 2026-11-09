@@ -82,6 +82,7 @@ def build_ui():
     misc.panel(160, 160, 26, '#0d363a', '#06191c', '#279b9b', '#8ff0e6', True, 9, 7).save(path('ui', 'card.png'))
     misc.panel(96, 96, 20, '#0d363a', '#071f22', '#279b9b', '#8ff0e6', False, 10, 5).save(path('ui', 'button_teal.png'))
     misc.panel(96, 96, 20, '#123f43', '#0a2c30', '#4fd6cc', '#d2fff9', False, 12, 5).save(path('ui', 'button_teal_hover.png'))
+    misc.panel(96, 96, 20, '#2bb3ac', '#147a78', '#bffaf3', '#ffffff', False, 13, 5).save(path('ui', 'button_on.png'))
     misc.stone_button(240, 104, 8, 1.0).save(path('ui', 'button_stone.png'))
     misc.stone_button(240, 104, 8, 1.18).save(path('ui', 'button_stone_hover.png'))
     misc.stone_button(240, 104, 8, 0.55).save(path('ui', 'button_stone_dim.png'))

@@ -36,6 +36,9 @@ var tut_hint_step := -1
 var tut_hit_seen := false
 
 var qa: Node
+var perf_frames := 0
+var perf_sum := 0.0
+var perf_worst := 0.0
 
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color("082b30"))
@@ -299,6 +302,9 @@ func _process(dt: float) -> void:
 			screens.show_upgrade(sim.upgrade_opts)
 	var speed := 1
 	if sim.phase == Sim.PH_VOLLEY and not paused:
+		perf_frames += 1
+		perf_sum += dt
+		perf_worst = maxf(perf_worst, dt)
 		volley_time += dt
 		speed = 1
 		if volley_time > 3.5:
@@ -381,6 +387,12 @@ func _consume_events() -> void:
 	world.sync_blocks()
 
 func _on_volley_end() -> void:
+	# one line per volley in the log (logcat tag "godot"): how smooth the volley ran on this device
+	if perf_frames > 0:
+		print("volley %d: %d balls, %d frames, avg %.1f ms, worst %.1f ms" % [sim.volleys, sim.v_total, perf_frames, perf_sum / perf_frames * 1000.0, perf_worst * 1000.0])
+	perf_frames = 0
+	perf_sum = 0.0
+	perf_worst = 0.0
 	world.scroll_target = sim.depth * Sim.CELL
 	world.sync_blocks()
 	world.danger = sim.danger_level()
@@ -398,7 +410,12 @@ func _on_volley_end() -> void:
 
 func _tutorial() -> void:
 	var step := int(G.meta.tutorial)
-	if step >= 6 or paused or screens.is_open():
+	if paused or screens.is_open():
+		if hud.hint.visible:
+			hud.hide_hint()
+			tut_hint_step = -1   # shown again once the screen closes
+		return
+	if step >= 6:
 		return
 	if sim.phase == Sim.PH_AIM:
 		var want := -1
@@ -447,7 +464,26 @@ func _on_lang() -> void:
 
 # ---------------------------------------------------------------- lifecycle
 
+func _go_back() -> void:
+	## Android back button: never lose a run by accident.
+	if screens.is_open():
+		match screens.current:
+			"menu":
+				G.save_game()
+				get_tree().quit()
+			"pause":
+				resume_from_pause()
+			"upgrade", "over":
+				pass
+			_:
+				screens.back()
+	elif mode == M_GAME:
+		open_pause()
+
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		_go_back()
+		return
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_CLOSE_REQUEST:
 		if mode == M_GAME and sim.phase != Sim.PH_OVER and over_timer < 0.0:
 			G.store_run(sim)   # full snapshot, balls in flight included

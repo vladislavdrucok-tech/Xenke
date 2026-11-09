@@ -14,6 +14,7 @@ config/icon="res://icon.png"
 boot_splash/bg_color=Color(0.0313726, 0.168627, 0.188235, 1)
 boot_splash/show_image=false
 run/low_processor_mode=false
+config/quit_on_go_back=false
 
 [autoload]
 
@@ -49,6 +50,8 @@ renderer/rendering_method.mobile="gl_compatibility"
 textures/canvas_textures/default_texture_filter=1
 textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.0313726, 0.168627, 0.188235, 1)
+limits/opengl/max_renderable_lights=4
+limits/opengl/max_lights_per_object=2
 2d/snap/snap_2d_transforms_to_pixel=false
 
 [debug]

@@ -256,6 +256,7 @@ func _make_block(b: Dictionary) -> Node2D:
 	elif b.w == 2 or b.h == 2:
 		fs = 78
 	lab.label_settings = _ls(fs)
+	n.set_meta("fs", fs)
 	lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lab.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lab.size = Vector2(b.w * Sim.CELL, fs * 1.4)
@@ -274,6 +275,13 @@ func _update_block(n: Node2D, b: Dictionary) -> void:
 	n.set_meta("hp", b.hp)
 	var lab: Label = n.get_node("num")
 	lab.text = str(b.hp)
+	# big numbers shrink so they always fit inside the stone
+	var base_fs: int = n.get_meta("fs")
+	var digits := lab.text.length()
+	var avail: float = b.w * Sim.CELL - 18.0
+	var fs := mini(base_fs, int(avail / (0.62 * digits)))
+	if lab.label_settings.font_size != fs:
+		lab.label_settings = _ls(fs)
 	var ratio := float(b.hp) / float(maxi(1, b.mhp))
 	var stage := 0
 	if b.mhp >= 2:
@@ -393,9 +401,22 @@ func _draw_balls() -> void:
 			col = Color(0.55, 1.0, 0.95)
 		elif b.k == Sim.K_HEAVY:
 			col = Color(1.0, 0.78, 0.5)
+		# short trail: at most 70 units behind the ball, however far it moved between frames
+		var left := 70.0
 		for i in range(tr.size() - 1):
-			var a := 0.42 * (1.0 - float(i) / tr.size())
-			balls_node.draw_line(tr[i], tr[i + 1], Color(col.r, col.g, col.b, a), 14.0 * (1.0 - float(i) / tr.size()) + 2.0, true)
+			var p0: Vector2 = tr[i]
+			var p1: Vector2 = tr[i + 1]
+			var L := p0.distance_to(p1)
+			if L <= 0.01:
+				continue
+			if L > left:
+				p1 = p0.lerp(p1, left / L)
+				L = left
+			var f := 1.0 - (70.0 - left) / 70.0
+			balls_node.draw_line(p0, p1, Color(col.r, col.g, col.b, 0.42 * f), 14.0 * f + 2.0, true)
+			left -= L
+			if left <= 0.0:
+				break
 	for b in sim.v_balls:
 		if b.st != 1:
 			continue

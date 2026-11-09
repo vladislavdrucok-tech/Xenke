@@ -111,6 +111,7 @@ func build_ref_board() -> void:
 
 func _ref() -> void:
 	G.settings.lang = "en"
+	G.meta.skin = "classic"
 	main.start_new_run(4242)
 	build_ref_board()
 	main.world.clear_blocks()
@@ -296,6 +297,9 @@ func _bot_angle(s: Sim, rng: RandomNumberGenerator) -> float:
 # ---------------------------------------------------------------- performance
 
 func _perf() -> void:
+	## Worst case: 32 balls with every upgrade drop through a single gap into a closed chamber and bounce
+	## there until they find the gap again (or the flight limit recalls them).
+	G.meta.skin = "classic"
 	main.start_new_run(31337)
 	var s: Sim = main.sim
 	s.balls = 32
@@ -304,28 +308,60 @@ func _perf() -> void:
 	main.world.clear_blocks()
 	s.blocks = {}
 	s.grid = {}
-	for vr in range(2, 10):
+	for c in 7:
+		if c != 3:
+			s._add_block({"c": c, "r": s.top + 1, "w": 1, "h": 1, "hp": 9999, "g": 1, "v": c % 4, "vein": false})
+	for vr in range(6, 10):
 		for c in 7:
-			if (c + vr) % 3 != 0:
-				s._add_block({"c": c, "r": s.top + vr, "w": 1, "h": 1, "hp": 60, "g": 1, "v": (c + vr) % 4, "vein": false})
+			if (c + vr) % 3 == 0:
+				s._add_block({"c": c, "r": s.top + vr, "w": 1, "h": 1, "hp": 9999, "g": 1, "v": (c + vr) % 4, "vein": false})
 	main.world.sync_blocks(true)
 	G.meta.tutorial = 6
 	await frames(5)
-	main._fire(1.25)
+	main._fire(PI * 0.5 - 0.06)
 	var times: Array = []
+	var sim_us := 0
 	var t0 := Time.get_ticks_usec()
 	var n := 0
-	while s.phase == Sim.PH_VOLLEY and n < 4000:
+	var ticks0 := s.v_tick
+	while s.phase == Sim.PH_VOLLEY and n < 6000:
 		var t1 := Time.get_ticks_usec()
 		await get_tree().process_frame
 		times.append((Time.get_ticks_usec() - t1) / 1000.0)
 		n += 1
-		if n == 90:
+		if n == 150:
 			await shot("perf_32_balls")
+	var total_ticks := s.v_tick if s.phase == Sim.PH_VOLLEY else 0
+	# pure simulation cost of the same volley, measured without rendering
+	var c := Sim.new()
+	c.from_dict(main.sim.to_dict())
 	times.sort()
 	var avg := 0.0
 	for x in times:
 		avg += x
 	avg /= maxf(1.0, times.size())
-	log_line("frames %d, avg %.2f ms, p95 %.2f ms, max %.2f ms, wall %.1f s" % [times.size(), avg, times[int(times.size() * 0.95)], times[-1], (Time.get_ticks_usec() - t0) / 1e6])
+	log_line("render+sim frames %d, avg %.2f ms, p95 %.2f ms, max %.2f ms, wall %.1f s" % [times.size(), avg, times[int(times.size() * 0.95)], times[-1], (Time.get_ticks_usec() - t0) / 1e6])
 	check(s.phase != Sim.PH_VOLLEY, "longest volley finishes")
+	# simulation alone: replay the same volley headless-style
+	var r := Sim.new()
+	r.new_run(31337)
+	r.balls = 32; r.heavy = 3; r.electric = 3
+	r.blocks = {}; r.grid = {}
+	for cc in 7:
+		if cc != 3:
+			r._add_block({"c": cc, "r": r.top + 1, "w": 1, "h": 1, "hp": 9999, "g": 1, "v": 0, "vein": false})
+	for vr in range(6, 10):
+		for cc in 7:
+			if (cc + vr) % 3 == 0:
+				r._add_block({"c": cc, "r": r.top + vr, "w": 1, "h": 1, "hp": 9999, "g": 1, "v": 0, "vein": false})
+	r.fire(PI * 0.5 - 0.06)
+	var tt := Time.get_ticks_usec()
+	var k := 0
+	var worst := 0
+	while r.phase == Sim.PH_VOLLEY:
+		var a := Time.get_ticks_usec()
+		r.step()
+		worst = maxi(worst, Time.get_ticks_usec() - a)
+		k += 1
+	log_line("simulation only: %d ticks (%.1f s of flight), %.3f ms per tick avg, worst tick %.3f ms" % [k, k / 60.0, (Time.get_ticks_usec() - tt) / 1000.0 / k, worst / 1000.0])
+	check(k <= Sim.VOLLEY_MAX_TICKS + 1, "flight time limit holds", "%d ticks" % k)

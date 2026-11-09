@@ -23,6 +23,7 @@ func _ready() -> void:
 	test_heavy_levels()
 	test_electric_levels()
 	test_upgrade_limits()
+	test_all_combinations()
 	test_volleys_always_end()
 	test_longest_volley()
 	test_save_roundtrip()
@@ -366,6 +367,73 @@ func test_upgrade_limits() -> void:
 	s.phase = Sim.PH_AIM; s.volleys = 3; s.blocks = {}; s.grid = {}
 	s._end_volley()
 	ok(s.phase == Sim.PH_AIM and s.run_gems - g0 == Sim.MAXED_BONUS and not s.choose_upgrade("balls"), "all upgrades maxed: the stage pays bonus crystals once")
+
+func test_all_combinations() -> void:
+	## Every heavy level 0..3 with every electric level 0..3: each hit obeys the rules, crystals add up.
+	var bad: PackedStringArray = []
+	var totals := ""
+	for hv in 4:
+		for el in 4:
+			var s := Sim.new()
+			s.new_run(9000 + hv * 4 + el)
+			s.balls = 16
+			s.heavy = hv
+			s.electric = el
+			s.events = []
+			var gems_from_breaks := 0
+			var zaps := 0
+			var hits := {0: 0, 1: 0, 2: 0}
+			for v in 3:
+				if s.phase != Sim.PH_AIM:
+					if s.phase == Sim.PH_UPGRADE:
+						s.upgrade_opts = []
+						s.phase = Sim.PH_AIM
+					else:
+						break
+				s.fire(0.35 + v * 1.1)
+				var gone := {}
+				var elec_direct := {}
+				while s.phase == Sim.PH_VOLLEY:
+					s.step()
+					for e in s.events:
+						match e.t:
+							"shot":
+								var want := Sim.K_NORMAL
+								var n: int = e.i + 1
+								if hv > 0 and n % 4 == 0:
+									want = Sim.K_HEAVY
+								elif el > 0 and n % 4 == 2:
+									want = Sim.K_ELECTRIC
+								if e.k != want:
+									bad.append("H%dE%d ball %d kind %d" % [hv, el, n, e.k])
+							"hit":
+								if gone.has(e.id):
+									bad.append("H%dE%d hit on broken stone" % [hv, el])
+								if e.k == Sim.K_HEAVY and e.d != Sim.HEAVY_DMG[hv]:
+									bad.append("H%dE%d heavy dmg %d" % [hv, el, e.d])
+								elif (e.k == Sim.K_NORMAL or e.k == Sim.K_ELECTRIC) and e.d != 1:
+									bad.append("H%dE%d direct dmg %d" % [hv, el, e.d])
+								elif e.k == -1 and e.d != Sim.ZAP_DMG[el]:
+									bad.append("H%dE%d zap dmg %d" % [hv, el, e.d])
+								if e.k >= 0:
+									hits[e.k] += 1
+							"zap", "fizzle":
+								zaps += 1
+								if el == 0:
+									bad.append("H%dE%d zap without upgrade" % [hv, el])
+							"break":
+								gone[e.id] = true
+								gems_from_breaks += int(e.g)
+					s.events.clear()
+			# electric: zaps == sum over electric balls of floor(direct hits / 4) is checked per ball in test_electric_levels;
+			# here: no zaps without the upgrade and crystals equal the sum of broken stones
+			if s.run_gems != gems_from_breaks + int(s.stats.bonus):
+				bad.append("H%dE%d crystals %d vs breaks %d" % [hv, el, s.run_gems, gems_from_breaks])
+			for b in s.blocks.values():
+				if b.hp <= 0:
+					bad.append("H%dE%d stone left with hp %d" % [hv, el, b.hp])
+			totals += "H%dE%d:%d/%d/%d z%d " % [hv, el, hits[0], hits[1], hits[2], zaps]
+	ok(bad.is_empty(), "all 16 heavy x electric level combinations follow the rules", (", ".join(bad.slice(0, 4)) if not bad.is_empty() else totals.substr(0, 160)))
 
 func test_volleys_always_end() -> void:
 	var worst := 0

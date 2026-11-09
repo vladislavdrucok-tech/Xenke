@@ -1,0 +1,73 @@
+keys,en,uk
+APP_TITLE,Pocket Triples,Pocket Triples
+PLAY,Play,Грати
+LEVEL_N,Level {n},Рівень {n}
+LEVELS,Levels,Рівні
+CHOOSE_LEVEL,Choose a level,Обери рівень
+UNDO,Undo,Скасувати
+RESTART,Restart,Почати заново
+PAUSE,Pause,Пауза
+RESUME,Resume,Продовжити
+NEXT_PUZZLE,Next Puzzle,Наступна задача
+ANOTHER_PUZZLE,Another Puzzle,Ще задача
+ANOTHER_N,Another Puzzle #{n},Ще задача №{n}
+HINT_TAP_TOP,Tap the top tile,Торкнися верхнього предмета
+HINT_MATCH,Match three identical tiles,Збери три однакові предмети
+HINT_FREED,Triple cleared — three slots are free!,Трійка зникла — три місця вільні!
+TAGLINE,Match three identical tiles,Збери три однакові предмети
+WIN_TITLE,Puzzle solved!,Задачу розв’язано!
+LOSE_TITLE,Tray full,Лоток заповнений
+LOSE_REASON,All five slots are taken and no three tiles match. Undo a move or restart.,"Усі п’ять місць зайняті, а трійки немає. Скасуй хід або почни заново."
+TRAY_ONE_LEFT,One free slot left,Лишилося одне вільне місце
+TRAY_LABEL,Tray: {n} of 5,Лоток: {n} з 5
+SOLVED_COUNT,Puzzles solved: {n},Розв’язано задач: {n}
+PUZZLES_SOLVED,Puzzles solved,Розв’язано задач
+SETTINGS,Settings,Налаштування
+LANGUAGE,Language,Мова
+LANG_UK,Українська,Українська
+LANG_EN,English,English
+SOUND,Sound,Звук
+VIBRATION,Vibration,Вібрація
+ON,On,Увімк.
+OFF,Off,Вимк.
+BACK,Back,Назад
+MAIN_MENU,Main menu,Головне меню
+STATS,Statistics,Статистика
+STAT_LEVELS,Levels completed,Пройдено рівнів
+STAT_LEVELS_VALUE,{a} of {b},{a} з {b}
+STAT_EXTRA,Extra puzzles solved,Розв’язано додаткових задач
+STAT_CLEAN,Solved without undo,Розв’язано без скасувань
+STAT_TRIPLES,Triples matched,Зібрано трійок
+CONFIRM_RESTART_TITLE,Restart this puzzle?,Почати задачу заново?
+CONFIRM_RESTART_TEXT,The tiles go back to the starting layout and the move history is cleared.,"Предмети повернуться на початкові місця, історію ходів буде очищено."
+YES_RESTART,"Yes, restart","Так, заново"
+KEEP_PLAYING,Keep playing,Грати далі
+TIME_N,Time: {t},Час: {t}
+UNDOS_N,Undos: {n},Скасувань: {n}
+NO_UNDO,Solved without undo!,Без жодного скасування!
+REPLAY,Play again,Зіграти ще раз
+ALL_LEVELS_DONE,All 30 levels are done! New puzzles are waiting in Another Puzzle.,Усі 30 рівнів пройдено! Нові задачі чекають у режимі «Ще задача».
+LEVEL_UNLOCKED,Level {n} unlocked,Відкрито рівень {n}
+LOCKED,Locked,Закрито
+PAUSED,Paused,Пауза
+PREPARING,Preparing a puzzle…,Готуємо задачу…
+HOW_TO_TITLE,How to play,Як грати
+HOW_TO_TEXT,"Tap a stack to move its top tile into the tray. Three identical tiles in the tray vanish and free their slots. If all five slots fill up without a triple, the puzzle is lost — Undo always helps.","Торкнися стопки, щоб перенести її верхній предмет у лоток. Три однакові предмети в лотку зникають і звільняють місця. Якщо всі п’ять місць заповнені без трійки, задачу програно — «Скасувати» завжди допоможе."
+TYPE_STAR,Coral star,Коралова зірка
+TYPE_LEAF,Green leaf,Зелений листок
+TYPE_WAVE,Blue wave,Синя хвиля
+TYPE_BOLT,Yellow lightning,Жовта блискавка
+TYPE_DIAMOND,Purple diamond,Фіолетовий ромб
+A11Y_STACK,"Stack {n}: {item} on top, {count} tiles","Стопка {n}: зверху {item}, предметів: {count}"
+A11Y_STACK_EMPTY,Stack {n}: empty,Стопка {n}: порожня
+A11Y_TRAY,Tray: {n} of 5 slots taken,Лоток: зайнято {n} з 5 місць
+A11Y_MENU,Open the main menu,Відкрити головне меню
+A11Y_SETTINGS,Open settings,Відкрити налаштування
+A11Y_UNDO,Undo the last move,Скасувати останній хід
+A11Y_RESTART,Start this puzzle again,Почати цю задачу заново
+A11Y_PAUSE,Pause the game,Поставити гру на паузу
+A11Y_LEVEL,Level {n},Рівень {n}
+A11Y_LEVEL_LOCKED,"Level {n}, locked","Рівень {n}, закрито"
+A11Y_LEVEL_SOLVED,"Level {n}, solved","Рівень {n}, розв’язано"
+ENDLESS_LOCKED,Finish level 1 first,Спершу пройди рівень 1
+NEW_PUZZLE_READY,A new puzzle is ready,Нова задача готова

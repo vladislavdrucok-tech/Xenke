@@ -1,0 +1,10 @@
+# Godot import cache and local export output
+.godot/
+export/
+*.apk
+*.aab
+*.idsig
+# signing material never belongs in the source tree
+*.keystore
+*.jks
+signing.env

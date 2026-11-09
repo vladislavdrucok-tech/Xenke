@@ -17,6 +17,7 @@ var seated := false
 var disturbing := 0.0      # > 0 while the loose connector is being touched
 var wig := Gest.Wiggle.new()
 var verify_travel := 0.0
+var last_wire_p := Vector2.INF
 var flick := 0.0
 var lever := 1.0           # 1 = up (on), 0 = down (off)
 var spring_back := false
@@ -93,6 +94,7 @@ func tutorial_line() -> String:
 func on_press(id: String, p: Vector2) -> void:
 	wig.reset()
 	wig.feed(p)
+	last_wire_p = p
 	match id:
 		"switch":
 			switch_on = not switch_on
@@ -166,9 +168,11 @@ func _wire_touch(p: Vector2) -> void:
 				if wig.travel > 30.0:
 					label("Спершу увімкни фару", false, SWITCH + Vector2(0, -30))
 				return
-			if wig.travel > 4.0:
-				verify_travel += 1.0
-				if (verify_travel > 20.0 and _near_connector(p)) or verify_travel > 34.0:
+			# count the distance wiggled with the light on, not the number of events
+			var step_len := p.distance_to(last_wire_p) if last_wire_p != Vector2.INF else 0.0
+			last_wire_p = p
+			verify_travel += minf(step_len, 120.0)
+			if (verify_travel > 160.0 and _near_connector(p)) or verify_travel > 300.0:
 					label("Світло рівне", true, CONN_ZONE + Vector2(0, -50))
 					succeed()
 

@@ -32,7 +32,7 @@ func _aim_angle() -> float:
 
 
 func _lens() -> Vector2:
-	return PIVOT + Vector2(cos(housing.angle), sin(housing.angle)) * 118
+	return PIVOT + Vector2(cos(housing.angle), sin(housing.angle)) * 126
 
 
 func _spot() -> Vector2:
@@ -99,8 +99,9 @@ func tick(delta: float) -> void:
 
 func paint_back(ci: CanvasItem) -> void:
 	# whitewashed wall with the chalk mark, floor below
-	ci.draw_polygon(PackedVector2Array([Vector2(WALL_X - 40, -400), Vector2(920, -400), Vector2(920, 760), Vector2(WALL_X - 40, 700)]),
-		PackedColorArray([Color("cbb99b"), Color("bfae90"), Color("a89880"), Color("b4a38a")]), Paint.uvs(PackedVector2Array([Vector2(WALL_X - 40, -400), Vector2(920, -400), Vector2(920, 760), Vector2(WALL_X - 40, 700)]), 1.4), Paint.stroke_tex())
+	var wall := PackedVector2Array([Vector2(WALL_X - 120, -400), Vector2(920, -400), Vector2(920, 760), Vector2(WALL_X - 120, 700)])
+	ci.draw_polygon(wall, PackedColorArray([Color("cbb99b"), Color("bfae90"), Color("a89880"), Color("b4a38a")]), Paint.uvs(wall, 1.4), Paint.stroke_tex())
+	ci.draw_polygon(PackedVector2Array([Vector2(WALL_X - 120, 700), Vector2(920, 760), Vector2(920, 1400), Vector2(WALL_X - 120, 1400)]), PackedColorArray([Color("6a6258"), Color("5f584f"), Color("3a3530"), Color("3a3530")]))
 	Paint.strokes(ci, Rect2(WALL_X, 0, 160, 600), Color(1, 0.97, 0.9, 0.3), 31, 14, 30, 3, 1.4)
 	# chalk cross mark
 	ci.draw_line(MARK + Vector2(-34, 0), MARK + Vector2(34, 0), Color(1, 1, 1, 0.9), 6, true)
@@ -134,10 +135,10 @@ func paint(ci: CanvasItem) -> void:
 	# housing rotated on the stalk
 	var a := housing.angle
 	var xf := Transform2D(a, PIVOT)
-	var body := Paint.xf(PackedVector2Array([Vector2(10, -32), Vector2(96, -42), Vector2(122, -30), Vector2(122, 30), Vector2(96, 42), Vector2(10, 32)]), xf)
+	var body := Paint.xf(PackedVector2Array([Vector2(10, -40), Vector2(100, -54), Vector2(128, -40), Vector2(128, 40), Vector2(100, 54), Vector2(10, 40)]), xf)
 	Paint.shadow(ci, PIVOT + Vector2(70, 50), 90, 20, 0.35)
 	Paint.fill(ci, body, Color("2f3036"), 0.3)
-	var lens_pts := Paint.xf(Paint.ellipse(Vector2(118, 0), 12, 40, 18), xf)
+	var lens_pts := Paint.xf(Paint.ellipse(Vector2(126, 0), 14, 50, 18), xf)
 	ci.draw_colored_polygon(lens_pts, Color("ffd27a") if on else Color("d08a2c"))
 	ci.draw_circle(PIVOT, 16, Paint.CHROME)
 	# switch button

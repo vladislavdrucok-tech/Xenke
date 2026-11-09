@@ -126,7 +126,8 @@ func paint_back(ci: CanvasItem) -> void:
 func paint(ci: CanvasItem) -> void:
 	var body := Color(order.get("paint", "#86a9b8"))
 	# glass pane
-	var g := PackedVector2Array([Vector2(110, glass_y), Vector2(640, glass_y), Vector2(640, glass_y + 420), Vector2(110, glass_y + 420)])
+	var gb := minf(glass_y + 420.0, 532.0)
+	var g := PackedVector2Array([Vector2(110, glass_y), Vector2(640, glass_y), Vector2(640, gb), Vector2(110, gb)])
 	ci.draw_colored_polygon(g, Color(0.75, 0.88, 0.95, 0.35))
 	ci.draw_line(Vector2(140, glass_y + 30), Vector2(260, glass_y + 6), Color(1, 1, 1, 0.45), 8, true)
 	ci.draw_line(Vector2(110, glass_y), Vector2(640, glass_y), Color(1, 1, 1, 0.55), 4, true)

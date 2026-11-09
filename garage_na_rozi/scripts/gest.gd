@@ -255,12 +255,20 @@ class Stroke:
 		covered.resize(bins)
 		covered.fill(false)
 
+	var last_i := -1
+
 	func feed(p: Vector2) -> void:
 		var c := Gest.path_closest(p, pts)
 		if c["dist"] > tol:
+			last_i = -1
 			return
 		var i := clampi(int(c["t"] * bins), 0, bins - 1)
+		# a fast finger skips bins between two events: fill the gap
+		if last_i >= 0:
+			for k in range(mini(last_i, i), maxi(last_i, i) + 1):
+				covered[k] = true
 		covered[i] = true
+		last_i = i
 		reached = maxf(reached, c["t"])
 
 	func progress() -> float:

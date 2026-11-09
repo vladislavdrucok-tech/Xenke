@@ -307,19 +307,33 @@ func _draw_over(ci: CanvasItem) -> void:
 	# tutorial finger
 	if tutorial and finger.size() > 0 and step != "done":
 		_draw_finger(ci)
-	# feedback labels
+	# feedback labels: newest at its spot, older ones are pushed clear of it
 	Paint.fonts()
-	for l in labels:
+	var placed: Array = []
+	var order_l := labels.duplicate()
+	order_l.sort_custom(func(a, b): return a["age"] < b["age"])
+	for l in order_l:
 		var a: float = clampf(3.2 - l["age"], 0.0, 1.0) * clampf(l["age"] * 6.0, 0.0, 1.0)
-		var pos: Vector2 = l["pos"] + Vector2(0, -60 - l["age"] * 10.0)
+		var pos: Vector2 = l["pos"] + Vector2(0, -60 - minf(l["age"], 0.6) * 10.0)
 		var txt: String = l["text"]
 		var fs := 28
 		var tw := Paint.font_bold.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		var bw := tw + 70.0
 		var bx := clampf(pos.x - bw / 2.0, 8.0, W - bw - 8.0)
 		var r := Rect2(bx, pos.y - 26, bw, 52)
+		var guard := 0
+		var moved := true
+		while moved and guard < 8:
+			moved = false
+			guard += 1
+			for q in placed:
+				if (q as Rect2).grow(4).intersects(r):
+					r.position.y = (q as Rect2).position.y - 58
+					moved = true
+		r.position.y = maxf(r.position.y, -40.0)
+		placed.append(r)
 		var bg := Color(0.98, 0.95, 0.86, 0.95 * a)
-		ci.draw_polygon(Paint.rrect(r, 24), PackedColorArray([bg]))
+		ci.draw_colored_polygon(Paint.rrect(r, 24), bg)
 		var edge := (Paint.OK if l["good"] else Paint.BAD)
 		edge.a = a
 		Paint.outline(ci, Paint.rrect(r, 24), edge, 3.0)

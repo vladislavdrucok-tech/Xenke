@@ -124,6 +124,7 @@ func restore_scene() -> void:
 		oid = "f_light" if oid == "" else oid
 	if Game.state.get("credits_pending", false):
 		oid = "f_light"
+		garage.sign_shown = false
 	if oid == "":
 		return
 	var o := Game.order(oid)
@@ -538,6 +539,7 @@ func _show_result(res: Dictionary) -> void:
 	var last_stage: bool = res["kind"] == "final" and res["events"].has("finale")
 	if last_stage:
 		thanks = Game.data["final"]["thanks"]
+		garage.sign_shown = false
 	hud.say(thanks, client_screen_pos(), 4.0)
 	Sfx.play("cash")
 	if int(res["tip"]) > 0:
@@ -600,20 +602,21 @@ func play_finale() -> void:
 	if garage.vehicle != "wagon":
 		_place_vehicle(fo)
 		_place_client(fo)
-	# the sign: a gift from the first client
-	hud.say("А це — тобі. Щоб усі знали, де тут гараж!", client_screen_pos(), 3.0)
-	await _wait(1.6)
+	garage.sign_shown = false
+	# the family waves and drives out through the gate
+	hud.say("До зустрічі! Привеземо тобі мушлю з моря!", client_screen_pos(), 2.6)
+	garage.client_wave = 1.0
+	await _wait(1.4)
+	await _depart()
+	await _wait(0.5)
+	# the gift: the enamel sign goes up above the gate
 	garage.sign_drop = 0.0
+	garage.sign_shown = true
 	garage.refresh()
 	Sfx.play("fanfare")
 	await _tween_prop(garage, "sign_drop", 1.0, 1.2)
-	hud.flash("Емальована вивіска «Гараж на розі»!", 2.6)
-	await _wait(1.6)
-	# the family drives out through the gate
-	garage.client_wave = 1.0
-	await _wait(0.8)
-	await _depart()
-	await _wait(0.6)
+	hud.flash("Подарунок від Остапа: емальована вивіска «Гараж на розі»!", 3.0)
+	await _wait(2.4)
 	hud.open_credits()
 	busy = false
 

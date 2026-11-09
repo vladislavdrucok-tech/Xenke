@@ -334,6 +334,11 @@ func _update_coins() -> void:
 
 
 func _process(delta: float) -> void:
+	# keep the bottom card exactly as tall as its content
+	if bottom.visible:
+		var want := bottom.get_combined_minimum_size().y
+		if absf(bottom.size.y - want) > 1.0:
+			bottom.offset_top = bottom.offset_bottom - want
 	if absf(shown_balance - target_balance) > 0.5:
 		var prev := int(shown_balance)
 		shown_balance = move_toward(shown_balance, target_balance, maxf(60.0, absf(target_balance - shown_balance) * 3.0) * delta)
@@ -397,6 +402,19 @@ func _show_bottom() -> void:
 	bottom.offset_bottom = -14 - safe_bottom
 	bottom.offset_top = bottom.offset_bottom
 	bottom.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_refit_later()
+
+
+## Wrapped labels measure their height only once their width is known, so the
+## card is shrunk to its real height again after layout.
+func _refit_later() -> void:
+	await get_tree().process_frame
+	if not is_instance_valid(bottom) or not bottom.visible:
+		return
+	bottom.offset_top = bottom.offset_bottom
+	await get_tree().process_frame
+	if is_instance_valid(bottom) and bottom.visible:
+		bottom.offset_top = bottom.offset_bottom
 
 
 func _row(children: Array) -> HBoxContainer:

@@ -203,8 +203,13 @@ func solve_repair(snap_name := "") -> bool:
 					await tap(repair_to_screen(a["at"]))
 				"drag":
 					var pts := PackedVector2Array()
-					for p in a["path"]:
-						pts.append(repair_to_screen(p))
+					var src: PackedVector2Array = a["path"]
+					var sparse := OS.get_cmdline_user_args().has("--sparse")
+					for k in src.size():
+						# --sparse: a slow phone delivers only every third touch sample
+						if sparse and k % 3 != 0 and k != src.size() - 1:
+							continue
+						pts.append(repair_to_screen(src[k]))
 					await drag(pts, int(a.get("per", 1)))
 				"hold":
 					await hold(repair_to_screen(a["at"]), int(a.get("frames", 60)))
@@ -249,12 +254,94 @@ func do_order(snap := "") -> Dictionary:
 
 
 func run_shots() -> void:
-	await shot("title")
-	await press("start")
-	await until(func(): return Game.current() != null and not main.busy, 1200)
-	await shot("arrival")
-	await do_order("headlight")
-	await shot("garage_after_first")
+	var what := "all"
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--what="):
+			what = a.substr(7)
+	if what == "all" or what == "start":
+		await fresh_profile()
+		await shot("title")
+		await press("start")
+		await until(func(): return Game.current() != null and not main.busy, 1200)
+		await shot("arrival")
+		await do_order("headlight")
+		await shot("garage_after_first")
+	if what == "all" or what == "garage":
+		await garage_states()
+	if what == "all" or what == "repairs":
+		await fresh_profile()
+		main.hud.close_overlay()
+		Game.state["tutorial"] = {"first_repair": true, "tap_zone": true}
+		var ids: Array = Game.order_ids + Game.FINAL
+		for a in OS.get_cmdline_user_args():
+			if a.begins_with("--ids="):
+				ids = a.substr(6).split(",")
+		for id in ids:
+			await repair_once(id, id)
+
+
+func set_stage(done_ids: Array, owned: Array, extra := {}) -> void:
+	Game.reset_progress()
+	Game.state["started"] = true
+	Game.state["tutorial"] = {"first_repair": true, "tap_zone": true}
+	for id in done_ids:
+		Game.state["done"][id] = 1
+		Game.state["records"][id] = 30.0 + randf() * 20.0
+	for it in owned:
+		Game.state["owned"][it] = true
+	for k in extra.keys():
+		Game.state[k] = extra[k]
+	Game.save()
+	await restart_game()
+	main.hud.close_overlay()
+	main.garage_idle()
+	await frames(10)
+
+
+func garage_states() -> void:
+	var moped := ["m_headlight", "m_mirror"]
+	await set_stage(moped, [], {"balance": 200})
+	await shot("g1_buy_stand")
+	await set_stage(moped, ["stand"], {"balance": 0})
+	Game.open_job("m_speedo", "career")
+	main.restore_scene()
+	main.garage_idle()
+	await frames(10)
+	await shot("g2_moped_on_stand")
+	var all_moped := ["m_headlight", "m_mirror", "m_speedo", "m_fender"]
+	await set_stage(all_moped + ["b_turn"], ["stand"], {"balance": 300, "photo": true})
+	Game.open_job("b_horn", "career")
+	main.restore_scene()
+	main.garage_idle()
+	await frames(10)
+	await shot("g3_moto_photo")
+	var moto := ["b_turn", "b_horn", "b_kickstand", "b_case"]
+	await set_stage(all_moped + moto, ["stand"], {"balance": 400, "photo": true})
+	await shot("g4_buy_lift")
+	await set_stage(all_moped + moto + ["c_wiper"], ["stand", "lift"], {"balance": 300, "photo": true})
+	Game.open_job("c_glovebox", "career")
+	main.restore_scene()
+	main.garage_idle()
+	await frames(10)
+	await shot("g5_car_on_lift")
+	var car := ["c_wiper", "c_glovebox", "c_dash", "c_window"]
+	await set_stage(all_moped + moto + car, ["stand", "lift"], {"balance": 600, "photo": true, "final_arrived": true})
+	main.restore_scene()
+	main.garage_idle()
+	await frames(10)
+	await shot("g6_final_wagon")
+	check(main.hud.bottom.size.y < 700.0, "final card fits its content (%d px)" % int(main.hud.bottom.size.y))
+	await set_stage(all_moped + moto + car + Game.FINAL, ["stand", "lift", "decor_lamp", "decor_cabinet", "decor_gate"], {"balance": 1240, "photo": true, "sign": true, "free_play": true, "gate_new_color": true, "final_done": Game.FINAL.duplicate()})
+	await shot("g7_free_play_decor")
+	main.hud.open_board(true, true)
+	await shot("g8_board")
+	main.hud.open_shop()
+	await shot("g9_shop")
+	main.hud.open_settings("")
+	await shot("g10_settings")
+	main.hud.open_credits()
+	await shot("g11_credits")
+	main.hud.close_overlay()
 
 
 func restart_game() -> void:

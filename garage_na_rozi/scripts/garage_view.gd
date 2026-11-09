@@ -8,9 +8,9 @@ const T := Vector2(360, 400)
 const R := Vector2(860, 650)
 const L := Vector2(-140, 650)
 const HW := 330.0
-const GATE_U := Vector2(0.44, 0.72)
+const GATE_U := Vector2(0.36, 0.66)
 const GATE_H := 236.0
-const BAY := Vector2(0.58, 0.34)          # car centre (u, v)
+const BAY := Vector2(0.51, 0.34)          # car centre (u, v)
 const SPOT := Vector2(0.62, 0.8)         # two-wheeler spot without the stand
 const STAND := Vector2(0.27, 0.62)        # stand spot near the workbench
 
@@ -38,6 +38,7 @@ var zones: Dictionary = {}    # id -> Vector2 (local) of tap zones on the vehicl
 var pulse := ""               # zone id highlighted for the first tap
 var pulse_ids: Array = []
 var sign_drop := 1.0          # 0..1 animation of the sign hanging
+var sign_shown := true        # false until the finale hangs it
 var dust: Array = []
 
 
@@ -131,7 +132,7 @@ func _draw_static(ci: CanvasItem) -> void:
 	# window with daylight
 	_window(ci)
 	# floor patch of daylight
-	ci.draw_colored_polygon(PackedVector2Array([g(0.07, 0.02), g(0.24, 0.02), g(0.3, 0.32), g(0.12, 0.32)]), Color(0.85, 0.92, 1.0, 0.08))
+	ci.draw_colored_polygon(PackedVector2Array([g(0.06, 0.02), g(0.21, 0.02), g(0.27, 0.32), g(0.11, 0.32)]), Color(0.85, 0.92, 1.0, 0.08))
 	_workbench(ci)
 	_board(ci)
 	if Game.state.get("photo", false):
@@ -142,10 +143,10 @@ func _draw_static(ci: CanvasItem) -> void:
 
 
 func _window(ci: CanvasItem) -> void:
-	var a := g(0.07, 0, 140)
-	var b := g(0.25, 0, 140)
-	var c := g(0.25, 0, 265)
-	var d := g(0.07, 0, 265)
+	var a := g(0.06, 0, 140)
+	var b := g(0.22, 0, 140)
+	var c := g(0.22, 0, 265)
+	var d := g(0.06, 0, 265)
 	ci.draw_colored_polygon(PackedVector2Array([a, b, c, d]), Color("cfe0ea"))
 	ci.draw_colored_polygon(PackedVector2Array([a, b, b + Vector2(0, -45), a + Vector2(0, -45)]), Color("9fbf8a"))
 	Paint.glow(ci, (a + c) * 0.5, 80, Color(1, 1, 1, 0.25))
@@ -255,8 +256,8 @@ func _board(ci: CanvasItem) -> void:
 
 
 func _photo(ci: CanvasItem) -> void:
-	var a := g(0.31, 0, 170)
-	var b := g(0.4, 0, 170)
+	var a := g(0.255, 0, 170)
+	var b := g(0.33, 0, 170)
 	var pts := PackedVector2Array([a, b, b + Vector2(0, -66), a + Vector2(0, -66)])
 	Paint.shadow(ci, (a + b) * 0.5 + Vector2(4, -30), 50, 40, 0.3)
 	ci.draw_colored_polygon(pts, Color("6b4a2c"))
@@ -331,7 +332,7 @@ func _draw_gate(ci: CanvasItem) -> void:
 	ci.draw_line(b, b + top, Color("3a3634"), 8, true)
 	ci.draw_line(a + top, b + top, Color("3a3634"), 10, true)
 	# enamel sign above the gate
-	if Game.state.get("sign", false):
+	if Game.state.get("sign", false) and sign_shown:
 		_sign(ci)
 
 
@@ -350,7 +351,7 @@ func _sign(ci: CanvasItem) -> void:
 	Paint.fonts()
 	var mid := (a + b) * 0.5 + sh * 0.5
 	ci.draw_set_transform(mid, (b - a).angle(), Vector2.ONE)
-	ci.draw_string(Paint.font_hand, Vector2(-120, 10), "Гараж на розі", HORIZONTAL_ALIGNMENT_CENTER, 240, 30, Color("f2ead7"))
+	ci.draw_string(Paint.font_hand, Vector2(-100, 9), "Гараж на розі", HORIZONTAL_ALIGNMENT_CENTER, 200, 27, Color("f2ead7"))
 	ci.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
 	ci.draw_circle(a + Vector2(14, 14), 3, Paint.CHROME)
 	ci.draw_circle(b + Vector2(-14, 14), 3, Paint.CHROME)
@@ -516,7 +517,7 @@ func zone_pos(id: String) -> Vector2:
 		"board":
 			return g(0, 0.155, 215)
 		"photo":
-			return g(0.355, 0, 205)
+			return g(0.29, 0, 205)
 		"gate":
 			return g((GATE_U.x + GATE_U.y) * 0.5, 0, 120)
 		"cabinet_spot":

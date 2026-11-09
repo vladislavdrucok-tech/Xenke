@@ -112,12 +112,13 @@ func paint(ci: CanvasItem) -> void:
 		var a := PI + PI * i / 13.0
 		ci.draw_line(WHEEL + Vector2(cos(a), sin(a)) * 286, WHEEL + Vector2(cos(a), sin(a)) * 300, Color(1, 1, 1, 0.06), 10, true)
 	# fender arc (with scuffs)
-	var outer := Paint.arc_pts(FENDER_C + b, 345, PI * 1.05, PI * 1.95, 30)
-	var inner := Paint.arc_pts(FENDER_C + b, 318, PI * 1.95, PI * 1.05, 30)
+	var outer := Paint.arc_pts(FENDER_C + b, 362, PI * 1.05, PI * 1.95, 30)
+	var inner := Paint.arc_pts(FENDER_C + b, 316, PI * 1.95, PI * 1.05, 30)
 	var fender := outer + inner
 	Paint.shadow(ci, FENDER_C + b + Vector2(0, -300), 340, 60, 0.3)
 	Paint.fill(ci, fender, paint_col, 0.35)
-	ci.draw_arc(FENDER_C + b, 338, PI * 1.15, PI * 1.5, 24, paint_col.lightened(0.45), 5, true)
+	ci.draw_arc(FENDER_C + b, 352, PI * 1.15, PI * 1.5, 24, paint_col.lightened(0.45), 6, true)
+	ci.draw_arc(FENDER_C + b, 322, PI * 1.08, PI * 1.92, 30, paint_col.darkened(0.35), 4, true)
 	Paint.strokes(ci, Rect2(80, 560, 500, 60), Color(0.95, 0.92, 0.8, 0.6), 13, 10, 10, 2)
 	# front bolt
 	Paint.bolt(ci, BOLT + b * 0.3, 18)

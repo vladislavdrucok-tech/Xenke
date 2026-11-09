@@ -131,6 +131,12 @@ func paint(ci: CanvasItem) -> void:
 	Paint.fill(ci, Paint.circle(LOCK, 34, 24), Paint.CHROME, 0.4)
 	var ka := key_turn * 1.2
 	ci.draw_line(LOCK - Vector2(cos(ka), sin(ka)) * 18, LOCK + Vector2(cos(ka), sin(ka)) * 18, Paint.METAL_DARK, 6, true)
+	# open case: dark interior and the hinge arms that hold the lid
+	if ly < -4.0:
+		var top := BODY.position.y + 6
+		ci.draw_colored_polygon(PackedVector2Array([Vector2(BODY.position.x + 24, top), Vector2(BODY.end.x - 24, top), Vector2(BODY.end.x - 10, top + ly + 8), Vector2(BODY.position.x + 10, top + ly + 8)]), Color("15161a"))
+		for x in [BODY.position.x + 30, BODY.end.x - 30]:
+			ci.draw_line(Vector2(x, top + 20), Vector2(x, top + ly + 4), Paint.METAL, 7, true)
 	# lid, moves down when pressed
 	var lr := Rect2(BODY.position.x - 10, BODY.position.y - 110 + ly, BODY.size.x + 20, 120)
 	Paint.shadow(ci, Vector2(360, BODY.position.y + ly + 14), 260, 18, 0.35)

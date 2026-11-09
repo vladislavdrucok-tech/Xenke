@@ -1,3 +1,5 @@
+> **«Гараж на розі» 1.0.0** — окрема гра в теці `garage_na_rozi/` (Godot 4.5, Android). Інструкція: `garage_na_rozi/README_UK.md`, APK: `builds/garage-na-rozi-1.0.0.apk`.
+
 # Afterfall · «Останній сад» — v0.13, перший епізод (в розробці)
 
 ## Запуск

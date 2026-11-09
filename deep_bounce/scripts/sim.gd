@@ -16,8 +16,8 @@ const GAP := 3.0                                    # inset of a block rect insi
 const BALL_R := 11.0
 const SPEED := 1380.0
 const DT := 1.0 / 60.0
-const PIVOT := Vector2(360.0, 128.0)                # barrel hinge inside the arch
-const BARREL := 70.0                                # hinge to muzzle: balls leave the barrel tip
+const PIVOT := Vector2(360.0, 120.0)                # barrel hinge inside the arch
+const BARREL := 84.0                                # hinge to muzzle: balls leave the barrel tip
 const RETURN_Y := DANGER_Y - 6.0                    # a ball crossing this upwards is back home
 const FIRE_EVERY := 4                               # ticks between two balls of a volley
 const MIN_VY := 0.12                                # minimum |vy|/speed (~7 degrees), no endless horizontal loops
@@ -76,6 +76,14 @@ var v_launched := 0
 var v_balls: Array = []
 var v_damage := 0
 var v_angle := PI * 0.5
+
+# difficulty curve (tuned with tests/balance.gd)
+var hp_a := 1.0
+var hp_b := 0.8
+var hp_c := 0.62
+var dens0 := 0.42
+var dens_k := 0.005
+var dens_max := 0.66
 
 var events: Array = []      # consumed by the view: hits, breaks, zaps, returns
 var record_events := true
@@ -154,7 +162,7 @@ func _gen_chunk() -> void:
 
 func _layout_chunk(rng: RandomNumberGenerator, r0: int) -> Array:
 	# Returns block specs for rows r0 and r0+1. Multi-cell stones: 2x2, 2x1, 1x2, 1x1.
-	var d := clampf(0.40 + 0.0045 * float(r0), 0.40, 0.64)
+	var d := clampf(dens0 + dens_k * float(r0), dens0, dens_max)
 	if r0 < 10:
 		d = 0.38
 	var occ := [[false, false, false, false, false, false, false], [false, false, false, false, false, false, false]]
@@ -216,7 +224,7 @@ func _row_open(occ: Array, rr: int) -> int:
 func _roll_hp(rng: RandomNumberGenerator, area: int, abs_row: int) -> int:
 	var t := float(depth)
 	var p := difficulty_power()
-	var base := 0.55 + 0.20 * t + 0.30 * p
+	var base := hp_a + hp_b * t + hp_c * p
 	if abs_row < 14:
 		# the opening rows: small numbers, room to learn
 		return rng.randi_range(area / 2 + 1, area / 2 + 3) if area > 1 else rng.randi_range(1, 3)

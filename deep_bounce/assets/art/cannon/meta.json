@@ -1,0 +1,46 @@
+{
+ "classic": {
+  "base_pivot": [
+   130.0,
+   94
+  ],
+  "barrel_pivot": [
+   0,
+   47.0
+  ]
+ },
+ "ember": {
+  "base_pivot": [
+   130.0,
+   94
+  ],
+  "barrel_pivot": [
+   0,
+   47.0
+  ]
+ },
+ "brass": {
+  "base_pivot": [
+   130.0,
+   94
+  ],
+  "barrel_pivot": [
+   0,
+   47.0
+  ]
+ },
+ "crystal": {
+  "base_pivot": [
+   130.0,
+   94
+  ],
+  "barrel_pivot": [
+   0,
+   47.0
+  ]
+ },
+ "arch_origin": [
+  200,
+  -40
+ ]
+}

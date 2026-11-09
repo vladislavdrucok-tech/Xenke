@@ -8,3 +8,10 @@ godot/tools/__pycache__/
 squad/tools/__pycache__/
 iso/tools/__pycache__/
 builds/*.idsig
+
+# Deep Bounce: Godot cache, build output, signing material never goes to git
+deep_bounce/.godot/
+deep_bounce/build/
+deep_bounce/tools/**/__pycache__/
+*.keystore
+*.jks

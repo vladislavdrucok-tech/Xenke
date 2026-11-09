@@ -33,6 +33,10 @@ func _ready() -> void:
 			_qa = a.substr(5)
 		elif a == "--selftest":
 			_qa = "test"
+		elif a.begins_with("--insets="):
+			var parts := a.substr(9).split(",")
+			if parts.size() == 2:
+				forced_insets = Vector2(float(parts[0]), float(parts[1]))
 	var st := Store.settings()
 	if st["lang"] == "":
 		st["lang"] = Loc.detect(OS.get_locale())
@@ -200,21 +204,30 @@ func _layout() -> void:
 	_update_hint()
 
 
-## Top and bottom system-bar insets, in viewport units (only on phones). When Android keeps the
-## status and navigation bars outside the game window there is nothing to avoid; when the window
-## covers the whole screen, the display's safe area (cut-outs, gesture bar) is kept free.
+## Top and bottom insets in viewport units. On a phone the game is full-screen, but Android still
+## keeps touches in the hidden navigation-bar strip (and the gesture area) for itself, and the status
+## bar or a camera cut-out sits on top. So the buttons stay out of 24 dp at the top and 48 dp at the
+## bottom, or out of the display's safe area if that is larger. A forced value can be given for
+## checking the phone layout on a computer: -- --insets=top,bottom
+var forced_insets := Vector2(-1, -1)
+
+
 func _safe_insets() -> Vector2:
+	if forced_insets.x >= 0.0:
+		return forced_insets
 	if not OS.has_feature("mobile"):
 		return Vector2.ZERO
 	var win := Vector2(DisplayServer.window_get_size())
-	var screen := Vector2(DisplayServer.screen_get_size())
-	if win.y <= 0 or win.y < screen.y - 8:
+	if win.x <= 0 or win.y <= 0:
 		return Vector2.ZERO
+	var k := _view.x / win.x
+	var dp := maxf(1.0, float(DisplayServer.screen_get_dpi()) / 160.0)
+	var top := 24.0 * dp * k
+	var bottom := 48.0 * dp * k
 	var safe := DisplayServer.get_display_safe_area()
-	var k := _view.y / win.y
-	var top := clampf(float(safe.position.y) * k, 0.0, _view.y * 0.08)
-	var bottom := clampf((win.y - float(safe.end.y)) * k, 0.0, _view.y * 0.08)
-	return Vector2(top, bottom)
+	if safe.size.y > 0:
+		top = maxf(top, float(safe.position.y) * k)
+	return Vector2(clampf(top, 0.0, _view.y * 0.08), clampf(bottom, 0.0, _view.y * 0.1))
 
 
 func _fit_texts() -> void:
@@ -779,10 +792,14 @@ func _update_hint() -> void:
 	if _hint_hide >= 0.0:
 		return
 	if run["history"].is_empty():
+		# Point at the tallest stack: the bubble then sits above every tile and hides none.
 		var col := 0
 		var sol: Array = run["puzzle"].get("solution", [])
 		if not sol.is_empty():
 			col = int(sol[0])
+		for i in gs.heights.size():
+			if gs.heights[i] > gs.heights[col]:
+				col = i
 		var p := board.top_tile_pos(col)
 		b.show_at("HINT_TAP_TOP", p - Vector2(0, 8), true, _view.x)
 	elif not run.get("tut_cleared", false):

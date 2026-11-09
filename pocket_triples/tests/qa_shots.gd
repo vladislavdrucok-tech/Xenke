@@ -202,8 +202,17 @@ func dump_rects() -> void:
 		lines.append("col%d %s" % [i, str(main.board.col_rects[i])])
 	for name in ["menu", "win", "pause", "settings", "lose", "confirm"]:
 		main.panels.close_all()
-		if name == "win":
-			main._refresh_win()
+		match name:
+			"win":
+				main._refresh_win()
+			"pause":
+				main._refresh_pause()
+			"settings":
+				main._refresh_settings()
+			"menu":
+				main._refresh_menu()
+			"lose":
+				main.panels.widgets["lose_next"].visible = main.mode == "endless"
 		main.panels.open(name)
 		await wait(0.35)
 		for b in main.panels.overlays[name].find_children("*", "Button", true, false):

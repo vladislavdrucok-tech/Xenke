@@ -13,6 +13,9 @@ var overflow: Array = []
 func run_all(p_main: Node, p_out: String) -> void:
 	main = p_main
 	out = p_out
+	if out.ends_with(".txt"):
+		await dump_rects()
+		return
 	DirAccess.make_dir_recursive_absolute(out)
 	Store.path = "user://qa_save.json"
 	for lang in ["uk", "en"]:
@@ -182,3 +185,31 @@ func walk(lang: String) -> void:
 	await wait(0.3)
 	await shot("pause_endless")
 	main.panels.close_all()
+
+
+## Prints where the buttons are (viewport units) for driving a real device with adb taps.
+func dump_rects() -> void:
+	Store.path = "user://qa_save.json"
+	Store.wipe()
+	Loc.apply("uk")
+	main.panels.close_all()
+	main.boot()
+	await wait(0.3)
+	var lines := ["view %s" % str(main.get_viewport().get_visible_rect().size)]
+	for k in ["menu", "settings", "undo", "pause", "restart"]:
+		lines.append("hud.%s %s" % [k, str((main.w[k] as Control).get_global_rect())])
+	for i in 4:
+		lines.append("col%d %s" % [i, str(main.board.col_rects[i])])
+	for name in ["menu", "win", "pause", "settings", "lose", "confirm"]:
+		main.panels.close_all()
+		if name == "win":
+			main._refresh_win()
+		main.panels.open(name)
+		await wait(0.35)
+		for b in main.panels.overlays[name].find_children("*", "Button", true, false):
+			if b.is_visible_in_tree():
+				lines.append("%s.%s %s" % [name, b.text, str(b.get_global_rect())])
+	var f := FileAccess.open(out, FileAccess.WRITE)
+	f.store_string("\n".join(lines))
+	f.close()
+	get_tree().quit()

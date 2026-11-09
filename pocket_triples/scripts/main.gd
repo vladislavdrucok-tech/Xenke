@@ -123,7 +123,14 @@ func _build() -> void:
 		var b := UiKit.button("", spec[2], "SoftButton", 26)
 		b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
 		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		b.add_theme_constant_override("icon_max_width", 40)
+		b.add_theme_constant_override("icon_max_width", 36)
+		b.custom_minimum_size = Vector2(0, 0)
+		for state in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+			var sb: StyleBox = theme.get_stylebox(state, "SoftButton").duplicate()
+			var down: bool = (state as String).contains("pressed")
+			sb.content_margin_top = 10 if down else 6
+			sb.content_margin_bottom = 6 if down else 10
+			b.add_theme_stylebox_override(state, sb)
 		Loc.bind(b, spec[1])
 		Loc.bind(b, spec[3], {}, "tooltip_text")
 		var id: String = spec[0]
@@ -173,7 +180,7 @@ func _layout() -> void:
 	var sub: Label = w["subtitle"]
 	sub.position = Vector2(x0 + 96, top + 52)
 	sub.size = Vector2(bw - 192, 34)
-	var bar_h := 108.0
+	var bar_h := maxf(100.0, (w["undo"] as Control).get_combined_minimum_size().y)
 	var bar_y := H - ins.y - 18.0 - bar_h
 	var gap := 14.0
 	var bwid := (bw - gap * 2) / 3.0
@@ -193,12 +200,15 @@ func _layout() -> void:
 	_update_hint()
 
 
-## Top and bottom system-bar insets, in viewport units (only on phones).
+## Top and bottom system-bar insets, in viewport units (only on phones). When Android keeps the
+## status and navigation bars outside the game window there is nothing to avoid; when the window
+## covers the whole screen, the display's safe area (cut-outs, gesture bar) is kept free.
 func _safe_insets() -> Vector2:
 	if not OS.has_feature("mobile"):
 		return Vector2.ZERO
 	var win := Vector2(DisplayServer.window_get_size())
-	if win.y <= 0:
+	var screen := Vector2(DisplayServer.screen_get_size())
+	if win.y <= 0 or win.y < screen.y - 8:
 		return Vector2.ZERO
 	var safe := DisplayServer.get_display_safe_area()
 	var k := _view.y / win.y

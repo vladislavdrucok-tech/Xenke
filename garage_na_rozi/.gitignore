@@ -1,0 +1,12 @@
+# Godot cache and builds
+.godot/
+build/
+*.apk
+*.aab
+*.idsig
+# signing material never goes into the project
+*.jks
+*.keystore
+*.p12
+export_credentials.cfg
+.android/

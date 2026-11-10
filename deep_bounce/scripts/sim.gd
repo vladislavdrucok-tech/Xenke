@@ -66,6 +66,8 @@ var run_gems := 0           # crystals found in this run
 var unclaimed := 0          # crystals not yet moved to the wallet (the wallet lives in the save)
 var upgrade_opts: Array = []
 var picks := 0
+var gen := 2                # layout generator: 1 = random rows (release 1.0), 2 = groups, side passages, pockets
+var band_kind := -1         # last band template of generator 2 (open and compact bands alternate)
 var stats := {"destroyed": 0, "zaps": 0, "best_volley": 0, "bonus": 0}
 var aim := PI * 0.5
 
@@ -75,12 +77,13 @@ var v_total := 0
 var v_launched := 0
 var v_balls: Array = []
 var v_damage := 0
+var v_hits := 0             # direct ball-to-stone hits in this volley (layout evaluation)
 var v_angle := PI * 0.5
 
 # difficulty curve (tuned with tests/balance.gd)
 var hp_a := 1.0
-var hp_b := 0.8
-var hp_c := 0.62
+var hp_b := 1.1
+var hp_c := 0.8
 var dens0 := 0.42
 var dens_k := 0.005
 var dens_max := 0.66
@@ -110,6 +113,7 @@ func new_run(run_seed: int) -> void:
 	next_id = 1
 	top = 0
 	gen_rows = 4          # the first four visible rows start empty: room to learn the ricochet
+	band_kind = -1
 	run_gems = 0
 	unclaimed = 0
 	upgrade_opts = []
@@ -135,6 +139,25 @@ func difficulty_power() -> float:
 	return float(balls) * (1.0 + 0.32 * heavy + 0.22 * electric)
 
 func _gen_chunk() -> void:
+	if gen >= 2:
+		_gen_band()
+	else:
+		_gen_rows_v1()
+
+func _carve(best: Array, r0: int, rng: RandomNumberGenerator) -> void:
+	# last resort: open a shaft under a cell that is still reachable from the top
+	var open_cols: Array = []
+	for c in COLS:
+		if _reachable_cell(c, r0 - 1):
+			open_cols.append(c)
+	if open_cols.is_empty():
+		return
+	var col: int = open_cols[rng.randi_range(0, open_cols.size() - 1)]
+	for spec in best.duplicate():
+		if spec.c <= col and spec.c + spec.w > col:
+			best.erase(spec)
+
+func _gen_rows_v1() -> void:
 	var r0 := gen_rows
 	var best: Array = []
 	var passable := false
@@ -142,23 +165,245 @@ func _gen_chunk() -> void:
 	for attempt in 12:
 		rng.seed = mix(seed, r0 * 16 + attempt)
 		best = _layout_chunk(rng, r0)
-		if _chunk_reachable(best, r0):
+		if _chunk_reachable(best, r0, r0 + 1):
 			passable = true
 			break
 	if not passable:
-		# carve a shaft under a cell that is still reachable from the top
-		var open_cols: Array = []
-		for c in COLS:
-			if _reachable_cell(c, r0 - 1):
-				open_cols.append(c)
-		if not open_cols.is_empty():
-			var col: int = open_cols[rng.randi_range(0, open_cols.size() - 1)]
-			for spec in best.duplicate():
-				if spec.c <= col and spec.c + spec.w > col:
-					best.erase(spec)
+		_carve(best, r0, rng)
 	for spec in best:
 		_add_block(spec)
 	gen_rows += 2
+
+# ---------------------------------------------------------------- generator 2: bands of 4 rows
+
+enum { B_OPEN, B_SHELF, B_PILLARS, B_CLUSTER, B_STAIRS, B_SCATTER }
+const BAND := 4
+
+func _gen_band() -> void:
+	var r0 := gen_rows
+	var best: Array = []
+	var kind := B_OPEN
+	var passable := false
+	var rng := RandomNumberGenerator.new()
+	for attempt in 12:
+		rng.seed = mix(seed ^ 0x5bd1e995, r0 * 16 + attempt)
+		kind = _pick_band(rng, r0)
+		best = _layout_band(rng, r0, kind)
+		if _chunk_reachable(best, r0, r0 + BAND - 1):
+			passable = true
+			break
+	if not passable:
+		_carve(best, r0, rng)
+	for spec in best:
+		_add_block(spec)
+	band_kind = kind
+	gen_rows += BAND
+
+func _pick_band(rng: RandomNumberGenerator, r0: int) -> int:
+	var opening := r0 < 14
+	if band_kind != B_OPEN and band_kind >= 0 and rng.randf() < (0.25 if opening else 0.12):
+		return B_OPEN          # breathing room after a compact band
+	var w: Array
+	if opening:
+		w = [[B_SHELF, 3.0], [B_CLUSTER, 3.0], [B_STAIRS, 2.0], [B_PILLARS, 1.0], [B_OPEN, 0.6]]
+	else:
+		w = [[B_SHELF, 3.5], [B_PILLARS, 1.2], [B_CLUSTER, 2.2], [B_STAIRS, 1.5], [B_SCATTER, 3.0], [B_OPEN, 0.3]]
+	var total := 0.0
+	for e in w:
+		if e[0] == B_OPEN and band_kind == B_OPEN:
+			continue
+		total += e[1]
+	var x := rng.randf() * total
+	for e in w:
+		if e[0] == B_OPEN and band_kind == B_OPEN:
+			continue
+		x -= e[1]
+		if x <= 0.0:
+			return e[0]
+	return B_SHELF
+
+func _grid4() -> Array:
+	var g: Array = []
+	for rr in BAND:
+		g.append([false, false, false, false, false, false, false])
+	return g
+
+func _put(occ: Array, keep: Array, specs: Array, r0: int, c: int, rr: int, w: int, h: int, role := "") -> bool:
+	if c < 0 or c + w > COLS or rr < 0 or rr + h > BAND:
+		return false
+	for yy in h:
+		for xx in w:
+			if occ[rr + yy][c + xx] or keep[rr + yy][c + xx]:
+				return false
+	for yy in h:
+		for xx in w:
+			occ[rr + yy][c + xx] = true
+	specs.append({"c": c, "r": r0 + rr, "w": w, "h": h, "role": role})
+	return true
+
+func _scatter4(occ: Array, keep: Array, specs: Array, r0: int, rng: RandomNumberGenerator, d: float, big := 0.3) -> void:
+	for rr in BAND:
+		for c in COLS:
+			if occ[rr][c] or keep[rr][c] or rng.randf() > d:
+				continue
+			var roll := rng.randf()
+			if roll < big * 0.4 and _put(occ, keep, specs, r0, c, rr, 2, 2):
+				continue
+			if roll < big * 0.7 and _put(occ, keep, specs, r0, c, rr, 2, 1):
+				continue
+			if roll < big and _put(occ, keep, specs, r0, c, rr, 1, 2):
+				continue
+			_put(occ, keep, specs, r0, c, rr, 1, 1)
+
+func _layout_band(rng: RandomNumberGenerator, r0: int, kind: int) -> Array:
+	## Four rows built around a purpose: a shelf with a pocket behind a side passage, pillars with a
+	## corridor, a compact group with open lanes, a ramp along a wall, or an open breathing band.
+	## Passages are whole free cells (98 px between stone faces, the ball is 22 px wide).
+	var occ := _grid4()
+	var keep := _grid4()
+	var specs: Array = []
+	var d := clampf(dens0 + dens_k * float(r0), dens0, dens_max)
+	match kind:
+		B_SHELF:
+			# a chamber: a roof of stones with one or two entry holes (often next to a wall, a side passage),
+			# an empty cavity behind it and a floor whose openings are shifted sideways from the entries,
+			# so a ball that gets in rattles between roof and floor instead of falling straight through
+			# compact chamber: 4-5 columns, against a wall or free-standing; the rest of the band is rock
+			var span_w := rng.randi_range(4, 5)
+			var span_a := 0
+			var place := rng.randf()
+			if place < 0.35:
+				span_a = 0
+			elif place < 0.7:
+				span_a = COLS - span_w
+			else:
+				span_a = rng.randi_range(1, COLS - span_w - 1)
+			var span_b := span_a + span_w - 1
+			var srow := 0 if rng.randf() < 0.7 else 1
+			var holes: Array = []
+			var h1 := span_a if rng.randf() < 0.5 else span_b
+			if rng.randf() < 0.4:
+				h1 = rng.randi_range(span_a, span_b)
+			holes.append(h1)
+			if span_b - span_a >= 4 and rng.randf() < 0.6:
+				var h2 := span_b if h1 <= (span_a + span_b) / 2 else span_a
+				holes.append(h2)
+			for h in holes:
+				keep[srow][h] = true
+			var cav_bottom := 3 if rng.randf() < 0.35 else 2     # cavity of 1 or 2 rows
+			if srow == 1:
+				cav_bottom = 3
+			for rr in range(srow + 1, cav_bottom):
+				for c in range(span_a, span_b + 1):
+					keep[rr][c] = true
+			# floor openings away from the entries
+			var far: Array = []
+			for c in range(span_a, span_b + 1):
+				var ok := true
+				for h in holes:
+					if absi(c - h) < 2:
+						ok = false
+				if ok:
+					far.append(c)
+			if not far.is_empty():
+				keep[cav_bottom][far[rng.randi_range(0, far.size() - 1)]] = true
+			var c := span_a
+			while c <= span_b:
+				if c + 1 <= span_b and rng.randf() < 0.5 and _put(occ, keep, specs, r0, c, srow, 2, 1, "roof"):
+					c += 2
+				else:
+					_put(occ, keep, specs, r0, c, srow, 1, 1, "roof")
+					c += 1
+			for c2 in range(span_a, span_b + 1):
+				if rng.randf() < 0.82:
+					if not (rng.randf() < 0.3 and _put(occ, keep, specs, r0, c2, cav_bottom, 2, 1, "floor")):
+						_put(occ, keep, specs, r0, c2, cav_bottom, 1, 1, "floor")
+			# a bumper inside a tall cavity now and then
+			if cav_bottom - srow >= 3 and rng.randf() < 0.4:
+				var bc := rng.randi_range(span_a + 1, span_b - 1)
+				keep[srow + 1][bc] = false
+				_put(occ, keep, specs, r0, bc, srow + 1, 1, 1)
+			# the rest of the band: ordinary rock, big stones welcome
+			_scatter4(occ, keep, specs, r0, rng, d * 1.4, 0.5)
+		B_PILLARS:
+			# staggered pillars: balls zig-zag between them
+			var cols := [rng.randi_range(0, 1), 3, COLS - 1 - rng.randi_range(0, 1)]
+			for i in cols.size():
+				var col: int = cols[i]
+				var start := 0 if i % 2 == 0 else 1
+				if rng.randf() < 0.3 and col + 1 < COLS and i != 1:
+					_put(occ, keep, specs, r0, col if col <= 1 else col - 1, start, 2, 2)
+				else:
+					_put(occ, keep, specs, r0, col, start, 1, 2)
+				if rng.randf() < 0.6:
+					_put(occ, keep, specs, r0, col, start + 2 if start + 2 < BAND else 0, 1, 1)
+			_scatter4(occ, keep, specs, r0, rng, d * 1.05, 0.35)
+		B_CLUSTER:
+			var cx := rng.randi_range(2, 3)
+			var ry := rng.randi_range(0, 2)
+			_put(occ, keep, specs, r0, cx, ry, 2, 2)
+			var around := [[cx - 1, ry], [cx - 1, ry + 1], [cx + 2, ry], [cx + 2, ry + 1], [cx, ry - 1], [cx + 1, ry - 1], [cx, ry + 2], [cx + 1, ry + 2]]
+			var want := rng.randi_range(4, 6)
+			for i in 12:
+				if want <= 0:
+					break
+				var pick: Array = around[rng.randi_range(0, around.size() - 1)]
+				if _put(occ, keep, specs, r0, pick[0], pick[1], 1, 1):
+					want -= 1
+			_scatter4(occ, keep, specs, r0, rng, d * 1.0, 0.35)
+		B_STAIRS:
+			var dir := 1 if rng.randf() < 0.5 else -1
+			var wall := 0 if dir == 1 else COLS - 1
+			keep[0][wall] = true
+			for i in BAND:
+				var col := wall + dir * (i + 1)
+				if i < 3 and rng.randf() < 0.45:
+					var cc := col if dir == 1 else col - 1
+					if not _put(occ, keep, specs, r0, cc, i, 2, 1, "roof"):
+						_put(occ, keep, specs, r0, col, i, 1, 1, "roof")
+				else:
+					_put(occ, keep, specs, r0, col, i, 1, 1, "roof")
+			# the pocket under the ramp has a floor of soft stones
+			for i in range(1, 3):
+				if rng.randf() < 0.75:
+					_put(occ, keep, specs, r0, wall + dir * i, 3, 1, 1, "floor")
+			_scatter4(occ, keep, specs, r0, rng, d * 1.0, 0.3)
+		B_SCATTER:
+			_scatter4(occ, keep, specs, r0, rng, d * 1.1, 0.45)
+		_:
+			var n := rng.randi_range(5, 7)
+			for i in 16:
+				if n <= 0:
+					break
+				var col := clampi(int(round(3.0 + rng.randfn(0.0, 1.6))), 0, COLS - 1)
+				if _put(occ, keep, specs, r0, col, rng.randi_range(0, 3), 1, 1):
+					n -= 1
+	# every row keeps at least two open cells
+	for rr in BAND:
+		var guard := 0
+		while _row_open(occ, rr) < 2 and guard < 10:
+			guard += 1
+			var cand: Array = []
+			for sp in specs:
+				if sp.r <= r0 + rr and sp.r + sp.h > r0 + rr:
+					cand.append(sp)
+			if cand.is_empty():
+				break
+			var victim: Dictionary = cand[rng.randi_range(0, cand.size() - 1)]
+			for yy in victim.h:
+				for xx in victim.w:
+					occ[victim.r - r0 + yy][victim.c + xx] = false
+			specs.erase(victim)
+	for sp in specs:
+		var area: int = sp.w * sp.h
+		var hp := _roll_hp(rng, area, sp.r)
+		if sp.role == "floor":
+			hp = maxi(1, int(round(hp * 0.8)))
+		sp["hp"] = hp
+		sp["vein"] = rng.randf() < (0.35 if sp.role == "floor" else 0.08)
+		sp["g"] = (1 if area == 1 else (2 if area == 2 else 3)) + (3 if sp.vein else 0)
+		sp["v"] = rng.randi_range(0, 3)
+	return specs
 
 func _layout_chunk(rng: RandomNumberGenerator, r0: int) -> Array:
 	# Returns block specs for rows r0 and r0+1. Multi-cell stones: 2x2, 2x1, 1x2, 1x1.
@@ -241,10 +486,9 @@ func _roll_hp(rng: RandomNumberGenerator, area: int, abs_row: int) -> int:
 		v *= 1.6
 	return maxi(1, int(round(v)))
 
-func _chunk_reachable(specs: Array, r0: int) -> bool:
+func _chunk_reachable(specs: Array, r0: int, last: int) -> bool:
 	# Flood fill from the open space above the field through empty cells of everything generated so far
-	# plus this chunk. The chunk's lower row must keep at least one cell reachable from the top.
-	var last := r0 + 1
+	# plus this chunk. The chunk's lowest row must keep at least one cell reachable from the top.
 	var occ := {}
 	for key in grid:
 		occ[key] = true
@@ -337,14 +581,38 @@ func block_rect(b: Dictionary) -> Rect2:
 func visible_row(b: Dictionary) -> int:
 	return b.r - top
 
+func crosses_line(b: Dictionary, shifts := 0) -> bool:
+	## The one rule for the red line: after `shifts` more upward shifts, is the top of this stone's collider
+	## above the line? The game-over check (shifts = 0, after the shift) and the warning (shifts = 1) both use it.
+	return block_rect(b).position.y - shifts * CELL < DANGER_Y
+
+func will_cross_next(b: Dictionary) -> bool:
+	return crosses_line(b, 1)
+
+func is_future(b: Dictionary) -> bool:
+	## Generated rock still below the floor: not reachable by balls yet.
+	return block_rect(b).position.y >= FLOOR_Y
+
+static func damage_stage(hp: int, mhp: int) -> int:
+	## Crack stage from the share of strength left: >80 % intact, 51-80 % light, 26-50 % medium, <=25 % heavy.
+	if mhp < 2:
+		return 0
+	var ratio := float(hp) / float(mhp)
+	if ratio <= 0.25:
+		return 3
+	if ratio <= 0.5:
+		return 2
+	if ratio <= 0.8:
+		return 1
+	return 0
+
 func danger_level() -> int:
-	# 0 calm, 1 a stone is two rows from the line, 2 next shift ends the run unless it breaks
+	# 0 calm, 1 a stone will cross the line in two shifts, 2 the next shift ends the run unless it breaks
 	var lvl := 0
 	for b in blocks.values():
-		var vr: int = b.r - top
-		if vr <= 0:
+		if crosses_line(b, 1):
 			return 2
-		if vr == 1:
+		if crosses_line(b, 2):
 			lvl = 1
 	return lvl
 
@@ -399,6 +667,7 @@ func fire(angle: float) -> bool:
 	v_launched = 0
 	v_balls = []
 	v_damage = 0
+	v_hits = 0
 	phase = PH_VOLLEY
 	return true
 
@@ -745,6 +1014,7 @@ func _hit_block(ball: Ball, id: int) -> void:
 	if b.is_empty():
 		return
 	var dmg := 1
+	v_hits += 1
 	if ball.k == K_HEAVY:
 		dmg = HEAVY_DMG[heavy]
 	_damage(b, dmg, ball.k, ball.x, ball.y)
@@ -820,7 +1090,7 @@ func _end_volley() -> void:
 	depth += 1
 	_ensure_rows()
 	for b in blocks.values():
-		if b.r < top:
+		if crosses_line(b, 0):
 			phase = PH_OVER
 			_ev({"t": "over"})
 			return
@@ -884,7 +1154,7 @@ func to_dict() -> Dictionary:
 	var d := {
 		"seed": seed, "depth": depth, "volleys": volleys, "balls": balls, "heavy": heavy, "electric": electric,
 		"phase": phase, "next_id": next_id, "gen_rows": gen_rows, "top": top, "run_gems": run_gems,
-		"unclaimed": unclaimed, "upgrade_opts": upgrade_opts.duplicate(), "picks": picks, "stats": stats.duplicate(),
+		"unclaimed": unclaimed, "upgrade_opts": upgrade_opts.duplicate(), "picks": picks, "stats": stats.duplicate(), "gen": gen, "band_kind": band_kind,
 		"aim": aim, "blocks": bl,
 	}
 	if phase == PH_VOLLEY:
@@ -911,6 +1181,8 @@ func from_dict(d: Dictionary) -> void:
 	for o in d.get("upgrade_opts", []):
 		upgrade_opts.append(String(o))
 	picks = int(d.get("picks", 0))
+	gen = int(d.get("gen", 2))
+	band_kind = int(d.get("band_kind", -1))
 	var st: Dictionary = d.get("stats", {})
 	stats = {"destroyed": int(st.get("destroyed", 0)), "zaps": int(st.get("zaps", 0)),
 		"best_volley": int(st.get("best_volley", 0)), "bonus": int(st.get("bonus", 0))}

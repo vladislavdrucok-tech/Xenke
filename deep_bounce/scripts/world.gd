@@ -15,7 +15,8 @@ var block_nodes := {}          # id -> Node2D
 var label_settings := {}       # font size -> LabelSettings
 var bg: Sprite2D
 var walls: Array[Sprite2D] = []
-var fog: Sprite2D
+var under_node: Node2D
+var warn_font: Font
 var cannon_base: Sprite2D
 var barrel: Sprite2D
 var collar: Sprite2D
@@ -109,23 +110,12 @@ func _build_static() -> void:
 	addm.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	spill.material = addm
 	add_child(spill)
+	# below the floor: the shaft darkens (behind the stones, never over them)
+	under_node = Node2D.new()
+	under_node.draw.connect(_draw_under)
+	add_child(under_node)
 	blocks_root = Node2D.new()
 	add_child(blocks_root)
-	fog = Sprite2D.new()
-	var gt := GradientTexture2D.new()
-	var g := Gradient.new()
-	g.set_color(0, Color(0.01, 0.07, 0.08, 0.35))
-	g.set_color(1, Color(0.01, 0.06, 0.07, 0.92))
-	gt.gradient = g
-	gt.fill_from = Vector2(0, 0)
-	gt.fill_to = Vector2(0, 1)
-	gt.width = 8
-	gt.height = 64
-	fog.texture = gt
-	fog.centered = false
-	fog.position = Vector2(-300, Sim.FLOOR_Y + 2)
-	fog.scale = Vector2(1320.0 / 8.0, 700.0 / 64.0)
-	add_child(fog)
 	over_node = Node2D.new()
 	over_node.draw.connect(_draw_over)
 	add_child(over_node)
@@ -170,6 +160,7 @@ func _build_static() -> void:
 	fx.world = self
 	add_child(fx)
 	fx_add = fx.add_layer
+	warn_font = load("res://assets/fonts/Rubik-ExtraBold.ttf")
 	set_skin(G.meta.skin)
 
 func set_skin(id: String) -> void:
@@ -220,8 +211,11 @@ func sync_blocks(snap := false) -> void:
 			n.position = block_target(b)
 		_update_block(n, b)
 		n.set_meta("target", block_target(b))
+		n.set_meta("future_target", 1.0 if sim.is_future(b) else 0.0)
+		n.set_meta("warn", sim.will_cross_next(b))
 		if snap:
 			n.position = block_target(b)
+			n.set_meta("future", n.get_meta("future_target"))
 	for id in block_nodes.keys():
 		if not alive.has(id):
 			block_nodes[id].queue_free()
@@ -266,6 +260,12 @@ func _make_block(b: Dictionary) -> Node2D:
 	blocks_root.add_child(n)
 	n.set_meta("hp", -1)
 	n.set_meta("pulse", 0.0)
+	n.set_meta("future", 1.0 if sim.is_future(b) else 0.0)
+	n.set_meta("future_target", n.get_meta("future"))
+	n.set_meta("warn", false)
+	n.set_meta("size", sim.block_rect(b).size)
+	n.set_meta("cells", Vector2i(b.w, b.h))
+	n.set_meta("fs_now", fs)
 	return n
 
 func _update_block(n: Node2D, b: Dictionary) -> void:
@@ -275,22 +275,7 @@ func _update_block(n: Node2D, b: Dictionary) -> void:
 	n.set_meta("hp", b.hp)
 	var lab: Label = n.get_node("num")
 	lab.text = str(b.hp)
-	# big numbers shrink so they always fit inside the stone
-	var base_fs: int = n.get_meta("fs")
-	var digits := lab.text.length()
-	var avail: float = b.w * Sim.CELL - 18.0
-	var fs := mini(base_fs, int(avail / (0.62 * digits)))
-	if lab.label_settings.font_size != fs:
-		lab.label_settings = _ls(fs)
-	var ratio := float(b.hp) / float(maxi(1, b.mhp))
-	var stage := 0
-	if b.mhp >= 2:
-		if ratio <= 0.25:
-			stage = 3
-		elif ratio <= 0.5:
-			stage = 2
-		elif ratio <= 0.8:
-			stage = 1
+	var stage := Sim.damage_stage(b.hp, b.mhp)
 	var cr: Sprite2D = n.get_node("crack")
 	cr.texture = null if stage == 0 else tex["crack_%dx%d_s%d" % [b.w, b.h, stage]]
 	if not first:
@@ -311,13 +296,40 @@ func _process_blocks(dt: float) -> void:
 		if p > 0.0:
 			p = maxf(0.0, p - dt * 6.0)
 			n.set_meta("pulse", p)
+		# future rock (still under the floor) is dimmed as a whole stone; it lights up when it becomes active
+		var f: float = n.get_meta("future")
+		f = move_toward(f, float(n.get_meta("future_target")), dt * 4.0)
+		n.set_meta("future", f)
+		var dim := 1.0 - 0.58 * f
 		var sc := 1.0 - 0.035 * sin(p * PI)
 		n.scale = Vector2(sc, sc)
-		n.modulate = Color(1.0 + 0.35 * p, 1.0 + 0.3 * p, 1.0 + 0.25 * p)
-		var lab: Label = n.get_node("num")
-		var ls := 1.0 + 0.16 * sin(p * PI)
-		lab.scale = Vector2(ls, ls)
-		lab.visible = n.position.y < Sim.FLOOR_Y + 40
+		n.modulate = Color((1.0 + 0.35 * p) * dim, (1.0 + 0.3 * p) * dim, (1.0 + 0.25 * p) * (dim + 0.04 * f))
+		_place_label(n, p, f)
+
+func _place_label(n: Node2D, p: float, f: float) -> void:
+	## The number stays whole and readable: on an active stone that reaches below the floor it sits in the
+	## part above the floor and shrinks to fit there; long numbers shrink to the stone's width.
+	var lab: Label = n.get_node("num")
+	var sz: Vector2 = n.get_meta("size")
+	var top := n.position.y - sz.y * 0.5
+	var bottom := top + sz.y
+	var vis_bottom := bottom
+	if f < 0.5:
+		vis_bottom = minf(bottom, Sim.FLOOR_Y)
+	var vis_h := maxf(30.0, vis_bottom - top)
+	var cy := (top + vis_bottom) * 0.5 - n.position.y
+	var digits := maxi(1, lab.text.length())
+	var base_fs: int = n.get_meta("fs")
+	var fs := mini(base_fs, int((sz.x - 18.0) / (0.62 * digits)))
+	fs = mini(fs, int(vis_h * 0.82))
+	fs = maxi(20, fs - fs % 4)
+	if int(n.get_meta("fs_now")) != fs:
+		n.set_meta("fs_now", fs)
+		lab.label_settings = _ls(fs)
+	lab.position = Vector2(-lab.size.x * 0.5, cy - lab.size.y * 0.5 - 2.0)
+	var ls := 1.0 + 0.16 * sin(p * PI)
+	lab.scale = Vector2(ls, ls)
+	lab.modulate.a = 1.0 - 0.35 * f
 
 # ---------------------------------------------------------------- per frame
 
@@ -464,17 +476,29 @@ func _draw_aim() -> void:
 	aim_node.draw_arc(hp, Sim.BALL_R, 0, TAU, 28, Color(1, 0.95, 0.8, 0.95 * a), 3.0, true)
 	aim_node.draw_arc(hp, Sim.BALL_R + 3, 0, TAU, 28, Color(0.1, 0.04, 0.0, 0.4 * a), 2.0, true)
 
+func _draw_under() -> void:
+	# the shaft below the floor is darker: there the rock is not reachable yet
+	var y0 := Sim.FLOOR_Y
+	for i in 12:
+		var a := 0.30 + 0.05 * i
+		under_node.draw_rect(Rect2(-400, y0 + i * 40.0, 1520, 40.0), Color(0.008, 0.05, 0.055, a))
+	under_node.draw_rect(Rect2(-400, y0 + 480.0, 1520, 600.0), Color(0.008, 0.05, 0.055, 0.88))
+	under_node.draw_line(Vector2(Sim.FIELD_X0, y0), Vector2(Sim.FIELD_X1, y0), Color(0.45, 0.85, 0.82, 0.22), 2.0)
+
 func _draw_over() -> void:
-	# danger line under the cannon
+	# the red line under the cannon: a stone whose collider crosses it after a shift ends the run
+	var reduced: bool = G.settings.get("reduced_fx", false)
 	var y := Sim.DANGER_Y
-	var pulse := 0.5 + 0.5 * sin(danger_t * (9.0 if danger == 2 else 4.0))
-	var col := Color(1.0, 0.72, 0.35, 0.45)
+	var pulse := 0.5 + 0.5 * sin(danger_t * 7.0)
+	if reduced:
+		pulse = 0.6
+	var col := Color(0.95, 0.36, 0.24, 0.55)
 	if danger == 1:
-		col = Color(1.0, 0.55, 0.25, 0.55 + 0.25 * pulse)
+		col = Color(1.0, 0.33, 0.22, 0.7)
 	elif danger == 2:
-		col = Color(1.0, 0.3, 0.2, 0.65 + 0.35 * pulse)
+		col = Color(1.0, 0.22, 0.16, 0.7 + 0.3 * pulse)
 	var x := Sim.FIELD_X0 + 4
-	over_node.draw_rect(Rect2(Sim.FIELD_X0, y - 5, Sim.FIELD_X1 - Sim.FIELD_X0, 10), Color(col.r, col.g, col.b, col.a * 0.18))
+	over_node.draw_rect(Rect2(Sim.FIELD_X0, y - 5, Sim.FIELD_X1 - Sim.FIELD_X0, 10), Color(col.r, col.g, col.b, col.a * 0.2))
 	while x < Sim.FIELD_X1 - 4:
 		var x2 := minf(x + 18.0, Sim.FIELD_X1 - 4)
 		over_node.draw_line(Vector2(x, y), Vector2(x2, y), col, 3.0, true)
@@ -482,5 +506,21 @@ func _draw_over() -> void:
 	for sx in [Sim.FIELD_X0 + 10, Sim.FIELD_X1 - 10]:
 		var dirx := 1.0 if sx < 360 else -1.0
 		over_node.draw_colored_polygon(PackedVector2Array([Vector2(sx, y - 9), Vector2(sx + dirx * 14, y), Vector2(sx, y + 9)]), col)
-	# floor edge on tall screens
-	over_node.draw_line(Vector2(Sim.FIELD_X0, Sim.FLOOR_Y + 1), Vector2(Sim.FIELD_X1, Sim.FLOOR_Y + 1), Color(0.02, 0.1, 0.1, 0.7), 4.0)
+	# stones that the next shift pushes over the line
+	for id in block_nodes:
+		var n: Node2D = block_nodes[id]
+		if not n.get_meta("warn"):
+			continue
+		var sz: Vector2 = n.get_meta("size")
+		var r := Rect2(n.position - sz * 0.5, sz).grow(3.0)
+		var a := 0.95 if reduced else 0.55 + 0.45 * pulse
+		var w := 5.0 if reduced else 4.0 + 3.0 * pulse
+		over_node.draw_rect(r.grow(w * 0.5 + 2.0), Color(0.25, 0.02, 0.0, 0.45 * a), false, 3.0)
+		over_node.draw_rect(r, Color(1.0, 0.25, 0.16, a), false, w)
+		# warning sign at the top right corner of the stone
+		var c := Vector2(r.end.x - 4.0, r.position.y + 4.0)
+		var tri := PackedVector2Array([c + Vector2(0, -19), c + Vector2(18, 13), c + Vector2(-18, 13)])
+		over_node.draw_colored_polygon(tri, Color(0.2, 0.03, 0.0, 0.9))
+		var tri2 := PackedVector2Array([c + Vector2(0, -14), c + Vector2(13, 10), c + Vector2(-13, 10)])
+		over_node.draw_colored_polygon(tri2, Color(1.0, 0.82, 0.25) if reduced else Color(1.0, 0.82, 0.25).lerp(Color(1, 0.35, 0.2), pulse * 0.5))
+		over_node.draw_string(warn_font, c + Vector2(-4.5, 8.0), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0.25, 0.05, 0.0))

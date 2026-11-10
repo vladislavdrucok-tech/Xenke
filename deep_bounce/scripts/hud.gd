@@ -1,6 +1,7 @@
 extends Control
-## In-game interface: title and depth (top left), pause (top right), the bottom panel with balls,
-## special-ball marks and crystals, the speed button, and short tutorial hints next to the action.
+## In-game interface: title, depth and progress to the next upgrade (top left); speed and pause (top right,
+## outside the field); the bottom panel with the ball series and crystals. Every small indicator explains
+## itself on a tap. Tutorial hints appear next to the action.
 
 const UK := preload("res://scripts/ui_kit.gd")
 
@@ -11,8 +12,11 @@ var main: Node
 var logo: TextureRect
 var depth_label: Label
 var pips: Array[Control] = []
+var progress_label: Label
+var progress_btn: Button
 var pause_btn: Button
 var panel: NinePatchRect
+var balls_btn: Button
 var balls_label: Label
 var gems_label: Label
 var gem_icon: TextureRect
@@ -20,7 +24,10 @@ var chips: HBoxContainer
 var heavy_chip: Control
 var electric_chip: Control
 var speed_btn: Button
-var speed_label: Label
+var info: Control
+var info_panel: PanelContainer
+var info_box: VBoxContainer
+var info_t := 0.0
 var hint: PanelContainer
 var hint_label: Label
 var hint_arrow: Node2D
@@ -31,6 +38,7 @@ var hand_t := 0.0
 var display_gems := -1
 var gem_pop := 0.0
 var _last := {}
+var _sim: Sim
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -42,24 +50,51 @@ func _ready() -> void:
 	depth_label = UK.label("", 32)
 	depth_label.position = Vector2(36, 128)
 	add_child(depth_label)
+	# progress to the next upgrade choice: 4 marks + caption, tap for an explanation
+	progress_btn = _flat_button(Vector2(30, 168), Vector2(200, 36))
+	progress_btn.pressed.connect(func(): show_upgrade_info())
+	add_child(progress_btn)
 	var pip_box := HBoxContainer.new()
-	pip_box.position = Vector2(38, 174)
-	pip_box.add_theme_constant_override("separation", 8)
+	pip_box.position = Vector2(8, 13)
+	pip_box.add_theme_constant_override("separation", 5)
 	pip_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(pip_box)
+	progress_btn.add_child(pip_box)
 	for i in 4:
 		var p := ColorRect.new()
-		p.custom_minimum_size = Vector2(22, 8)
+		p.custom_minimum_size = Vector2(16, 9)
 		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		pip_box.add_child(p)
 		pips.append(p)
+		if i < 3:
+			pip_box.add_child(_sp(1))
+	progress_label = UK.label("", 19, UK.TEAL, 5, "Rubik-Bold")
+	progress_label.position = Vector2(92, 4)
+	progress_btn.add_child(progress_label)
+	# top right, outside the field: speed, pause
+	speed_btn = Button.new()
+	speed_btn.theme_type_variation = "TealButton"
+	speed_btn.icon = load("res://assets/art/ui/speed.png")
+	speed_btn.expand_icon = true
+	speed_btn.add_theme_constant_override("icon_max_width", 30)
+	speed_btn.add_theme_constant_override("h_separation", 2)
+	speed_btn.add_theme_font_size_override("font_size", 26)
+	for st in ["normal", "hover", "pressed", "disabled"]:
+		speed_btn.add_theme_stylebox_override(st, UK.sbt("button_teal_hover.png" if st == "hover" else "button_teal.png", 26, Vector4(10, 10, 12, 10)))
+	speed_btn.focus_mode = Control.FOCUS_NONE
+	speed_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	speed_btn.offset_left = -204
+	speed_btn.offset_right = -110
+	speed_btn.offset_top = 22
+	speed_btn.offset_bottom = 96
+	speed_btn.pressed.connect(func():
+		G.sfx("click", -6.0)
+		speed_pressed.emit())
+	add_child(speed_btn)
 	pause_btn = Button.new()
 	pause_btn.theme_type_variation = "TealButton"
 	pause_btn.icon = load("res://assets/art/ui/pause.png")
 	pause_btn.expand_icon = true
 	pause_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	pause_btn.custom_minimum_size = Vector2(74, 74)
-	pause_btn.size = Vector2(74, 74)
 	pause_btn.add_theme_constant_override("icon_max_width", 44)
 	for st in ["normal", "hover", "pressed"]:
 		pause_btn.add_theme_stylebox_override(st, UK.sbt("button_teal_hover.png" if st == "hover" else "button_teal.png", 26, Vector4(12, 12, 12, 12)))
@@ -89,75 +124,55 @@ func _ready() -> void:
 	add_child(panel)
 	var row := HBoxContainer.new()
 	row.set_anchors_preset(Control.PRESET_FULL_RECT)
-	row.offset_left = 26
-	row.offset_right = -26
+	row.offset_left = 18
+	row.offset_right = -22
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(row)
+	# left: the ball series (tap: what each ball of the volley does)
+	balls_btn = _flat_button(Vector2.ZERO, Vector2(0, 96))
+	balls_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	balls_btn.pressed.connect(func(): show_series_info())
+	row.add_child(balls_btn)
 	var left := HBoxContainer.new()
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left.set_anchors_preset(Control.PRESET_FULL_RECT)
 	left.alignment = BoxContainer.ALIGNMENT_CENTER
 	left.add_theme_constant_override("separation", 12)
 	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(left)
-	left.add_child(UK.icon("res://assets/art/ui/ball_icon.png", Vector2(54, 54)))
-	balls_label = UK.label("", 40)
-	left.add_child(balls_label)
+	balls_btn.add_child(left)
+	left.add_child(_center(UK.icon("res://assets/art/ui/ball_icon.png", Vector2(52, 52))))
+	var lines := VBoxContainer.new()
+	lines.alignment = BoxContainer.ALIGNMENT_CENTER
+	lines.add_theme_constant_override("separation", -2)
+	lines.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left.add_child(lines)
+	balls_label = UK.label("", 38)
+	lines.add_child(balls_label)
 	chips = HBoxContainer.new()
-	chips.add_theme_constant_override("separation", 4)
+	chips.add_theme_constant_override("separation", 10)
 	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	left.add_child(chips)
-	heavy_chip = _chip("res://assets/art/balls/ball_heavy.png")
+	lines.add_child(chips)
 	electric_chip = _chip("res://assets/art/balls/ball_electric.png")
+	heavy_chip = _chip("res://assets/art/balls/ball_heavy.png")
 	chips.add_child(electric_chip)
 	chips.add_child(heavy_chip)
 	var div := ColorRect.new()
 	div.color = Color(0.25, 0.65, 0.63, 0.65)
 	div.custom_minimum_size = Vector2(3, 56)
 	div.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var dc := CenterContainer.new()
-	dc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	dc.add_child(div)
-	row.add_child(dc)
+	row.add_child(_center(div))
 	var right := HBoxContainer.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.size_flags_stretch_ratio = 0.62
+	right.size_flags_stretch_ratio = 0.55
 	right.alignment = BoxContainer.ALIGNMENT_CENTER
 	right.add_theme_constant_override("separation", 14)
 	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(right)
-	gem_icon = UK.icon("res://assets/art/ui/gem_icon.png", Vector2(52, 68))
-	gem_icon.pivot_offset = Vector2(26, 34)
-	right.add_child(gem_icon)
+	gem_icon = UK.icon("res://assets/art/ui/gem_icon.png", Vector2(50, 66))
+	gem_icon.pivot_offset = Vector2(25, 33)
+	right.add_child(_center(gem_icon))
 	gems_label = UK.label("", 44)
 	right.add_child(gems_label)
-	# speed button above the panel, right side
-	speed_btn = Button.new()
-	speed_btn.theme_type_variation = "TealButton"
-	speed_btn.icon = load("res://assets/art/ui/speed.png")
-	speed_btn.expand_icon = true
-	speed_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	speed_btn.add_theme_constant_override("icon_max_width", 44)
-	for st in ["normal", "hover", "pressed"]:
-		speed_btn.add_theme_stylebox_override(st, UK.sbt("button_teal_hover.png" if st == "hover" else "button_teal.png", 26, Vector4(14, 10, 14, 10)))
-	speed_btn.custom_minimum_size = Vector2(80, 70)
-	speed_btn.focus_mode = Control.FOCUS_NONE
-	speed_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	speed_btn.offset_left = -104
-	speed_btn.offset_right = -24
-	speed_btn.offset_top = -190
-	speed_btn.offset_bottom = -120
-	speed_btn.pressed.connect(func(): speed_pressed.emit())
-	speed_btn.visible = false
-	add_child(speed_btn)
-	speed_label = UK.label("", 24, UK.TEAL)
-	speed_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	speed_label.offset_left = -230
-	speed_label.offset_right = -112
-	speed_label.offset_top = -170
-	speed_label.offset_bottom = -136
-	speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	add_child(speed_label)
 	# hint bubble
 	hint = PanelContainer.new()
 	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -176,13 +191,53 @@ func _ready() -> void:
 	hand.draw.connect(_draw_hand)
 	hand.visible = false
 	add_child(hand)
+	# explanation card (a tap anywhere closes it)
+	info = Control.new()
+	info.set_anchors_preset(Control.PRESET_FULL_RECT)
+	info.mouse_filter = Control.MOUSE_FILTER_STOP
+	info.visible = false
+	info.gui_input.connect(func(e):
+		if (e is InputEventScreenTouch and e.pressed) or (e is InputEventMouseButton and e.pressed):
+			hide_info())
+	add_child(info)
+	info_panel = PanelContainer.new()
+	info_panel.add_theme_stylebox_override("panel", UK.sbt("card.png", 40, Vector4(28, 22, 28, 22)))
+	info_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info.add_child(info_panel)
+	info_box = VBoxContainer.new()
+	info_box.add_theme_constant_override("separation", 10)
+	info_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_panel.add_child(info_box)
+
+func _sp(w: int) -> Control:
+	var c := Control.new()
+	c.custom_minimum_size = Vector2(w, 0)
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return c
+
+func _center(c: Control) -> CenterContainer:
+	var cc := CenterContainer.new()
+	cc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cc.add_child(c)
+	return cc
+
+func _flat_button(pos: Vector2, sz: Vector2) -> Button:
+	var b := Button.new()
+	b.flat = true
+	b.focus_mode = Control.FOCUS_NONE
+	b.position = pos
+	b.custom_minimum_size = sz
+	b.size = sz
+	for st in ["normal", "hover", "pressed", "focus"]:
+		b.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+	return b
 
 func _chip(tex: String) -> Control:
 	var c := HBoxContainer.new()
-	c.add_theme_constant_override("separation", 0)
+	c.add_theme_constant_override("separation", 4)
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	c.add_child(UK.icon(tex, Vector2(30, 30)))
-	var l := UK.label("", 22, UK.CREAM, 6)
+	c.add_child(_center(UK.icon(tex, Vector2(24, 24))))
+	var l := UK.label("", 20, UK.TEAL, 5, "Rubik-Bold")
 	l.name = "lv"
 	c.add_child(l)
 	c.visible = false
@@ -195,8 +250,10 @@ func ball_icon_global() -> Vector2:
 	return balls_label.get_global_rect().get_center()
 
 func update_state(sim: Sim, flying_gems: int, speed: int, show_speed: bool) -> void:
+	_sim = sim
 	var lang := G.lang_index()
-	var key := [sim.depth, sim.balls, sim.heavy, sim.electric, sim.volleys, lang, G.meta.crystals - flying_gems, speed, show_speed]
+	var boost: bool = main != null and main.get("boost") == true
+	var key := [sim.depth, sim.balls, sim.heavy, sim.electric, sim.volleys, lang, G.meta.crystals - flying_gems, speed, show_speed, boost]
 	if key == _last.get("k"):
 		return
 	_last["k"] = key
@@ -204,8 +261,9 @@ func update_state(sim: Sim, flying_gems: int, speed: int, show_speed: bool) -> v
 	balls_label.text = G.balls_text(sim.balls)
 	heavy_chip.visible = sim.heavy > 0
 	electric_chip.visible = sim.electric > 0
-	(heavy_chip.get_node("lv") as Label).text = str(sim.heavy)
-	(electric_chip.get_node("lv") as Label).text = str(sim.electric)
+	chips.visible = sim.heavy > 0 or sim.electric > 0
+	(heavy_chip.get_node("lv") as Label).text = G.t("lv_short", [sim.heavy])
+	(electric_chip.get_node("lv") as Label).text = G.t("lv_short", [sim.electric])
 	var shown := maxi(0, G.meta.crystals - flying_gems)
 	if display_gems >= 0 and shown > display_gems:
 		gem_pop = 1.0
@@ -214,10 +272,96 @@ func update_state(sim: Sim, flying_gems: int, speed: int, show_speed: bool) -> v
 	var done := sim.volleys % Sim.UPGRADE_EVERY
 	for i in 4:
 		pips[i].color = Color(0.5, 0.95, 0.9, 0.95) if i < done else Color(0.1, 0.3, 0.3, 0.8)
-	speed_btn.visible = show_speed
-	speed_label.text = G.t("speed", [speed]) if speed > 1 else ""
+	progress_label.text = G.t("upgrade_progress", [done])
+	# speed: shown in its own button next to pause; active only while a volley flies
+	speed_btn.disabled = not show_speed
+	speed_btn.text = "×%d" % speed
+	speed_btn.modulate = Color(1, 1, 1, 1.0 if show_speed else 0.45)
+	speed_btn.theme_type_variation = "OnButton" if boost else "TealButton"
+
+# ---------------------------------------------------------------- explanations on tap
+
+func _open_info(anchor_bottom: float, anchor_top := -1.0) -> void:
+	info.visible = true
+	info_t = 0.0
+	info_panel.reset_size()
+	await get_tree().process_frame
+	info_panel.reset_size()
+	var sz := info_panel.size
+	var x := (size.x - sz.x) * 0.5
+	var y := anchor_bottom - sz.y if anchor_top < 0.0 else anchor_top
+	info_panel.position = Vector2(x, clampf(y, 110, size.y - sz.y - 110))
+
+func _clear_info() -> void:
+	for c in info_box.get_children():
+		info_box.remove_child(c)
+		c.queue_free()
+	info_panel.size = Vector2.ZERO
+	info_box.size = Vector2.ZERO
+
+func _line(text: String, size_px := 22, color := UK.CREAM, icon := "") -> Control:
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 10)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if icon != "":
+		h.add_child(_center(UK.icon(icon, Vector2(30, 30))))
+	var l := UK.label(text, size_px, color, 5, "Rubik-Bold")
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size = Vector2(540 if icon == "" else 500, 0)
+	h.add_child(l)
+	return h
+
+func show_series_info() -> void:
+	## The real series of the next volley, ball by ball, and what the special ones do.
+	if _sim == null:
+		return
+	G.sfx("click", -6.0)
+	_clear_info()
+	info_box.add_child(_line(G.t("series_title", [G.balls_text(_sim.balls)]), 28))
+	var grid := GridContainer.new()
+	grid.columns = 16
+	grid.add_theme_constant_override("h_separation", 4)
+	grid.add_theme_constant_override("v_separation", 4)
+	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for i in _sim.balls:
+		var k := _sim.ball_kind(i)
+		var tex := "res://assets/art/balls/ball_normal.png"
+		if k == Sim.K_HEAVY:
+			tex = "res://assets/art/balls/ball_heavy.png"
+		elif k == Sim.K_ELECTRIC:
+			tex = "res://assets/art/balls/ball_electric.png"
+		grid.add_child(UK.icon(tex, Vector2(30, 30)))
+	info_box.add_child(_center(grid))
+	info_box.add_child(_line(G.t("series_normal"), 21, UK.CREAM, "res://assets/art/balls/ball_normal.png"))
+	if _sim.electric > 0:
+		info_box.add_child(_line(G.t("series_electric", [_sim.electric, Sim.ZAP_DMG[_sim.electric]]), 21, UK.CREAM, "res://assets/art/balls/ball_electric.png"))
+	if _sim.heavy > 0:
+		info_box.add_child(_line(G.t("series_heavy", [_sim.heavy, Sim.HEAVY_DMG[_sim.heavy]]), 21, UK.CREAM, "res://assets/art/balls/ball_heavy.png"))
+	if _sim.electric == 0 or _sim.heavy == 0:
+		info_box.add_child(_line(G.t("series_locked"), 19, UK.TEAL))
+	info_box.add_child(_line(G.t("tap_close"), 18, Color(0.7, 0.85, 0.83)))
+	_open_info(size.y - 118)
+
+func show_upgrade_info() -> void:
+	if _sim == null:
+		return
+	G.sfx("click", -6.0)
+	_clear_info()
+	var done := _sim.volleys % Sim.UPGRADE_EVERY
+	info_box.add_child(_line(G.t("upgrade_progress", [done]), 28))
+	info_box.add_child(_line(G.t("info_upgrade", [done]), 22))
+	info_box.add_child(_line(G.t("tap_close"), 18, Color(0.7, 0.85, 0.83)))
+	_open_info(-1.0, 214)
+
+func hide_info() -> void:
+	info.visible = false
 
 func _process(dt: float) -> void:
+	if info.visible:
+		info_t += dt
+		info_panel.modulate.a = minf(1.0, info_t * 5.0)
+		if info_t > 7.0:
+			hide_info()
 	gem_pop = maxf(0.0, gem_pop - dt * 4.0)
 	var s := 1.0 + 0.25 * sin(gem_pop * PI)
 	gem_icon.scale = Vector2(s, s)

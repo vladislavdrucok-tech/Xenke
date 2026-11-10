@@ -36,6 +36,8 @@ var tut_hint_step := -1
 var tut_hit_seen := false
 
 var qa: Node
+var speed_override := 0      # QA: force a speed (1, 2, 4) to compare outcomes
+var freeze := false          # QA screenshots: the volley stands still, the interface behaves as in flight
 var perf_frames := 0
 var perf_sum := 0.0
 var perf_worst := 0.0
@@ -185,6 +187,7 @@ func open_pause() -> void:
 		return
 	paused = true
 	_cancel_aim()
+	hud.hide_info()
 	G.store_run(sim)
 	screens.show_pause()
 
@@ -278,6 +281,7 @@ func _cancel_aim() -> void:
 func _fire(angle: float) -> void:
 	if not sim.fire(angle):
 		return
+	hud.hide_info()
 	volley_time = 0.0
 	boost = false
 	G.store_run(sim)      # checkpoint: the volley can be replayed exactly from here
@@ -301,6 +305,9 @@ func _process(dt: float) -> void:
 			paused = true
 			screens.show_upgrade(sim.upgrade_opts)
 	var speed := 1
+	if freeze and sim.phase == Sim.PH_VOLLEY:
+		hud.update_state(sim, flying_gems, 2, true)
+		return
 	if sim.phase == Sim.PH_VOLLEY and not paused:
 		perf_frames += 1
 		perf_sum += dt
@@ -313,6 +320,8 @@ func _process(dt: float) -> void:
 			speed = 3
 		if boost:
 			speed = 4
+		if speed_override > 0:
+			speed = speed_override
 		acc += dt * speed
 		var steps := 0
 		while acc >= Sim.DT and steps < 16 and sim.phase == Sim.PH_VOLLEY:
@@ -328,7 +337,7 @@ func _process(dt: float) -> void:
 	else:
 		acc = 0.0
 		world.set_count(0)
-	hud.update_state(sim, flying_gems, speed, sim.phase == Sim.PH_VOLLEY and volley_time > 2.0)
+	hud.update_state(sim, flying_gems, speed, sim.phase == Sim.PH_VOLLEY and not paused)
 	_tutorial()
 
 func _consume_events() -> void:

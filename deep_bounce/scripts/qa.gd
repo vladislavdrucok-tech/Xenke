@@ -60,6 +60,14 @@ func _run() -> void:
 			await _flow()
 		"perf":
 			await _perf()
+		"speed":
+			await _speed()
+		"shifts":
+			await _shifts()
+		"demo":
+			await _demo()
+		"s29":
+			await load("res://scripts/qa_s29.gd").new().run(self)
 		_:
 			log_line("unknown qa mode " + mode)
 	finish()
@@ -164,6 +172,19 @@ func _tour() -> void:
 		main.start_new_run(777)
 		await frames(10)
 		await shot("tutorial_aim_" + lang)
+		main.sim.heavy = 1
+		main.sim.electric = 2
+		main.sim.balls = 16
+		main.sim.volleys = 1
+		main.hud.update_state(main.sim, 0, 1, false)
+		main.hud.show_series_info()
+		await frames(4)
+		await shot("info_series_" + lang)
+		main.hud.hide_info()
+		main.hud.show_upgrade_info()
+		await frames(4)
+		await shot("info_upgrade_" + lang)
+		main.hud.hide_info()
 		main.screens.show_upgrade(["balls", "heavy", "electric"])
 		await shot("upgrade_" + lang)
 		main.screens.show_pause()
@@ -365,3 +386,193 @@ func _perf() -> void:
 		k += 1
 	log_line("simulation only: %d ticks (%.1f s of flight), %.3f ms per tick avg, worst tick %.3f ms" % [k, k / 60.0, (Time.get_ticks_usec() - tt) / 1000.0 / k, worst / 1000.0])
 	check(k <= Sim.VOLLEY_MAX_TICKS + 1, "flight time limit holds", "%d ticks" % k)
+
+
+# ---------------------------------------------------------------- the same volley at x1, x2, x4
+
+func _run_volley_at(speed: int, seed: int, ang: float) -> int:
+	main.start_new_run(seed)
+	G.meta.tutorial = 6
+	main.hud.hide_hint()
+	main.speed_override = speed
+	main._fire(ang)
+	var guard := 0
+	while main.sim.phase == Sim.PH_VOLLEY and guard < 20000:
+		main._process(1.0 / 60.0)      # the real game loop, frame by frame
+		guard += 1
+	main.speed_override = 0
+	return main.sim.state_hash()
+
+func _speed() -> void:
+	var same := true
+	var info := ""
+	for t in [[101, 0.7], [202, 1.9], [303, 1.25]]:
+		var h1 := _run_volley_at(1, t[0], t[1])
+		var h2 := _run_volley_at(2, t[0], t[1])
+		var h4 := _run_volley_at(4, t[0], t[1])
+		same = same and h1 == h2 and h2 == h4
+		info += "seed %d: %s; " % [t[0], "same" if h1 == h2 and h2 == h4 else "DIFFERENT"]
+	check(same, "the same volley run through the game loop at x1, x2 and x4 ends in the same state", info)
+	# where the ball appears: the tip of the drawn barrel
+	var w: Node2D = main.world
+	var img: Image = w.barrel.texture.get_image()
+	var mid := img.get_height() / 2
+	var dark: Array = []
+	var last := 0
+	for x in img.get_width():
+		var c := img.get_pixel(x, mid)
+		if c.a > 0.5:
+			last = x
+			if x > img.get_width() * 0.7 and c.get_luminance() < 0.12:
+				dark.append(x)
+	var bore := 0.0
+	for x in dark:
+		bore += float(x)
+	bore = bore / maxf(1.0, dark.size())
+	var bore_len: float = (bore + 0.5 + w.barrel.offset.x) * w.barrel.scale.x
+	var rim_len: float = (last + 1 + w.barrel.offset.x) * w.barrel.scale.x
+	check(dark.size() > 0 and absf(bore_len - Sim.BARREL) < 2.0, "balls appear in the bore of the drawn barrel",
+		"bore centre %.1f, outer rim %.1f, launch point %.1f units from the hinge" % [bore_len, rim_len, Sim.BARREL])
+
+
+# ---------------------------------------------------------------- shifts: dimming and numbers follow whole stones
+
+func _shifts() -> void:
+	var S29 = load("res://scripts/qa_s29.gd").new()
+	G.settings.lang = "uk"
+	G.lang_changed.emit()
+	G.meta.tutorial = 6
+	main.start_new_run(2929)
+	S29.build(main.sim)
+	var s: Sim = main.sim
+	# the 8 under the red line would end the run on the first shift (as the warning says): take it out here
+	for id in s.blocks.keys():
+		if s.will_cross_next(s.blocks[id]):
+			var b0: Dictionary = s.blocks[id]
+			for yy in b0.h:
+				for xx in b0.w:
+					s.grid.erase((b0.r + yy) * Sim.COLS + b0.c + xx)
+			s.blocks.erase(id)
+	main.world.clear_blocks()
+	main.world.sync_blocks(true)
+	main.hud.hide_hint()
+	var bad := 0
+	var checked := 0
+	for k in 3:
+		if s.phase == Sim.PH_UPGRADE:
+			main.pick_upgrade(s.upgrade_opts[0])
+		if s.phase != Sim.PH_AIM:
+			break
+		# keep the run going for the display check: stones flagged for the next shift are removed first
+		for id in s.blocks.keys():
+			if s.will_cross_next(s.blocks[id]):
+				var b1: Dictionary = s.blocks[id]
+				for yy in b1.h:
+					for xx in b1.w:
+						s.grid.erase((b1.r + yy) * Sim.COLS + b1.c + xx)
+				s.blocks.erase(id)
+		main.world.sync_blocks()
+		main._fire([1.4, 0.6, 2.4][k])
+		var guard := 0
+		while s.phase == Sim.PH_VOLLEY and guard < 6000:
+			main.world.remember_positions()
+			s.step()
+			main._consume_events()
+			guard += 1
+		main.over_timer = -1.0
+		await frames(50)          # the shift animation settles
+		var w: Node2D = main.world
+		for id in w.block_nodes:
+			var n: Node2D = w.block_nodes[id]
+			var b: Dictionary = s.blocks[id]
+			checked += 1
+			var fut: bool = s.is_future(b)
+			var f: float = n.get_meta("future")
+			if (fut and f < 0.99) or (not fut and f > 0.01):
+				bad += 1
+			var lab: Label = n.get_node("num")
+			var cy: float = n.position.y + lab.position.y + lab.size.y * 0.5
+			if not fut and cy > Sim.FLOOR_Y:
+				bad += 1          # the number of an active stone must sit above the floor
+			if n.position.distance_to(s.block_rect(b).get_center()) > 1.0:
+				bad += 1
+		await shot("shift_%d" % (k + 1))
+	check(bad == 0 and checked > 0, "after each of 3 shifts every stone is dimmed only while it is below the floor, numbers of active stones stay above it", "%d stone states checked, %d wrong" % [checked, bad])
+
+
+# ---------------------------------------------------------------- short gameplay recording (Movie Maker)
+
+func _best_angle(s: Sim) -> float:
+	var best := 1.2
+	var bh := -1
+	for i in 40:
+		var a := 0.25 + (PI - 0.5) * float(i) / 39.0
+		var c := s.clone()
+		c.fire(a)
+		var n := 0
+		while c.phase == Sim.PH_VOLLEY and n < 3000:
+			c.step()
+			n += 1
+		if c.v_hits > bh and n < 900:
+			bh = c.v_hits
+			best = a
+	return best
+
+func _aim_sweep(from_a: float, to_a: float, secs: float) -> void:
+	var n := int(secs * 30.0)
+	for i in n:
+		var k := float(i) / maxf(1.0, n - 1)
+		var e := k * k * (3.0 - 2.0 * k)
+		var a := lerpf(from_a, to_a, e)
+		main.world.aim_angle = a
+		main.world.aim_pts = main.sim.preview(a)
+		main.world.aim_visible = true
+		await get_tree().process_frame
+
+func _demo() -> void:
+	G.settings.lang = "uk"
+	G.lang_changed.emit()
+	G.meta.tutorial = 6
+	G.meta.skin = "classic"
+	main.start_new_run(5151)
+	var s: Sim = main.sim
+	s.balls = 14
+	s.heavy = 1
+	s.electric = 1
+	s.volleys = 14
+	for i in 14:
+		s.top += 1
+		s.depth += 1
+		s._ensure_rows()
+	for id in s.blocks.keys():
+		if s.blocks[id].r < s.top + 1:
+			var b: Dictionary = s.blocks[id]
+			for yy in b.h:
+				for xx in b.w:
+					s.grid.erase((b.r + yy) * Sim.COLS + b.c + xx)
+			s.blocks.erase(id)
+	main.world.clear_blocks()
+	main.world.sync_blocks(true)
+	main.world.scroll = s.depth * Sim.CELL
+	main.world.scroll_target = main.world.scroll
+	main.world.danger = s.danger_level()
+	main.hud.hide_hint()
+	await frames(20)
+	for v in 2:
+		var target := _best_angle(s)
+		await _aim_sweep(main.world.aim_angle, clampf(target + 0.6, 0.3, PI - 0.3), 1.2)
+		await _aim_sweep(main.world.aim_angle, clampf(target - 0.5, 0.3, PI - 0.3), 1.4)
+		await _aim_sweep(main.world.aim_angle, target, 1.0)
+		await frames(12)
+		main.world.aim_visible = false
+		main._fire(target)
+		var guard := 0
+		while s.phase == Sim.PH_VOLLEY and guard < 30 * 14:
+			await get_tree().process_frame
+			guard += 1
+		await frames(30)
+		if s.phase == Sim.PH_UPGRADE:
+			await frames(20)
+			main.pick_upgrade(s.upgrade_opts[0])
+			await frames(15)
+	log_line("demo recorded, depth %d m" % s.depth)

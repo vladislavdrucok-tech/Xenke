@@ -44,6 +44,8 @@ func impact(p: Vector2, strong := false, teal := false) -> void:
 func break_stone(c: Vector2, w: int, h: int, gems_n: int) -> void:
 	var size := Vector2(w, h) * 92.0
 	var n := 5 + 2 * (w * h)
+	if G.settings.get("reduced_fx", false):
+		n = 3 + w * h
 	for i in n:
 		var p := c + Vector2(randf_range(-0.4, 0.4) * size.x, randf_range(-0.4, 0.4) * size.y)
 		var v := (p - c).normalized() * randf_range(120, 330) + Vector2(0, -randf_range(60, 200))

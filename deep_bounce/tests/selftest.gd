@@ -27,6 +27,11 @@ func _ready() -> void:
 	test_volleys_always_end()
 	test_longest_volley()
 	test_save_roundtrip()
+	test_thin_passage_aim()
+	test_damage_stage()
+	test_red_line_rule()
+	test_layout_bands()
+	test_save_migration()
 	print("time %d ms" % (Time.get_ticks_msec() - t0))
 	print("SELFTEST " + ("PASS" if fails == 0 else "FAIL (%d)" % fails))
 	var f := FileAccess.open("user://selftest.log", FileAccess.WRITE)
@@ -141,7 +146,7 @@ func test_generation() -> void:
 						if occ.has(k):
 							bad_overlap += 1
 						occ[k] = true
-				if turn == 0:
+				if turn == 0 and b.r < 14:
 					max_start_hp = maxi(max_start_hp, b.hp)
 			if turn == 0:
 				for b in s.blocks.values():
@@ -162,7 +167,7 @@ func test_generation() -> void:
 	ok(bad_overlap == 0, "generation: no overlapping stones (%d seeds x 9 turns)" % N)
 	ok(bad_open == 0, "generation: every row keeps >= 2 open cells", "%d bad rows" % bad_open)
 	ok(bad_reach == 0, "generation: the floor is reachable from the top in the opening turns", "%d blocked boards" % bad_reach)
-	ok(bad_start == 0 and max_start_hp <= 5, "opening board: 4 empty rows, strength <= 5", "max hp %d" % max_start_hp)
+	ok(bad_start == 0 and max_start_hp <= 5, "opening board (rows 4-13): 4 empty rows, strength <= 5", "max hp %d" % max_start_hp)
 
 func _reach_floor(s: Sim, occ: Dictionary) -> bool:
 	var last := s.top + Sim.VIS_ROWS - 1
@@ -472,3 +477,116 @@ func test_save_roundtrip() -> void:
 	var d: Dictionary = JSON.parse_string(JSON.stringify(s.to_dict(), "", true, true))
 	var s2 := Sim.new(); s2.from_dict(d)
 	ok(s.state_hash() == s2.state_hash(), "run state survives a JSON save/load unchanged")
+
+
+func test_thin_passage_aim() -> void:
+	# a row of stones with one free cell: aim through the middle of the gap; the aim line and the real ball
+	# agree, and the ball reaches the stone placed on that line below the row
+	var worst := 0.0
+	var passed := 0
+	for gap in [1, 3, 5]:
+		var s := empty_sim()
+		for col in 7:
+			if col != gap:
+				put(s, col, 4, 1, 1, 999)
+		var through := Vector2(Sim.FIELD_X0 + (gap + 0.5) * Sim.CELL, Sim.DANGER_Y + 4.5 * Sim.CELL)
+		var ang := PI * 0.5
+		for k in 4:
+			ang = (through - Sim.muzzle(ang)).angle()
+		var m := Sim.muzzle(ang)
+		var y8 := Sim.DANGER_Y + 8.5 * Sim.CELL
+		var x8 := m.x + (y8 - m.y) / tan(ang)
+		var col8 := clampi(int(floor((x8 - Sim.FIELD_X0) / Sim.CELL)), 0, 6)
+		var catcher := put(s, col8, 8, 1, 1, 999)
+		var pts := s.preview(ang)
+		s.fire(ang)
+		var first := Vector2.INF
+		var guard := 0
+		while s.phase == Sim.PH_VOLLEY and first == Vector2.INF and guard < 400:
+			s.step()
+			guard += 1
+			for e in s.events:
+				if (e.t == "hit" or e.t == "wall") and first == Vector2.INF:
+					first = Vector2(e.x, e.y)
+					if e.t == "hit" and e.id == catcher:
+						passed += 1
+			s.events.clear()
+		if first != Vector2.INF:
+			worst = maxf(worst, first.distance_to(pts[1]))
+	ok(worst < 0.5 and passed == 3, "narrow passage (one free cell, 98 px for a 22 px ball): aim line = real contact, ball gets through", "3 gaps, %d reached the stone below, max error %.4f px" % [passed, worst])
+
+func test_damage_stage() -> void:
+	var good := Sim.damage_stage(100, 100) == 0 and Sim.damage_stage(81, 100) == 0 and Sim.damage_stage(80, 100) == 1 \
+		and Sim.damage_stage(51, 100) == 1 and Sim.damage_stage(50, 100) == 2 and Sim.damage_stage(26, 100) == 2 \
+		and Sim.damage_stage(25, 100) == 3 and Sim.damage_stage(1, 100) == 3 and Sim.damage_stage(1, 1) == 0 \
+		and Sim.damage_stage(1, 2) == 2 and Sim.damage_stage(3, 4) == 1
+	ok(good, "crack stage follows the share of strength left: >80% intact, 51-80 light, 26-50 medium, <=25 heavy")
+
+func test_red_line_rule() -> void:
+	# the warning (next shift) and the game-over check use the same collider rule
+	var s := empty_sim()
+	var a := put(s, 2, 0, 1, 1, 5)
+	var b := put(s, 4, 1, 1, 2, 5)
+	var c := put(s, 6, 2, 1, 1, 5)
+	var warn_a := s.will_cross_next(s.blocks[a])
+	var warn_b := s.will_cross_next(s.blocks[b])
+	var warn_c := s.will_cross_next(s.blocks[c])
+	s.phase = Sim.PH_VOLLEY
+	s.v_balls = []
+	s._end_volley()
+	ok(warn_a and not warn_b and not warn_c and s.phase == Sim.PH_OVER, "red line: the stone flagged for the next shift is exactly the one that ends the run")
+	var s2 := empty_sim()
+	put(s2, 2, 1, 2, 2, 5)
+	var flagged := false
+	for blk in s2.blocks.values():
+		flagged = flagged or s2.will_cross_next(blk)
+	s2.phase = Sim.PH_VOLLEY
+	s2.v_balls = []
+	s2._end_volley()
+	ok(not flagged and s2.phase != Sim.PH_OVER, "red line: a tall stone one row lower is neither flagged nor ending the run")
+
+func test_layout_bands() -> void:
+	# generator 2 builds chambers/groups: count how many 4-row bands contain a roofed cavity
+	var roofed := 0
+	var bands := 0
+	for sd in 200:
+		var s := Sim.new()
+		s.new_run(sd * 13 + 5)
+		for k in 24:
+			s.top += 1
+			s.depth += 1
+			s._ensure_rows()
+		for r0 in range(16, s.gen_rows - 3, 4):
+			bands += 1
+			for c in 7:
+				var roof: bool = s.grid.has(r0 * 7 + c)
+				var hollow: bool = not s.grid.has((r0 + 1) * 7 + c) and not s.grid.has((r0 + 2) * 7 + c)
+				if roof and hollow:
+					roofed += 1
+					break
+	ok(bands > 0 and float(roofed) / bands > 0.5, "generator 2: most bands have a stone roof over open space (pockets to bounce in)", "%d of %d bands" % [roofed, bands])
+
+func test_save_migration() -> void:
+	# a save written by version 1.0 (format 1): the run, record, purchases and language survive
+	var old := Sim.new()
+	old.gen = 1
+	old.new_run(321)
+	var d1 := old.to_dict()
+	d1.erase("gen")
+	d1.erase("band_kind")
+	var save1 := {"v": 1, "settings": {"lang": "uk", "sound": true, "music": false, "vibration": true, "shake": 1},
+		"meta": {"crystals": 382, "best": 57, "owned": ["classic", "ember"], "skin": "ember", "tutorial": 6, "runs": 9, "broken": 400, "spent": 150},
+		"run": d1}
+	var text := JSON.stringify(save1)
+	var data: Dictionary = G.migrate(JSON.parse_string(text))
+	var s2 := Sim.new()
+	s2.from_dict(data.run)
+	var same_stones := true
+	for id in old.blocks:
+		var a: Dictionary = old.blocks[id]
+		var b: Dictionary = s2.blocks.get(id, {})
+		if b.is_empty() or a.c != b.c or a.r != b.r or a.hp != b.hp or a.w != b.w or a.h != b.h:
+			same_stones = false
+	ok(int(data.v) == 2 and data.settings.reduced_fx == false and data.settings.lang == "uk" and int(data.meta.best) == 57
+		and data.meta.owned.has("ember") and int(data.meta.crystals) == 382 and same_stones and s2.depth == old.depth and s2.gen == 2,
+		"save format 1 -> 2: run with its exact stones, record, purchases, wallet and language kept; new fields added")

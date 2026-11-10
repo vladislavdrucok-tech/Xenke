@@ -48,19 +48,26 @@ def stone_field(w, h, mask, rng, style, cells=1.0, light_bias=1.0):
     dist = ndimage.distance_transform_edt(inside)
     m = min(w, h)
     bw = max(10.0, style['bevel'] * min(m, 2 * CELL * S * 0.6) * 1.6)
+    bw = min(bw, max(10.0, 0.24 * m))      # small stones keep a flat face: no pyramids
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float64)
-    t = np.clip(dist / bw, 0, 1)
+    # smooth shoulder from a blurred silhouette: rounded edges without the sharp medial-axis ridges
+    # (pyramid creases towards the corners) that a distance transform produces
+    dist_s = blur(dist, 5.0)
+    # the bevel is wide in some places and narrow in others: uneven, hand-cut faces inside a tight outline
+    bwv = bw * (0.45 + 1.1 * fft_noise(h, w, 2.8, rng))
+    t = np.clip(dist_s / bwv, 0, 1)
     shoulder = 1.0 - (1.0 - t) ** 1.8
     cx, cy = w / 2, h / 2
     dome = np.clip(1.0 - (((xx - cx) / (w * 0.75)) ** 2 + ((yy - cy) / (h * 0.75)) ** 2), 0, 1)
-    f = 40.0 * shoulder + 12.0 * dome
+    f = 42.0 * shoulder + 12.0 * dome
     f = blur(f, 1.0)
     gyf, gxf = np.gradient(f)
     # seeds: dense along the bevel, sparse inside
     edge_ids = np.argwhere((dist > 2) & (dist < bw * 1.1))
     in_ids = np.argwhere(dist >= bw * 1.1)
-    ne = max(10, int(len(edge_ids) / 420 * style.get('edge_density', 1.0)))
-    ni = max(2, int(style['seeds'] * cells * 0.45))
+    # denser seeds: smaller faces, never a few big triangles
+    ne = max(16, int(len(edge_ids) / 200 * style.get('edge_density', 1.0)))
+    ni = max(4, int(style['seeds'] * cells * 0.9))
     seeds = []
     if len(edge_ids):
         seeds += [tuple(edge_ids[i]) for i in rng.choice(len(edge_ids), size=min(ne, len(edge_ids)), replace=False)]
@@ -68,7 +75,7 @@ def stone_field(w, h, mask, rng, style, cells=1.0, light_bias=1.0):
         seeds += [tuple(in_ids[i]) for i in rng.choice(len(in_ids), size=min(ni, len(in_ids)), replace=False)]
     height = np.full((h, w), 1e9)
     idx = np.zeros((h, w), dtype=np.int32)
-    tilt = style['tilt'] * 0.10
+    tilt = style['tilt'] * 0.24
     for i, (sy, sx) in enumerate(seeds):
         z = f[sy, sx] + rng.uniform(0, 1.5)
         gx = gxf[sy, sx] + rng.uniform(-tilt, tilt)
@@ -78,11 +85,15 @@ def stone_field(w, h, mask, rng, style, cells=1.0, light_bias=1.0):
         idx = np.where(lower, i, idx)
         height = np.minimum(height, plane)
     height = np.minimum(height, f + 6.0)
+    # painted, not polygonal: chiselled planes blended into the rounded body and softened
+    height = 0.72 * height + 0.28 * f
+    height = blur(np.where(inside, height, 0.0), 1.3)
     height = np.where(inside, height, 0.0)
     crease = np.zeros((h, w))
     grain = fft_noise(h, w, 1.3, rng) - 0.5
     undul = fft_noise(h, w, 2.4, rng) - 0.5
-    height = height + grain * 1.3 + undul * 5.0 * shoulder
+    lumps = fft_noise(h, w, 2.0, rng) - 0.5
+    height = height + grain * 1.0 + undul * 3.0 * shoulder + lumps * 3.0 * shoulder
     if style['strata'] > 0:
         wav = fft_noise(h, w, 2.6, rng)
         bands = np.sin((yy / (h + 1)) * np.pi * rng.uniform(5, 8) * max(1.0, h / (CELL * S)) * 0.6 + wav * 6.0)
@@ -95,17 +106,17 @@ def stone_field(w, h, mask, rng, style, cells=1.0, light_bias=1.0):
     n3 = fft_noise(h, w, 1.8, rng)
     br = brush(h, w, rng)
     base = lerp(C_MID, C_RED, smoothstep(0.3, 0.85, n1) * 0.8)
-    base = lerp(base, C_SAND, np.clip(smoothstep(0.5, 0.9, n3) * 0.5 + style['warm'], 0, 1))
+    base = lerp(base, C_SAND, np.clip(smoothstep(0.55, 0.92, n3) * 0.3 + style['warm'] * 0.6, 0, 1))
     gp = smoothstep(0.64, 0.88, n2) * style['grey']
     base = lerp(base, lerp(C_GREY, C_PURP, n1), gp)
     tint = rng.uniform(0.92, 1.07, max(n, 1))
     base = base * tint[idx][..., None]
-    base = base * (0.84 + 0.30 * br)[..., None]
+    base = base * (0.78 + 0.40 * br)[..., None]
     if style['strata'] > 0:
         band = np.sin(yy / 11.0 + undul * 9 + n3 * 3) * 0.5 + 0.5
         base = lerp(base, C_RED * 0.8, band * 0.30 * style['strata'])
-        thin = smoothstep(0.93, 0.99, np.sin(yy / 4.3 + undul * 14) * 0.5 + 0.5)
-        base = lerp(base, C_PALE, thin * 0.35 * style['strata'])
+        thin = smoothstep(0.95, 0.995, np.sin(yy / 4.3 + undul * 14) * 0.5 + 0.5)
+        base = lerp(base, C_PALE, thin * 0.16 * style['strata'])
     base = base * style['tone']
     # scratches: short light and dark strokes
     if style['scratch'] > 0:
@@ -131,17 +142,21 @@ def shade_rock(height, base, crease, dist, mask, rng, style, speck=1.0, kuw=3, r
     nrm = normals(height)
     dif = lambert(nrm)
     sp = spec(nrm, 8.0)
-    shade = 0.16 + 1.18 * dif ** 1.2
+    shade = 0.10 + 1.12 * dif ** 1.3
     # warm bounce light on the faces turned down and right (light reflected by the stones below)
     fill = np.clip((nrm * np.array([0.35, 0.75, 0.55])).sum(axis=2), 0, 1)
-    shade = shade + 0.30 * fill
+    shade = shade + 0.18 * fill
     col = base * shade[..., None]
     lum = col.mean(axis=2, keepdims=True)
-    col = lum + (col - lum) * 1.18
+    col = lum + (col - lum) * 1.32
     # shadowed planes go towards a deep red-brown, not grey
     col = lerp(col, C_DEEP * 0.75, np.clip((0.42 - dif) * 1.1, 0, 0.55))
-    col = lerp(col, C_PALE, np.clip(sp * 0.45 + np.clip(dif - 0.88, 0, 1) * 2.2, 0, 0.7))
+    col = lerp(col, C_PALE, np.clip(sp * 0.3 + np.clip(dif - 0.9, 0, 1) * 2.0, 0, 0.55))
     col *= (1 - 0.16 * crease)[..., None]
+    # dark hollows and light ridges from the relief itself
+    cav = blur(height, 4.0) - height
+    col *= (1 - np.clip(cav * 0.05, 0, 0.25))[..., None]
+    col = lerp(col, C_PALE, np.clip(-cav * 0.03, 0, 0.2) * dif)
     # painted rim on edges that face the light, dark contour on the far side
     edge = np.exp(-dist / 2.6) * mask
     facing = np.clip(-(nrm[..., 0] * 0.7 + nrm[..., 1] * 0.9), 0, 1)
@@ -161,6 +176,38 @@ def shade_rock(height, base, crease, dist, mask, rng, style, speck=1.0, kuw=3, r
     return np.clip(col, 0, 1)
 
 
+def fissures(col, mask, dist, rng, n=2, length=(30, 70)):
+    """Thin natural fissures of the rock (not damage): a dark hairline with a lit lower lip."""
+    from PIL import ImageDraw
+    h, w = mask.shape
+    ss = 3
+    dk = Image.new('L', (w * ss, h * ss), 0)
+    lt = Image.new('L', (w * ss, h * ss), 0)
+    dd, dl = ImageDraw.Draw(dk), ImageDraw.Draw(lt)
+    inner = np.argwhere(dist > 10)
+    if len(inner) == 0:
+        return col
+    for i in range(n):
+        y, x = inner[rng.integers(0, len(inner))]
+        ang = rng.uniform(0, np.pi)
+        L = rng.uniform(*length)
+        pts = [(x, y)]
+        for k in range(int(L / 6)):
+            ang += rng.normal(0, 0.35)
+            x += np.cos(ang) * 6
+            y += np.sin(ang) * 6
+            pts.append((x, y))
+        P = [(px * ss, py * ss) for px, py in pts]
+        Q = [((px + 1.2) * ss, (py + 1.2) * ss) for px, py in pts]
+        dl.line(Q, fill=150, width=int(1.2 * ss))
+        dd.line(P, fill=200, width=int(1.4 * ss))
+    D = np.asarray(dk.resize((w, h), Image.LANCZOS), dtype=np.float64) / 255 * (dist > 4)
+    Lt = np.asarray(lt.resize((w, h), Image.LANCZOS), dtype=np.float64) / 255 * (dist > 4)
+    col = lerp(col, C_PALE, Lt * 0.35)
+    col = lerp(col, C_DEEP * 0.6, D * 0.6)
+    return col
+
+
 def drop_shadow(mask, ox=5, oy=7, s=4.0, a=0.6):
     sh = ndimage.shift(mask, (oy, ox), order=1, mode='constant')
     return np.clip(blur(sh, s) * a, 0, 1)
@@ -173,10 +220,14 @@ def block(wc, hc, variant, seed):
     H = int((hc * CELL - 2 * GAP) * S)
     w, h = W + 2 * PAD, H + 2 * PAD
     style = STYLES[variant]
-    poly = jitter_poly(rng, PAD, PAD, PAD + W, PAD + H, chamfer=(0.06, 0.2), wobble=0.04, steps=1 + wc + hc)
+    # silhouette hugs the collider: corners cut by at most 8 % of the short side, sides wobble inward <= 2 %
+    m = min(W, H)
+    poly = jitter_poly(rng, PAD, PAD, PAD + W, PAD + H, chamfer=(min(0.03, 6.0 / m), min(0.08, 12.0 / m)),
+                       wobble=min(0.02, 4.0 / m), steps=1 + wc + hc)
     mask = poly_mask(w, h, [poly])
     height, base, idx, crease, dist, sh = stone_field(w, h, mask, rng, style, cells=wc * hc)
     col = shade_rock(height, base, crease, dist, mask, rng, style)
+    col = fissures(col, mask, dist, rng, n=1 + wc * hc // 2)
     shadow = drop_shadow(mask, 6, 9, 5.0, 0.78)
     outline = np.clip(ndimage.grey_dilation(mask, size=(4, 4)), 0, 1)
     r0, a0 = over(np.zeros_like(col) + rgb('#03100f'), shadow, np.zeros_like(col) + rgb('#2a0f05'), outline * 0.9)
@@ -374,18 +425,19 @@ def wall_strip(side, seed, width=220, height=1024):
         # field edge: irregular but never more than a few pixels past the line
         fx0, fx1 = x0 + g, x1 - g
         if side == 'L' and x1 >= w - 1:
-            fx1 = w - rng.uniform(2, 14)
+            fx1 = w - rng.uniform(2, 8)
         if side == 'R' and x0 <= 0:
-            fx0 = rng.uniform(2, 14)
+            fx0 = rng.uniform(2, 8)
         sw, shh = int(fx1 - fx0 + 24), int(y1 - y0 + 24)
         if sw < 20 or shh < 20:
             continue
-        poly = jitter_poly(rng, 12, 12, 12 + fx1 - fx0, 12 + (y1 - y0) - 2 * g, chamfer=(0.12, 0.3), wobble=0.06, steps=3)
+        poly = jitter_poly(rng, 12, 12, 12 + fx1 - fx0, 12 + (y1 - y0) - 2 * g, chamfer=(0.08, 0.18), wobble=0.035, steps=4)
         mask = poly_mask(sw, shh, [poly])
         style = dict(STYLES[rng.choice(style_ids)])
         style['bevel'] = 0.22
         height_, base, idx, crease, dist, s_ = stone_field(sw, shh, mask, rng, style, cells=max(1.0, (y1 - y0) / 120))
         col = shade_rock(height_, base * 1.04, crease, dist, mask, rng, style, kuw=2)
+        col = fissures(col, mask, dist, rng, n=1, length=(20, 45))
         shadow = drop_shadow(mask, 4, 6, 3.0, 0.7)
         # paste with vertical wrap
         for oy in (0, -h, h):

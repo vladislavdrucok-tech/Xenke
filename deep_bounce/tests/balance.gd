@@ -7,6 +7,8 @@ extends Node
 var runs := 6
 var skills := ["weak", "avg", "good"]
 var tune := {}
+var no_upgrades := false
+var fate := {}       # size class -> [broken before the danger rows, reached the danger rows]
 
 func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
@@ -14,6 +16,8 @@ func _ready() -> void:
 			runs = int(a.substr(7))
 		elif a.begins_with("--skill=") and a.substr(8) != "all":
 			skills = a.substr(8).split(",")
+		elif a == "--noup":
+			no_upgrades = true
 		elif a.begins_with("--set="):
 			for kv in a.substr(6).split(","):
 				var p := kv.split(":")
@@ -35,6 +39,13 @@ func _ready() -> void:
 			skill, avg(depths), depths.min(), depths.max(), avg(times) / 60.0, times.min() / 60.0, times.max() / 60.0, avg(gems)]
 		print(line)
 		report.append(line)
+		for cls in ["1x1", "2 cells", "2x2"]:
+			if fate.has(cls):
+				var tot: int = fate[cls][0] + fate[cls][1]
+				var fl := "  %s: broken before the danger rows %d%% (%d of %d)" % [cls, 100 * fate[cls][0] / maxi(1, tot), fate[cls][0], tot]
+				print(fl)
+				report.append(fl)
+		fate = {}
 	var f := FileAccess.open("user://balance.txt", FileAccess.WRITE)
 	f.store_string("\n".join(report) + "\n")
 	get_tree().quit()
@@ -67,9 +78,14 @@ func play(skill: String, seed: int) -> Dictionary:
 	rng.seed = seed
 	var time := 0.0
 	var ups := {"balls": 0, "heavy": 0, "electric": 0}
+	var seen_fate := {}
 	var guard := 0
 	while s.phase != Sim.PH_OVER and guard < 400:
 		guard += 1
+		if s.phase == Sim.PH_UPGRADE and no_upgrades:
+			s.upgrade_opts = []
+			s.phase = Sim.PH_AIM
+			continue
 		if s.phase == Sim.PH_UPGRADE:
 			var o: String = s.upgrade_opts[rng.randi_range(0, s.upgrade_opts.size() - 1)]
 			ups[o] += 1
@@ -77,11 +93,28 @@ func play(skill: String, seed: int) -> Dictionary:
 			time += 3.0
 			continue
 		var ang := pick_angle(s, skill, rng)
+		var before := {}
+		for id in s.blocks:
+			before[id] = s.blocks[id]
 		s.fire(ang)
 		var ticks := 0
 		while s.phase == Sim.PH_VOLLEY:
 			s.step()
 			ticks += 1
+		# fate of stones: broken before reaching the two rows under the red line, or not
+		for id in before:
+			var b: Dictionary = before[id]
+			var cls := "1x1" if b.w * b.h == 1 else ("2 cells" if b.w * b.h == 2 else "2x2")
+			if not fate.has(cls):
+				fate[cls] = [0, 0]
+			if seen_fate.has(id):
+				continue
+			if not s.blocks.has(id):
+				fate[cls][0] += 1
+				seen_fate[id] = true
+			elif s.blocks[id].r - s.top <= 1:
+				fate[cls][1] += 1
+				seen_fate[id] = true
 		time += 3.5 + volley_seconds(ticks) + 0.5
 	return {"depth": s.depth, "time": time, "gems": s.run_gems, "picks": s.picks, "ups": ups}
 

@@ -176,6 +176,7 @@ func show_settings() -> void:
 			G.settings.vibration = on
 			if on:
 				G.vibrate(40)))
+		v.add_child(_toggle_row("reduced_fx", func(on): G.settings.reduced_fx = on))
 		var shake_opts: Array = []
 		for i in 4:
 			var lv := i

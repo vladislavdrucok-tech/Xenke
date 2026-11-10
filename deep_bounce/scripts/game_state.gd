@@ -8,12 +8,14 @@ signal wallet_changed
 
 const I18N := preload("res://scripts/i18n.gd")
 const SAVE_PATH := "user://deep_bounce.save"
-const VERSION := "1.0"
+const VERSION := "1.0.1"
 
 const SKINS := ["classic", "ember", "brass", "crystal"]
 const SKIN_PRICE := {"classic": 0, "ember": 150, "brass": 320, "crystal": 600}
 
-var settings := {"lang": "en", "sound": true, "music": true, "vibration": true, "shake": 2}
+const SAVE_VERSION := 2
+var settings := {"lang": "en", "sound": true, "music": true, "vibration": true, "shake": 2, "reduced_fx": false}
+var migrated_from := 0       # save version found on disk when it was older than SAVE_VERSION
 var meta := {"crystals": 0, "best": 0, "owned": ["classic"], "skin": "classic", "tutorial": 0, "runs": 0,
 	"broken": 0, "spent": 0}
 var run: Dictionary = {}          # Sim.to_dict() of the run in progress, or empty
@@ -91,7 +93,7 @@ func has_run() -> bool:
 	return not run.is_empty()
 
 func save_game() -> bool:
-	var data := {"v": 1, "settings": settings, "meta": meta, "run": run}
+	var data := {"v": SAVE_VERSION, "settings": settings, "meta": meta, "run": run}
 	var text := JSON.stringify(data, "", true, true)
 	var tmp := SAVE_PATH + ".tmp"
 	var f := FileAccess.open(tmp, FileAccess.WRITE)
@@ -120,11 +122,13 @@ func load_game() -> bool:
 		var data = JSON.parse_string(f.get_as_text())
 		if typeof(data) != TYPE_DICTIONARY or not data.has("meta"):
 			continue
+		data = migrate(data)
 		var s: Dictionary = data.get("settings", {})
 		for k in settings.keys():
 			if s.has(k):
 				settings[k] = s[k]
 		settings.shake = int(settings.shake)
+		settings.reduced_fx = bool(settings.reduced_fx)
 		var m: Dictionary = data.meta
 		for k in meta.keys():
 			if m.has(k):
@@ -144,6 +148,25 @@ func load_game() -> bool:
 		run = r if typeof(r) == TYPE_DICTIONARY else {}
 		return true
 	return false
+
+static func migrate(data: Dictionary) -> Dictionary:
+	## Older saves keep everything (run with its exact stones, record, purchases, language) and get the
+	## fields that newer versions added.
+	var v := int(data.get("v", 1))
+	if v < 2:
+		var st: Dictionary = data.get("settings", {})
+		if not st.has("reduced_fx"):
+			st["reduced_fx"] = false
+		data["settings"] = st
+		var r = data.get("run", {})
+		if typeof(r) == TYPE_DICTIONARY and not r.is_empty() and not r.has("gen"):
+			# the stones already in the run stay exactly as saved; rows generated from now on use the
+			# layout generator with groups, side passages and pockets
+			r["gen"] = 2
+			data["run"] = r
+		data["v"] = 2
+		G.migrated_from = v
+	return data
 
 func store_run(sim: Sim) -> void:
 	## Moves the run's found crystals into the wallet and writes run + wallet together.

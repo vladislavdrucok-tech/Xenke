@@ -2,7 +2,7 @@
 a round collar over the barrel root, and the stone arch it sits in. Four finishes."""
 import numpy as np
 from kit import *
-from stones import stone_field, shade_rock, STYLES, drop_shadow, C_DEEP
+from stones import stone_field, shade_rock, STYLES, drop_shadow, C_DEEP, fissures
 
 S = 2
 
@@ -310,6 +310,7 @@ def arch(seed=11):
         style['bevel'] = 0.30
         hgt, base, idx, crease, dist, s_ = stone_field(sw, sh_, mk, rng, style, cells=1.0)
         col = shade_rock(hgt, base * 1.06, crease, dist, mk, rng, style, kuw=2)
+        col = fissures(col, mk, dist, rng, n=1, length=(16, 36))
         sh = drop_shadow(mk, 4, 6, 3, 0.65)
         tx, ty = int((bx0 - X0) * S - 12), int((by0 - Y0) * S - 12)
         ys0, xs0 = max(0, ty), max(0, tx)

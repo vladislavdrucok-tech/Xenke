@@ -35,6 +35,7 @@ func _ready() -> void:
 	test_strength_on_entry()
 	test_exact_volley_bits()
 	test_load_101_volley()
+	test_top_row_return()
 	print("time %d ms" % (Time.get_ticks_msec() - t0))
 	print("SELFTEST " + ("PASS" if fails == 0 else "FAIL (%d)" % fails))
 	var f := FileAccess.open("user://selftest.log", FileAccess.WRITE)
@@ -718,3 +719,62 @@ func test_load_101_volley() -> void:
 			active_ok = false
 	ok(int(data.v) == G.SAVE_VERSION and close and all_have_hp and guard < 5000 and active_ok and int(data.meta.crystals) == 617 and data.settings.reduced_fx == true,
 		"save of 1.0.1 taken mid-volley loads in 1.0.2: same stones and balls, the volley finishes, later rock gets its strength on entry")
+
+
+func test_top_row_return() -> void:
+	# The owner's 18 m screenshot: a stone in the top row. Balls that bounce off its top face are already
+	# above the return line; they must go home at once instead of leaving the screen until the flight limit.
+	var s := empty_sim()
+	s.balls = 14
+	var id6 := put(s, 1, 0, 1, 2, 12)
+	put(s, 0, 1, 1, 2, 16)
+	put(s, 2, 1, 1, 1, 7)
+	put(s, 3, 9, 1, 1, 22)
+	var target := Vector2(Sim.FIELD_X0 + 1.5 * Sim.CELL, Sim.DANGER_Y + 3.0)
+	var ang := PI * 0.5
+	for k in 4:
+		ang = (target - Sim.muzzle(ang)).angle()
+	s.fire(ang)
+	var ticks := 0
+	var highest := 1e9
+	while s.phase == Sim.PH_VOLLEY and ticks < 5000:
+		s.step()
+		ticks += 1
+		for b in s.v_balls:
+			if b.st == 1:
+				highest = minf(highest, b.y)
+	ok(ticks < 150 and highest > Sim.CEILING_Y and not s.blocks.has(id6) and count_ev(s, "recall") == 0,
+		"shot at the top face of a top-row stone: every ball deals its hit and returns at once (was 20.7 s with balls off screen)",
+		"%d ticks = %.1f s, highest ball y %.0f" % [ticks, ticks / 60.0, highest])
+	# sweep: stones in the three upper rows, many directions: no ball ever travels upwards above the return line
+	var escapes := 0
+	var worst_up := 1e9
+	var shots := 0
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2026
+	for board in 40:
+		var e := empty_sim()
+		e.balls = 16
+		for c in 7:
+			for vr in 3:
+				if rng.randf() < 0.35 and not e.grid.has((e.top + vr) * 7 + c):
+					put(e, c, vr, 1, 1, 500)
+		for c in 7:
+			if rng.randf() < 0.3:
+				put(e, c, rng.randi_range(5, 9), 1, 1, 500)
+		for a in 9:
+			var t := e.clone()
+			t.record_events = true
+			t.fire(0.2 + (PI - 0.4) * float(a) / 8.0)
+			shots += 1
+			var n := 0
+			while t.phase == Sim.PH_VOLLEY and n < 5000:
+				t.step()
+				n += 1
+				for b in t.v_balls:
+					if b.st == 1 and b.vy < 0.0:
+						worst_up = minf(worst_up, b.y)
+						if b.y < Sim.RETURN_Y - 4.0:
+							escapes += 1
+	ok(escapes == 0, "no ball ever flies upwards above the return line (40 boards with stones in the top rows x 9 directions)",
+		"%d shots, highest upward-moving ball at y %.1f (return line %.0f)" % [shots, worst_up, Sim.RETURN_Y])

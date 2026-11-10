@@ -1,17 +1,17 @@
-# Deep Bounce 1.0.2
+# Deep Bounce 1.0.3
 
 Офлайн-гра для Android на Godot 4.5.1 (GDScript, рендерер Compatibility / OpenGL ES 3).
 Проводиш пальцем, відпускаєш — гармата вгорі випускає серію кульок униз, вони рикошетять від стін і каміння,
 число на камені — його міцність. Після кожного залпу порода підіймається на ряд, глибина зростає на метр.
 Камінь перетнув лінію під гарматою — забіг завершено. Інтерфейс англійською та українською, назва гри завжди англійською.
 
-Готовий підписаний APK: [`../builds/DeepBounce-1.0.2.apk`](../builds/DeepBounce-1.0.2.apk) (arm64-v8a + x86_64, ~57 МБ;
-ставиться поверх 1.0 і 1.0.1 зі збереженням забігу, рекорду, покупок і мови).
+Готовий підписаний APK: [`../builds/DeepBounce-1.0.3.apk`](../builds/DeepBounce-1.0.3.apk) (arm64-v8a + x86_64, ~57 МБ;
+ставиться поверх попередніх версій зі збереженням забігу, рекорду, покупок і мови).
 Звіт про перевірки: [`QA_REPORT.md`](QA_REPORT.md). Оцінка розкладок породи: [`docs/LAYOUTS_UA.md`](docs/LAYOUTS_UA.md).
 
 ## Встановлення на телефон
 
-1. Скачай `builds/DeepBounce-1.0.2.apk` на телефон (на GitHub: відкрий файл → «Download raw file»).
+1. Скачай `builds/DeepBounce-1.0.3.apk` на телефон (на GitHub: відкрий файл → «Download raw file»).
 2. Відкрий файл. Android попросить дозволити встановлення з цього джерела (браузер або «Файли») — дозволь.
 3. «Встановити» → значок **Deep Bounce** з’явиться серед програм.
 4. Мережа не потрібна: у застосунку немає дозволу на інтернет, лише на вібрацію.
@@ -57,11 +57,11 @@ export GODOT_ANDROID_KEYSTORE_RELEASE_USER=deepbounce
 export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=...
 # 3) збірка
 godot --headless --path deep_bounce --import
-godot --headless --path deep_bounce --export-release "Android" build/DeepBounce-1.0.2.apk
-apksigner verify --print-certs deep_bounce/build/DeepBounce-1.0.2.apk
+godot --headless --path deep_bounce --export-release "Android" build/DeepBounce-1.0.3.apk
+apksigner verify --print-certs deep_bounce/build/DeepBounce-1.0.3.apk
 ```
 
-Пресет «Android» у `export_presets.cfg`: пакет `com.deepbounce.game`, версія 1.0.2 (code 3), портрет, повноекранний режим,
+Пресет «Android» у `export_presets.cfg`: пакет `com.deepbounce.game`, версія 1.0.3 (code 4), портрет, повноекранний режим,
 архітектури arm64-v8a і x86_64 (x86_64 — для емулятора), адаптивна іконка.
 
 ### Ключ підпису
@@ -90,7 +90,7 @@ Rubik (латиниця + кирилиця) — інтерфейс.
 
 ```bash
 cd deep_bounce
-godot --headless --path . res://tests/selftest.tscn                     # 31 перевірка правил, фізики, генерації, збереження
+godot --headless --path . res://tests/selftest.tscn                     # 33 перевірки правил, фізики, генерації, збереження
 godot --headless --path . res://tests/balance.tscn -- --runs=4          # боти трьох рівнів: глибина, час, кристали, долі каменів
 godot --headless --path . res://tests/layouts.tscn -- --seeds=20        # розкладки реальними залпами: генератор 1 проти 2
 # з рендером (на сервері — під xvfb-run, драйвер opengl3):

@@ -18,7 +18,8 @@ const SPEED := 1380.0
 const DT := 1.0 / 60.0
 const PIVOT := Vector2(360.0, 120.0)                # barrel hinge inside the arch
 const BARREL := 84.0                                # hinge to muzzle: balls leave the barrel tip
-const RETURN_Y := DANGER_Y - 6.0                    # a ball crossing this upwards is back home
+const RETURN_Y := DANGER_Y - 6.0                    # a ball moving up at or above this line is back home
+const CEILING_Y := 60.0                             # no ball may ever be above this (top of the arch)
 const FIRE_EVERY := 4                               # ticks between two balls of a volley
 const MIN_VY := 0.12                                # minimum |vy|/speed (~7 degrees), no endless horizontal loops
 const BALL_MAX_TICKS := 60 * 20                     # a ball flying longer is recalled to the cannon
@@ -771,6 +772,10 @@ func step() -> void:
 	for b in v_balls:
 		if b.st == 1:
 			_move(b)
+			if b.st == 1 and b.y < CEILING_Y:
+				# safety net: whatever happened, a ball above the cannon goes home
+				b.st = 2
+				_ev({"t": "ret", "i": b.idx, "x": b.x, "y": CEILING_Y})
 			if b.st == 1:
 				b.life += 1
 				if b.life >= BALL_MAX_TICKS:
@@ -928,7 +933,13 @@ func _cast(px: float, py: float, dx: float, dy: float, with_return: bool) -> voi
 		t = (FLOOR_Y - BALL_R - py) / dy
 		if t < _ht:
 			_set_hit(maxf(t, 0.0), 0.0, -1.0, H_FLOOR, 0)
-	elif dy < 0.0 and with_return and py > RETURN_Y:
+	elif dy < 0.0 and with_return:
+		# A ball moving up at or above the return line is home. It can already be above the line when it
+		# turns upwards: the top face of a stone in the top row is touched at DANGER_Y + GAP - BALL_R, which
+		# lies above RETURN_Y. Without this such a ball left the screen and flew until the flight limit.
+		if py <= RETURN_Y:
+			_set_hit(0.0, 0.0, 0.0, H_RETURN, 0)
+			return
 		t = (RETURN_Y - py) / dy
 		if t < _ht:
 			_set_hit(maxf(t, 0.0), 0.0, 0.0, H_RETURN, 0)

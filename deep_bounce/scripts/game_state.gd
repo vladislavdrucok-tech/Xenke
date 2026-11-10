@@ -8,7 +8,7 @@ signal wallet_changed
 
 const I18N := preload("res://scripts/i18n.gd")
 const SAVE_PATH := "user://deep_bounce.save"
-const VERSION := "1.0.2"
+const VERSION := "1.0.3"
 
 const SKINS := ["classic", "ember", "brass", "crystal"]
 const SKIN_PRICE := {"classic": 0, "ember": 150, "brass": 320, "crystal": 600}

@@ -66,6 +66,8 @@ func _run() -> void:
 			await _shifts()
 		"demo":
 			await _demo()
+		"start":
+			await _start()
 		"s29":
 			await load("res://scripts/qa_s29.gd").new().run(self)
 		_:
@@ -530,49 +532,86 @@ func _aim_sweep(from_a: float, to_a: float, secs: float) -> void:
 		await get_tree().process_frame
 
 func _demo() -> void:
+	## A new run from its first volley (the situation of the owner's recordings): aim sweep, volley, shift.
 	G.settings.lang = "uk"
 	G.lang_changed.emit()
 	G.meta.tutorial = 6
 	G.meta.skin = "classic"
-	main.start_new_run(5151)
+	var seed := 2024
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--seed="):
+			seed = int(a.substr(7))
+	main.start_new_run(seed)
 	var s: Sim = main.sim
-	s.balls = 14
-	s.heavy = 1
-	s.electric = 1
-	s.volleys = 14
-	for i in 14:
-		s.top += 1
-		s.depth += 1
-		s._ensure_rows()
-	for id in s.blocks.keys():
-		if s.blocks[id].r < s.top + 1:
-			var b: Dictionary = s.blocks[id]
-			for yy in b.h:
-				for xx in b.w:
-					s.grid.erase((b.r + yy) * Sim.COLS + b.c + xx)
-			s.blocks.erase(id)
-	main.world.clear_blocks()
-	main.world.sync_blocks(true)
-	main.world.scroll = s.depth * Sim.CELL
-	main.world.scroll_target = main.world.scroll
-	main.world.danger = s.danger_level()
 	main.hud.hide_hint()
 	await frames(20)
-	for v in 2:
+	for v in 4:
+		if s.phase == Sim.PH_UPGRADE:
+			await frames(25)
+			main.pick_upgrade(s.upgrade_opts[0])
+			await frames(20)
+		if s.phase != Sim.PH_AIM:
+			break
 		var target := _best_angle(s)
-		await _aim_sweep(main.world.aim_angle, clampf(target + 0.6, 0.3, PI - 0.3), 1.2)
-		await _aim_sweep(main.world.aim_angle, clampf(target - 0.5, 0.3, PI - 0.3), 1.4)
-		await _aim_sweep(main.world.aim_angle, target, 1.0)
-		await frames(12)
+		await _aim_sweep(main.world.aim_angle, clampf(target + 0.5, 0.3, PI - 0.3), 0.9)
+		await _aim_sweep(main.world.aim_angle, clampf(target - 0.4, 0.3, PI - 0.3), 1.0)
+		await _aim_sweep(main.world.aim_angle, target, 0.8)
+		await frames(10)
 		main.world.aim_visible = false
 		main._fire(target)
 		var guard := 0
 		while s.phase == Sim.PH_VOLLEY and guard < 30 * 14:
 			await get_tree().process_frame
 			guard += 1
-		await frames(30)
-		if s.phase == Sim.PH_UPGRADE:
-			await frames(20)
-			main.pick_upgrade(s.upgrade_opts[0])
-			await frames(15)
+		await frames(28)
 	log_line("demo recorded, depth %d m" % s.depth)
+
+# ---------------------------------------------------------------- the first volleys of a new run (as in the owner's recordings)
+
+func _start() -> void:
+	G.settings.lang = "en"
+	G.lang_changed.emit()
+	G.meta.tutorial = 6
+	G.meta.skin = "classic"
+	G.meta.crystals = 583
+	var seed := 2024
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--seed="):
+			seed = int(a.substr(7))
+	main.start_new_run(seed)
+	main.hud.hide_hint()
+	var s: Sim = main.sim
+	await frames(8)
+	var angles := [0.5, 0.62, 0.45, 2.5, 0.55, 2.2]
+	for k in 6:
+		if s.phase == Sim.PH_UPGRADE:
+			main.pick_upgrade("balls")
+			await frames(4)
+		if s.phase != Sim.PH_AIM:
+			break
+		var stones := 0
+		for b in s.blocks.values():
+			if not s.is_future(b):
+				stones += 1
+		log_line("depth %d m: %d stones in play, rows in use %d, balls %d" % [s.depth, stones, s.field_rows_in_use(), s.balls])
+		await shot("start_%dm" % s.depth)
+		var ang: float = angles[k]
+		main.world.aim_angle = ang
+		main.world.aim_pts = s.preview(ang)
+		main.world.aim_visible = true
+		await frames(6)
+		main.world.aim_visible = false
+		main._fire(ang)
+		var t := 0
+		while s.phase == Sim.PH_VOLLEY and t < 6000:
+			main.world.remember_positions()
+			s.step()
+			main._consume_events()
+			t += 1
+			if k == 0 and t == 70:
+				main.freeze = true
+				await shot("start_volley")
+				main.freeze = false
+		main.over_timer = -1.0
+		await frames(45)
+	check(true, "opening sequence rendered")

@@ -5,6 +5,7 @@ extends Node2D
 const FX := preload("res://scripts/fx.gd")
 const ART := "res://assets/art/"
 const BALL_SIZE := 27.0
+const TRAIL_LEN := 70.0
 
 var sim: Sim
 var fx: Node2D
@@ -16,6 +17,7 @@ var label_settings := {}       # font size -> LabelSettings
 var bg: Sprite2D
 var walls: Array[Sprite2D] = []
 var under_node: Node2D
+var ground: Sprite2D
 var warn_font: Font
 var cannon_base: Sprite2D
 var barrel: Sprite2D
@@ -50,7 +52,7 @@ var trails := {}
 var interp := 1.0
 
 func _ready() -> void:
-	for f in ["bg/shaft", "walls/wall_left", "walls/wall_right", "cannon/arch", "cannon/barrel_normal",
+	for f in ["bg/shaft", "bg/bedrock", "bg/crust", "walls/wall_left", "walls/wall_right", "cannon/arch", "cannon/barrel_normal",
 			"balls/ball_normal", "balls/ball_heavy", "balls/ball_electric", "fx/glow_warm", "fx/glow_teal",
 			"fx/glow_white", "fx/gem", "fx/sparkle", "fx/dust"]:
 		tex[f] = load(ART + f + ".png")
@@ -111,6 +113,16 @@ func _build_static() -> void:
 	spill.material = addm
 	add_child(spill)
 	# below the floor: the shaft darkens (behind the stones, never over them)
+	# below the floor lies unbroken rock: a solid mass the balls bounce on, scrolling up with the stones
+	ground = Sprite2D.new()
+	ground.texture = tex["bg/bedrock"]
+	ground.centered = false
+	ground.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	ground.region_enabled = true
+	ground.scale = Vector2(0.5, 0.5)
+	ground.position = Vector2(Sim.FIELD_X0, Sim.FLOOR_Y)
+	ground.region_rect = Rect2(0, 0, (Sim.FIELD_X1 - Sim.FIELD_X0) * 2.0, 1600)
+	add_child(ground)
 	under_node = Node2D.new()
 	under_node.draw.connect(_draw_under)
 	add_child(under_node)
@@ -271,10 +283,10 @@ func _make_block(b: Dictionary) -> Node2D:
 func _update_block(n: Node2D, b: Dictionary) -> void:
 	if int(n.get_meta("hp")) == int(b.hp):
 		return
-	var first := int(n.get_meta("hp")) < 0
+	var first := int(n.get_meta("hp")) <= 0      # also: rock that has just entered the field (no hit flash)
 	n.set_meta("hp", b.hp)
 	var lab: Label = n.get_node("num")
-	lab.text = str(b.hp)
+	lab.text = str(b.hp) if b.hp > 0 else ""
 	var stage := Sim.damage_stage(b.hp, b.mhp)
 	var cr: Sprite2D = n.get_node("crack")
 	cr.texture = null if stage == 0 else tex["crack_%dx%d_s%d" % [b.w, b.h, stage]]
@@ -329,7 +341,7 @@ func _place_label(n: Node2D, p: float, f: float) -> void:
 	lab.position = Vector2(-lab.size.x * 0.5, cy - lab.size.y * 0.5 - 2.0)
 	var ls := 1.0 + 0.16 * sin(p * PI)
 	lab.scale = Vector2(ls, ls)
-	lab.modulate.a = 1.0 - 0.35 * f
+	lab.modulate.a = clampf(1.0 - 2.0 * f, 0.0, 1.0)     # rock below the floor shows no number
 
 # ---------------------------------------------------------------- per frame
 
@@ -338,8 +350,10 @@ func _process(dt: float) -> void:
 	if sim == null:
 		return
 	_process_blocks(dt)
-	scroll += (scroll_target - scroll) * (1.0 - exp(-dt * 7.0))
+	scroll += (scroll_target - scroll) * (1.0 - exp(-dt * 11.0))      # same easing as the stones
 	bg.region_rect.position.y = scroll * 0.35 * 1.5
+	ground.region_rect.position.y = fposmod(scroll * 2.0, 1024.0)
+	under_node.queue_redraw()
 	for w in walls:
 		w.region_rect = Rect2(0, scroll * 2.0 + float(w.get_meta("phase")), 220, 3600)
 	# cannon
@@ -405,7 +419,7 @@ func _draw_balls() -> void:
 		var tr: Array = trails.get(b.idx, [])
 		if tr.is_empty() or tr[0].distance_to(p) > 1.0:
 			tr.push_front(p)
-			if tr.size() > 7:
+			if tr.size() > 12:
 				tr.pop_back()
 		trails[b.idx] = tr
 		var col := Color(1.0, 0.94, 0.8)
@@ -413,21 +427,30 @@ func _draw_balls() -> void:
 			col = Color(0.55, 1.0, 0.95)
 		elif b.k == Sim.K_HEAVY:
 			col = Color(1.0, 0.78, 0.5)
-		# short trail: at most 70 units behind the ball, however far it moved between frames
-		var left := 70.0
+		# trail: a ribbon that narrows and fades evenly over 70 units behind the ball (no steps at any frame rate)
+		var left := TRAIL_LEN
+		var d0 := 0.0
 		for i in range(tr.size() - 1):
 			var p0: Vector2 = tr[i]
 			var p1: Vector2 = tr[i + 1]
 			var L := p0.distance_to(p1)
-			if L <= 0.01:
+			if L <= 0.5:
 				continue
 			if L > left:
 				p1 = p0.lerp(p1, left / L)
 				L = left
-			var f := 1.0 - (70.0 - left) / 70.0
-			balls_node.draw_line(p0, p1, Color(col.r, col.g, col.b, 0.42 * f), 14.0 * f + 2.0, true)
+			var f0 := 1.0 - d0 / TRAIL_LEN
+			var f1 := maxf(0.0, 1.0 - (d0 + L) / TRAIL_LEN)
+			var n := (p1 - p0).orthogonal() / L
+			var w0 := 1.0 + 6.0 * f0
+			var w1 := 1.0 + 6.0 * f1
+			var c0 := Color(col.r, col.g, col.b, 0.5 * f0 * f0)
+			var c1 := Color(col.r, col.g, col.b, 0.5 * f1 * f1)
+			balls_node.draw_primitive(PackedVector2Array([p0 + n * w0, p1 + n * w1, p1 - n * w1, p0 - n * w0]),
+				PackedColorArray([c0, c1, c1, c0]), PackedVector2Array([Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO]))
+			d0 += L
 			left -= L
-			if left <= 0.0:
+			if left <= 0.5:
 				break
 	for b in sim.v_balls:
 		if b.st != 1:
@@ -477,13 +500,12 @@ func _draw_aim() -> void:
 	aim_node.draw_arc(hp, Sim.BALL_R + 3, 0, TAU, 28, Color(0.1, 0.04, 0.0, 0.4 * a), 2.0, true)
 
 func _draw_under() -> void:
-	# the shaft below the floor is darker: there the rock is not reachable yet
-	var y0 := Sim.FLOOR_Y
-	for i in 12:
-		var a := 0.30 + 0.05 * i
-		under_node.draw_rect(Rect2(-400, y0 + i * 40.0, 1520, 40.0), Color(0.008, 0.05, 0.055, a))
-	under_node.draw_rect(Rect2(-400, y0 + 480.0, 1520, 600.0), Color(0.008, 0.05, 0.055, 0.88))
-	under_node.draw_line(Vector2(Sim.FIELD_X0, y0), Vector2(Sim.FIELD_X1, y0), Color(0.45, 0.85, 0.82, 0.22), 2.0)
+	# The ground below the floor is one solid mass (the bedrock sprite); rock that will rise next shows in it
+	# as dim embedded stones. Further down everything fades into darkness.
+	for i in 6:
+		under_node.draw_rect(Rect2(Sim.FIELD_X0, Sim.FLOOR_Y + 90.0 + i * 70.0, Sim.FIELD_X1 - Sim.FIELD_X0, 900.0), Color(0.008, 0.04, 0.045, 0.14))
+	# the surface of the ground: this is what the balls bounce on
+	under_node.draw_texture_rect(tex["bg/crust"], Rect2(Sim.FIELD_X0, Sim.FLOOR_Y - 5.0, Sim.FIELD_X1 - Sim.FIELD_X0, 22.0), false)
 
 func _draw_over() -> void:
 	# the red line under the cannon: a stone whose collider crosses it after a shift ends the run

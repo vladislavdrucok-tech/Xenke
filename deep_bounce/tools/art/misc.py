@@ -255,3 +255,43 @@ def speed_glyph(size=64):
     for x in (12, 32):
         d.polygon([(x * s, 16 * s), ((x + 20) * s, 32 * s), (x * s, 48 * s)], fill=(255, 240, 200, 255))
     return im.resize((size, size), Image.LANCZOS)
+
+
+def bedrock(seed=41, W=1288, H=1024):
+    """Unbroken rock below the floor: dark, warm, tileable in both directions (it scrolls with the stones)."""
+    rng = np.random.default_rng(seed)
+    big = fft_noise(H, W, 2.8, rng)
+    mid = fft_noise(H, W, 2.0, rng)
+    fine = fft_noise(H, W, 1.3, rng)
+    ridged = 1 - np.abs(2 * fft_noise(H, W, 2.2, rng) - 1)
+    hgt = big * 90 + mid * 30 + ridged ** 2 * 22 + fine * 5
+    nrm = normals(blur(hgt, 1.2))
+    dif = lambert(nrm)
+    # cool grey-brown, clearly darker and duller than the warm stones embedded in it
+    base = lerp(rgb('#3b2a22'), rgb('#2b2f30'), smoothstep(0.3, 0.75, mid))
+    col = base * (0.45 + 0.75 * dif)[..., None]
+    col = lerp(col, rgb('#0b1c1d'), np.clip(0.5 - dif, 0, 0.5) * 0.9)
+    seams = smoothstep(0.86, 0.97, ridged)
+    col = col * (1 - 0.4 * seams)[..., None]
+    # strata lines: reads as layered ground, not as a flat fill
+    yy = np.mgrid[0:H, 0:W][0].astype(np.float64)
+    strata = smoothstep(0.9, 0.99, np.sin(yy / H * np.pi * 2 * 14 + big * 9.0) * 0.5 + 0.5)
+    col = col * (1 - 0.22 * strata)[..., None]
+    col = kuwahara(col, 2)
+    return to_img(col * 0.85)
+
+
+def crust(seed=42, W=1288, H=44):
+    """The surface of the unbroken rock: an uneven lit edge the balls bounce on. Tiles horizontally."""
+    rng = np.random.default_rng(seed)
+    prof = fft_noise(1, W, 1.6, rng)[0]
+    prof2 = fft_noise(1, W, 0.9, rng)[0]
+    top = 6 + prof * 9 + prof2 * 3                      # y of the surface for each x (art px)
+    yy = np.arange(H)[:, None].astype(np.float64)
+    d = yy - top[None, :]
+    a = np.clip(d + 0.5, 0, 1) * np.clip((H - 2 - yy) / 14.0, 0, 1)     # fades out downwards into the bedrock
+    lit = np.exp(-np.clip(d, 0, None) / 2.2)
+    grain = fft_noise(H, W, 1.2, rng)
+    col = lerp(rgb('#5a2e16'), rgb('#f0b06a'), lit * 0.85)
+    col = col * (0.85 + 0.3 * grain)[..., None]
+    return to_img(col, a)

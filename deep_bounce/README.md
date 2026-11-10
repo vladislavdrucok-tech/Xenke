@@ -1,17 +1,17 @@
-# Deep Bounce 1.0.1
+# Deep Bounce 1.0.2
 
 Офлайн-гра для Android на Godot 4.5.1 (GDScript, рендерер Compatibility / OpenGL ES 3).
 Проводиш пальцем, відпускаєш — гармата вгорі випускає серію кульок униз, вони рикошетять від стін і каміння,
 число на камені — його міцність. Після кожного залпу порода підіймається на ряд, глибина зростає на метр.
 Камінь перетнув лінію під гарматою — забіг завершено. Інтерфейс англійською та українською, назва гри завжди англійською.
 
-Готовий підписаний APK: [`../builds/DeepBounce-1.0.1.apk`](../builds/DeepBounce-1.0.1.apk) (arm64-v8a + x86_64, ~57 МБ;
-ставиться поверх 1.0 зі збереженням забігу, рекорду, покупок і мови).
+Готовий підписаний APK: [`../builds/DeepBounce-1.0.2.apk`](../builds/DeepBounce-1.0.2.apk) (arm64-v8a + x86_64, ~57 МБ;
+ставиться поверх 1.0 і 1.0.1 зі збереженням забігу, рекорду, покупок і мови).
 Звіт про перевірки: [`QA_REPORT.md`](QA_REPORT.md). Оцінка розкладок породи: [`docs/LAYOUTS_UA.md`](docs/LAYOUTS_UA.md).
 
 ## Встановлення на телефон
 
-1. Скачай `builds/DeepBounce-1.0.1.apk` на телефон (на GitHub: відкрий файл → «Download raw file»).
+1. Скачай `builds/DeepBounce-1.0.2.apk` на телефон (на GitHub: відкрий файл → «Download raw file»).
 2. Відкрий файл. Android попросить дозволити встановлення з цього джерела (браузер або «Файли») — дозволь.
 3. «Встановити» → значок **Deep Bounce** з’явиться серед програм.
 4. Мережа не потрібна: у застосунку немає дозволу на інтернет, лише на вібрацію.
@@ -25,6 +25,8 @@
   до першого дотику і перший рикошет — тією самою геометрією, що й справжній постріл. Відпусти — залп.
   Проведи вгору або занадто коротко — постріл скасовано.
 - Звичайне влучання знімає 1 міцності. Розбитий камінь дає кристали (з кристалічною жилою — більше).
+- Міцність камінь отримує, коли підіймається з ґрунту в поле: що глибше й що сильніший залп гравця, то вона більша.
+  Порода під дном показана без чисел.
 - Кульки, що вилетіли вгору за лінію, повертаються в гармату. Довгий залп пришвидшується сам (×2, ×3); кнопка «⏩» угорі
   праворуч, поруч із паузою, показує поточну швидкість, дотик — ×4.
 - **Червона лінія:** камінь, який наступний зсув виведе за неї (і цим завершить забіг), обведений червоним зі знаком «!».
@@ -55,11 +57,11 @@ export GODOT_ANDROID_KEYSTORE_RELEASE_USER=deepbounce
 export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=...
 # 3) збірка
 godot --headless --path deep_bounce --import
-godot --headless --path deep_bounce --export-release "Android" build/DeepBounce-1.0.1.apk
-apksigner verify --print-certs deep_bounce/build/DeepBounce-1.0.1.apk
+godot --headless --path deep_bounce --export-release "Android" build/DeepBounce-1.0.2.apk
+apksigner verify --print-certs deep_bounce/build/DeepBounce-1.0.2.apk
 ```
 
-Пресет «Android» у `export_presets.cfg`: пакет `com.deepbounce.game`, версія 1.0.1 (code 2), портрет, повноекранний режим,
+Пресет «Android» у `export_presets.cfg`: пакет `com.deepbounce.game`, версія 1.0.2 (code 3), портрет, повноекранний режим,
 архітектури arm64-v8a і x86_64 (x86_64 — для емулятора), адаптивна іконка.
 
 ### Ключ підпису
@@ -88,7 +90,7 @@ Rubik (латиниця + кирилиця) — інтерфейс.
 
 ```bash
 cd deep_bounce
-godot --headless --path . res://tests/selftest.tscn                     # 28 перевірок правил, фізики, генерації, збереження
+godot --headless --path . res://tests/selftest.tscn                     # 31 перевірка правил, фізики, генерації, збереження
 godot --headless --path . res://tests/balance.tscn -- --runs=4          # боти трьох рівнів: глибина, час, кристали, долі каменів
 godot --headless --path . res://tests/layouts.tscn -- --seeds=20        # розкладки реальними залпами: генератор 1 проти 2
 # з рендером (на сервері — під xvfb-run, драйвер opengl3):
@@ -99,6 +101,7 @@ godot --path . --rendering-driver opengl3 --resolution 720x1280 -- --qa=perf --o
 godot --path . --rendering-driver opengl3 --resolution 720x1600 -- --qa=s29  --out=/tmp/qa   # сцена зі скриншота 29 м
 godot --path . --rendering-driver opengl3 --resolution 720x1600 -- --qa=shifts --out=/tmp/qa # 3 зсуви: затемнення й числа
 godot --path . --rendering-driver opengl3 --resolution 720x1280 -- --qa=speed --out=/tmp/qa  # ×1/×2/×4 і точка появи кульки
+godot --path . --rendering-driver opengl3 --resolution 720x1560 -- --qa=start --out=/tmp/qa  # перші залпи нового забігу
 godot --path . --rendering-driver opengl3 --resolution 540x960 --write-movie demo.avi --fixed-fps 30 -- --qa=demo  # запис гри
 ```
 

@@ -40,6 +40,8 @@ def build_walls():
 
 def build_shaft():
     misc.shaft().save(path('bg', 'shaft.png'))
+    misc.bedrock().save(path('bg', 'bedrock.png'))
+    misc.crust().save(path('bg', 'crust.png'))
 
 
 def build_cannon():

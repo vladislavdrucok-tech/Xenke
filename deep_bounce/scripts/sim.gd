@@ -81,9 +81,20 @@ var v_hits := 0             # direct ball-to-stone hits in this volley (layout e
 var v_angle := PI * 0.5
 
 # difficulty curve (tuned with tests/balance.gd)
-var hp_a := 1.0
-var hp_b := 1.1
-var hp_c := 0.8
+var hp_a := 2.0
+var hp_b := 0.3
+var hp_c := 0.65
+var hp_d := 0.02             # slow extra growth with depth squared: long runs do end
+var open_soft := 0.8        # the first rows are this much softer, easing out over `open_len` m
+var open_len := 12.0
+var start_empty := 5        # visible rows without stones at the start of a run
+var open_top := 0.45        # opening board: strength factor of its top row ...
+var open_bottom := 1.3      # ... and of its bottom row (those stones have many turns before the line)
+var open_dens := 1.3        # opening bands are this much denser
+var band_k := 0.14          # rubber band strength (0 = off)
+var band_target := 5.0      # rows in use the rubber band aims at
+var band_min := 0.7
+var band_max := 1.7
 var dens0 := 0.42
 var dens_k := 0.005
 var dens_max := 0.66
@@ -112,7 +123,7 @@ func new_run(run_seed: int) -> void:
 	grid = {}
 	next_id = 1
 	top = 0
-	gen_rows = 4          # the first four visible rows start empty: room to learn the ricochet
+	gen_rows = start_empty  # the upper rows start empty: room to learn the ricochet and time before the line
 	band_kind = -1
 	run_gems = 0
 	unclaimed = 0
@@ -122,7 +133,7 @@ func new_run(run_seed: int) -> void:
 	aim = PI * 0.5
 	v_balls = []
 	events = []
-	_ensure_rows()
+	_ensure_rows(true)
 
 static func mix(a: int, b: int) -> int:
 	var h := ((a & 0xFFFFFFFF) * 374761393 + (b & 0xFFFFFFFF) * 668265263) & 0xFFFFFFFF
@@ -131,12 +142,24 @@ static func mix(a: int, b: int) -> int:
 
 # ---------------------------------------------------------------- generation
 
-func _ensure_rows() -> void:
+func _ensure_rows(opening := false) -> void:
 	while gen_rows < top + VIS_ROWS + BUFFER_ROWS:
 		_gen_chunk()
+	_activate(opening)
 
 func difficulty_power() -> float:
-	return float(balls) * (1.0 + 0.32 * heavy + 0.22 * electric)
+	## Damage one volley can deal per ball-hit: every 4th ball is heavy (1 + level), every 4th direct hit of
+	## every 4th ball sparks `level` more.
+	return float(balls) * (1.0 + 0.25 * heavy + 0.0625 * electric)
+
+func field_rows_in_use() -> int:
+	## Rows between the highest stone already in play and the floor (0 = empty field, 10 = under the red line).
+	var top_row := VIS_ROWS
+	for b in blocks.values():
+		var vr: int = b.r - top
+		if vr < VIS_ROWS and b.hp > 0:
+			top_row = mini(top_row, maxi(0, vr))
+	return VIS_ROWS - top_row
 
 func _gen_chunk() -> void:
 	if gen >= 2:
@@ -201,11 +224,11 @@ func _gen_band() -> void:
 
 func _pick_band(rng: RandomNumberGenerator, r0: int) -> int:
 	var opening := r0 < 14
-	if band_kind != B_OPEN and band_kind >= 0 and rng.randf() < (0.25 if opening else 0.12):
+	if not opening and band_kind != B_OPEN and band_kind >= 0 and rng.randf() < 0.12:
 		return B_OPEN          # breathing room after a compact band
 	var w: Array
 	if opening:
-		w = [[B_SHELF, 3.0], [B_CLUSTER, 3.0], [B_STAIRS, 2.0], [B_PILLARS, 1.0], [B_OPEN, 0.6]]
+		w = [[B_SHELF, 3.0], [B_CLUSTER, 3.0], [B_STAIRS, 2.0], [B_PILLARS, 1.0], [B_SCATTER, 1.5]]
 	else:
 		w = [[B_SHELF, 3.5], [B_PILLARS, 1.2], [B_CLUSTER, 2.2], [B_STAIRS, 1.5], [B_SCATTER, 3.0], [B_OPEN, 0.3]]
 	var total := 0.0
@@ -263,6 +286,8 @@ func _layout_band(rng: RandomNumberGenerator, r0: int, kind: int) -> Array:
 	var keep := _grid4()
 	var specs: Array = []
 	var d := clampf(dens0 + dens_k * float(r0), dens0, dens_max)
+	if r0 < 14:
+		d *= open_dens
 	match kind:
 		B_SHELF:
 			# a chamber: a roof of stones with one or two entry holes (often next to a wall, a side passage),
@@ -396,10 +421,10 @@ func _layout_band(rng: RandomNumberGenerator, r0: int, kind: int) -> Array:
 			specs.erase(victim)
 	for sp in specs:
 		var area: int = sp.w * sp.h
-		var hp := _roll_hp(rng, area, sp.r)
+		var q := _roll_q(rng, area)
 		if sp.role == "floor":
-			hp = maxi(1, int(round(hp * 0.8)))
-		sp["hp"] = hp
+			q *= 0.8
+		sp["q"] = q
 		sp["vein"] = rng.randf() < (0.35 if sp.role == "floor" else 0.08)
 		sp["g"] = (1 if area == 1 else (2 if area == 2 else 3)) + (3 if sp.vein else 0)
 		sp["v"] = rng.randi_range(0, 3)
@@ -453,7 +478,7 @@ func _layout_chunk(rng: RandomNumberGenerator, r0: int) -> Array:
 	# strength, look, crystals
 	for s in specs:
 		var area: int = s.w * s.h
-		s["hp"] = _roll_hp(rng, area, s.r)
+		s["q"] = _roll_q(rng, area)
 		s["vein"] = rng.randf() < 0.13
 		s["g"] = (1 if area == 1 else (2 if area == 2 else 3)) + (3 if s.vein else 0)
 		s["v"] = rng.randi_range(0, 3)
@@ -466,25 +491,60 @@ func _row_open(occ: Array, rr: int) -> int:
 			n += 1
 	return n
 
-func _roll_hp(rng: RandomNumberGenerator, area: int, abs_row: int) -> int:
-	var t := float(depth)
-	var p := difficulty_power()
-	var base := hp_a + hp_b * t + hp_c * p
-	if abs_row < 14:
-		# the opening rows: small numbers, room to learn
-		return rng.randi_range(area / 2 + 1, area / 2 + 3) if area > 1 else rng.randi_range(1, 3)
+func _roll_q(rng: RandomNumberGenerator, area: int) -> float:
+	## Relative weight of a stone inside its row (size and luck). The actual strength is set by
+	## _activate() when the stone enters the field.
 	var mult := 1.0
 	if area == 2:
 		mult = 1.7
 	elif area >= 4:
 		mult = 2.7
-	# rows right after the opening ramp up instead of jumping
-	if abs_row < 28:
-		mult *= lerpf(0.45, 1.0, float(abs_row - 14) / 14.0)
-	var v := base * mult * rng.randf_range(0.6, 1.3)
+	var q := mult * rng.randf_range(0.6, 1.3)
 	if rng.randf() < 0.09:
-		v *= 1.6
-	return maxi(1, int(round(v)))
+		q *= 1.5
+	return snappedf(q, 0.001)
+
+func strength_base() -> float:
+	## What a stone of weight 1 is worth for rock entering the field right now. One row arrives per volley,
+	## so a row is sized against what one volley can do: it grows with depth and with the player's current
+	## power. There are no "free" rows; the opening is only softened. A gentle rubber band keeps the field
+	## populated: a nearly empty field gets tougher rock, a field close to the red line softer rock.
+	var d := float(depth)
+	var base := hp_a + hp_b * d + hp_d * d * d + hp_c * difficulty_power()
+	base *= lerpf(open_soft, 1.0, clampf(d / open_len, 0.0, 1.0))
+	if band_k > 0.0:
+		base *= clampf(1.0 + band_k * (band_target - float(field_rows_in_use())), band_min, band_max)
+	return base
+
+func _activate(opening := false) -> void:
+	## Stones that have just risen above the floor get their strength (once).
+	## The opening board is not rubber-banded, and its upper rows (the first to reach the red line) are softer.
+	var base := -1.0
+	var ids := blocks.keys()
+	ids.sort()
+	for id in ids:
+		var b: Dictionary = blocks[id]
+		if b.hp > 0 or b.q <= 0.0 or is_future(b):
+			continue
+		if base < 0.0:
+			if opening:
+				var keep := band_k
+				band_k = 0.0
+				base = strength_base()
+				band_k = keep
+			else:
+				base = strength_base()
+		var k := 1.0
+		var q: float = b.q
+		if opening:
+			# the opening board: its upper rows reach the red line first, so they are the softest (eased in,
+			# not linear), and no stone of the board is an outlier
+			var t := clampf(float(b.r - top - start_empty) / float(maxi(1, VIS_ROWS - 1 - start_empty)), 0.0, 1.0)
+			k = lerpf(open_top, open_bottom, t * t * (3.0 - 2.0 * t))
+			var area: int = b.w * b.h
+			q = minf(q, (1.0 if area == 1 else (1.7 if area == 2 else 2.3)) * 1.3)
+		b.hp = maxi(1, int(round(q * base * k)))
+		b.mhp = b.hp
 
 func _chunk_reachable(specs: Array, r0: int, last: int) -> bool:
 	# Flood fill from the open space above the field through empty cells of everything generated so far
@@ -561,7 +621,10 @@ func _add_block(s: Dictionary) -> void:
 		if (left.is_empty() or left.v != vv) and (up.is_empty() or up.v != vv):
 			v = vv
 			break
-	var b := {"id": id, "c": s.c, "r": s.r, "w": s.w, "h": s.h, "hp": s.hp, "mhp": s.hp, "v": v, "g": s.g, "vein": s.vein}
+	# generated rock carries a weight q and gets its strength on entering the field; an explicit hp is final
+	var hp0: int = s.get("hp", 0)
+	var b := {"id": id, "c": s.c, "r": s.r, "w": s.w, "h": s.h, "hp": hp0, "mhp": hp0, "v": v, "g": s.g, "vein": s.vein,
+		"q": 0.0 if hp0 > 0 else float(roundi(float(s.get("q", 1.0)) * 1000.0)) / 1000.0}
 	blocks[id] = b
 	for yy in s.h:
 		for xx in s.w:
@@ -1150,18 +1213,23 @@ func to_dict() -> Dictionary:
 	ids.sort()
 	for id in ids:
 		var b: Dictionary = blocks[id]
-		bl.append([b.id, b.c, b.r, b.w, b.h, b.hp, b.mhp, b.v, b.g, 1 if b.vein else 0])
+		bl.append([b.id, b.c, b.r, b.w, b.h, b.hp, b.mhp, b.v, b.g, 1 if b.vein else 0, roundi(b.q * 1000.0)])
 	var d := {
 		"seed": seed, "depth": depth, "volleys": volleys, "balls": balls, "heavy": heavy, "electric": electric,
 		"phase": phase, "next_id": next_id, "gen_rows": gen_rows, "top": top, "run_gems": run_gems,
 		"unclaimed": unclaimed, "upgrade_opts": upgrade_opts.duplicate(), "picks": picks, "stats": stats.duplicate(), "gen": gen, "band_kind": band_kind,
-		"aim": aim, "blocks": bl,
+		"aim": snappedf(aim, 0.0001), "blocks": bl,
 	}
 	if phase == PH_VOLLEY:
+		# positions, velocities and the angle are stored as the exact bytes of the doubles: text numbers do not
+		# survive JSON bit for bit, and one bit is enough to change a later bounce
 		var bs: Array = []
+		var exact := PackedFloat64Array([v_angle])
 		for b in v_balls:
-			bs.append([b.x, b.y, b.vx, b.vy, b.k, b.hits, b.life, b.st, b.idx])
-		d["volley"] = {"tick": v_tick, "total": v_total, "launched": v_launched, "angle": v_angle, "dmg": v_damage, "balls": bs}
+			bs.append([b.k, b.hits, b.life, b.st, b.idx])
+			exact.append_array(PackedFloat64Array([b.x, b.y, b.vx, b.vy]))
+		d["volley"] = {"tick": v_tick, "total": v_total, "launched": v_launched, "dmg": v_damage, "hits": v_hits,
+			"balls": bs, "bits": exact.to_byte_array().hex_encode()}
 	return d
 
 func from_dict(d: Dictionary) -> void:
@@ -1191,7 +1259,8 @@ func from_dict(d: Dictionary) -> void:
 	grid = {}
 	for a in d.blocks:
 		var b := {"id": int(a[0]), "c": int(a[1]), "r": int(a[2]), "w": int(a[3]), "h": int(a[4]), "hp": int(a[5]),
-			"mhp": int(a[6]), "v": int(a[7]), "g": int(a[8]), "vein": int(a[9]) == 1}
+			"mhp": int(a[6]), "v": int(a[7]), "g": int(a[8]), "vein": int(a[9]) == 1,
+			"q": float(int(a[10])) / 1000.0 if a.size() > 10 else 0.0}   # saves before 1.0.2: every stone already has its strength
 		blocks[b.id] = b
 		for yy in b.h:
 			for xx in b.w:
@@ -1203,13 +1272,26 @@ func from_dict(d: Dictionary) -> void:
 		v_tick = int(v.tick)
 		v_total = int(v.total)
 		v_launched = int(v.launched)
-		v_angle = float(v.angle)
 		v_damage = int(v.get("dmg", 0))
-		for a in v.balls:
-			var b := Ball.new()
-			b.x = float(a[0]); b.y = float(a[1]); b.vx = float(a[2]); b.vy = float(a[3])
-			b.k = int(a[4]); b.hits = int(a[5]); b.life = int(a[6]); b.st = int(a[7]); b.idx = int(a[8])
-			v_balls.append(b)
+		v_hits = int(v.get("hits", 0))
+		if v.has("bits"):
+			var exact: PackedFloat64Array = String(v.bits).hex_decode().to_float64_array()
+			v_angle = exact[0]
+			var i := 1
+			for a in v.balls:
+				var b := Ball.new()
+				b.x = exact[i]; b.y = exact[i + 1]; b.vx = exact[i + 2]; b.vy = exact[i + 3]
+				i += 4
+				b.k = int(a[0]); b.hits = int(a[1]); b.life = int(a[2]); b.st = int(a[3]); b.idx = int(a[4])
+				v_balls.append(b)
+		else:
+			# volley saved by 1.0 / 1.0.1: numbers as text
+			v_angle = float(v.angle)
+			for a in v.balls:
+				var b := Ball.new()
+				b.x = float(a[0]); b.y = float(a[1]); b.vx = float(a[2]); b.vy = float(a[3])
+				b.k = int(a[4]); b.hits = int(a[5]); b.life = int(a[6]); b.st = int(a[7]); b.idx = int(a[8])
+				v_balls.append(b)
 	elif phase == PH_VOLLEY:
 		phase = PH_AIM
 

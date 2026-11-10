@@ -8,12 +8,12 @@ signal wallet_changed
 
 const I18N := preload("res://scripts/i18n.gd")
 const SAVE_PATH := "user://deep_bounce.save"
-const VERSION := "1.0.1"
+const VERSION := "1.0.2"
 
 const SKINS := ["classic", "ember", "brass", "crystal"]
 const SKIN_PRICE := {"classic": 0, "ember": 150, "brass": 320, "crystal": 600}
 
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 var settings := {"lang": "en", "sound": true, "music": true, "vibration": true, "shake": 2, "reduced_fx": false}
 var migrated_from := 0       # save version found on disk when it was older than SAVE_VERSION
 var meta := {"crystals": 0, "best": 0, "owned": ["classic"], "skin": "classic", "tutorial": 0, "runs": 0,
@@ -166,6 +166,13 @@ static func migrate(data: Dictionary) -> Dictionary:
 			data["run"] = r
 		data["v"] = 2
 		G.migrated_from = v
+	if int(data.get("v", 2)) < 3:
+		# format 3 (1.0.2): stones carry a weight and get their strength on entering the field; balls in
+		# flight are stored bit for bit. Sim.from_dict reads the older shapes as they are: every stone of an
+		# older run keeps the strength it already has, a volley saved as text numbers continues from them.
+		if G.migrated_from == 0:
+			G.migrated_from = int(data.get("v", 2))
+		data["v"] = 3
 	return data
 
 func store_run(sim: Sim) -> void:

@@ -1,4 +1,4 @@
-> **Deep Bounce 1.0.1** (офлайн-гра для Android на Godot): проєкт у [`deep_bounce/`](deep_bounce/README.md), APK — [`builds/DeepBounce-1.0.1.apk`](builds/DeepBounce-1.0.1.apk), звіт — [`deep_bounce/QA_REPORT.md`](deep_bounce/QA_REPORT.md).
+> **Deep Bounce 1.0.2** (офлайн-гра для Android на Godot): проєкт у [`deep_bounce/`](deep_bounce/README.md), APK — [`builds/DeepBounce-1.0.2.apk`](builds/DeepBounce-1.0.2.apk), звіт — [`deep_bounce/QA_REPORT.md`](deep_bounce/QA_REPORT.md).
 
 # Afterfall · «Останній сад» — v0.13, перший епізод (в розробці)
 

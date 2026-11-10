@@ -32,6 +32,9 @@ func _ready() -> void:
 	test_red_line_rule()
 	test_layout_bands()
 	test_save_migration()
+	test_strength_on_entry()
+	test_exact_volley_bits()
+	test_load_101_volley()
 	print("time %d ms" % (Time.get_ticks_msec() - t0))
 	print("SELFTEST " + ("PASS" if fails == 0 else "FAIL (%d)" % fails))
 	var f := FileAccess.open("user://selftest.log", FileAccess.WRITE)
@@ -132,6 +135,7 @@ func test_generation() -> void:
 	var bad_reach := 0
 	var bad_start := 0
 	var max_start_hp := 0
+	var max_first_row := 0
 	var N := 1500
 	for sd in N:
 		var s := Sim.new()
@@ -146,18 +150,24 @@ func test_generation() -> void:
 						if occ.has(k):
 							bad_overlap += 1
 						occ[k] = true
-				if turn == 0 and b.r < 14:
+				if turn == 0 and not s.is_future(b):
 					max_start_hp = maxi(max_start_hp, b.hp)
+					if b.r == s.start_empty and b.w * b.h == 1:
+						max_first_row = maxi(max_first_row, b.hp)
+					if b.hp <= 0:
+						bad_start += 1          # every stone in play has a strength
+				if turn == 0 and s.is_future(b) and b.hp != 0:
+					bad_start += 1              # rock below the floor gets its strength only when it rises
 			if turn == 0:
 				for b in s.blocks.values():
-					if b.r < 4:
+					if b.r < s.start_empty:
 						bad_start += 1
 			for r in range(s.top, s.gen_rows):
 				var open := 0
 				for c in Sim.COLS:
 					if not occ.has(r * Sim.COLS + c):
 						open += 1
-				if r >= 4 and open < 2:
+				if r >= s.start_empty and open < 2:
 					bad_open += 1
 			if not _reach_floor(s, occ):
 				bad_reach += 1
@@ -167,7 +177,9 @@ func test_generation() -> void:
 	ok(bad_overlap == 0, "generation: no overlapping stones (%d seeds x 9 turns)" % N)
 	ok(bad_open == 0, "generation: every row keeps >= 2 open cells", "%d bad rows" % bad_open)
 	ok(bad_reach == 0, "generation: the floor is reachable from the top in the opening turns", "%d blocked boards" % bad_reach)
-	ok(bad_start == 0 and max_start_hp <= 5, "opening board (rows 4-13): 4 empty rows, strength <= 5", "max hp %d" % max_start_hp)
+	ok(bad_start == 0 and max_first_row <= 8 and max_start_hp <= 36,
+		"opening board: 5 empty rows, the first stones to reach the line are the softest (single stones <= 8), nothing above 36",
+		"first row max %d, board max %d" % [max_first_row, max_start_hp])
 
 func _reach_floor(s: Sim, occ: Dictionary) -> bool:
 	var last := s.top + Sim.VIS_ROWS - 1
@@ -435,7 +447,7 @@ func test_all_combinations() -> void:
 			if s.run_gems != gems_from_breaks + int(s.stats.bonus):
 				bad.append("H%dE%d crystals %d vs breaks %d" % [hv, el, s.run_gems, gems_from_breaks])
 			for b in s.blocks.values():
-				if b.hp <= 0:
+				if b.hp <= 0 and not s.is_future(b):
 					bad.append("H%dE%d stone left with hp %d" % [hv, el, b.hp])
 			totals += "H%dE%d:%d/%d/%d z%d " % [hv, el, hits[0], hits[1], hits[2], zaps]
 	ok(bad.is_empty(), "all 16 heavy x electric level combinations follow the rules", (", ".join(bad.slice(0, 4)) if not bad.is_empty() else totals.substr(0, 160)))
@@ -587,6 +599,122 @@ func test_save_migration() -> void:
 		var b: Dictionary = s2.blocks.get(id, {})
 		if b.is_empty() or a.c != b.c or a.r != b.r or a.hp != b.hp or a.w != b.w or a.h != b.h:
 			same_stones = false
-	ok(int(data.v) == 2 and data.settings.reduced_fx == false and data.settings.lang == "uk" and int(data.meta.best) == 57
+	ok(int(data.v) == G.SAVE_VERSION and data.settings.reduced_fx == false and data.settings.lang == "uk" and int(data.meta.best) == 57
 		and data.meta.owned.has("ember") and int(data.meta.crystals) == 382 and same_stones and s2.depth == old.depth and s2.gen == 2,
-		"save format 1 -> 2: run with its exact stones, record, purchases, wallet and language kept; new fields added")
+		"save format 1 -> 3: run with its exact stones, record, purchases, wallet and language kept; new fields added")
+
+
+func test_strength_on_entry() -> void:
+	# rock gets its strength when it rises above the floor: more for a stronger player and for an empty
+	# field, less when the field is close to the red line; decided once
+	var a := Sim.new(); a.new_run(555)
+	var b := Sim.new(); b.new_run(555)
+	b.balls = 16; b.heavy = 2
+	var fut_before := 0
+	for blk in a.blocks.values():
+		if a.is_future(blk) and blk.hp == 0:
+			fut_before += 1
+	var first_new := a.top + Sim.VIS_ROWS
+	for s in [a, b]:
+		for k in 4:
+			s.top += 1; s.depth += 1
+			s._ensure_rows()
+	var sum_a := 0
+	var sum_b := 0
+	var n := 0
+	for id in a.blocks:
+		var x: Dictionary = a.blocks[id]
+		if x.r >= first_new and x.hp > 0 and b.blocks.has(id) and b.blocks[id].hp > 0:
+			sum_a += x.hp
+			sum_b += b.blocks[id].hp
+			n += 1
+	var keep := {}
+	for id in a.blocks:
+		keep[id] = a.blocks[id].hp
+	a._activate()
+	var stable := true
+	for id in a.blocks:
+		stable = stable and keep[id] == a.blocks[id].hp
+	# field state: empty field vs field near the line
+	var e := Sim.new(); e.new_run(556)
+	var base_mid := e.strength_base()
+	for id in e.blocks.keys():
+		if not e.is_future(e.blocks[id]):
+			e.blocks.erase(id)
+	var base_empty := e.strength_base()
+	e._add_block({"c": 0, "r": e.top + 1, "w": 1, "h": 1, "hp": 5, "g": 1, "v": 0, "vein": false})
+	var base_full := e.strength_base()
+	ok(fut_before > 0 and n > 0 and sum_b > sum_a and stable and base_empty > base_mid and base_full < base_mid,
+		"strength is set when rock enters the field: stronger player -> tougher row, empty field -> tougher, field near the line -> softer; set once",
+		"row for 8 balls %d, for 16 balls+heavy 2 %d; base empty %.1f / mid %.1f / near line %.1f" % [sum_a, sum_b, base_empty, base_mid, base_full])
+
+func test_exact_volley_bits() -> void:
+	# a volley saved as text keeps the exact bits of every ball: save -> load -> save gives the same text
+	var s := Sim.new(); s.new_run(4321)
+	s.balls = 16; s.electric = 2
+	s.fire(0.77)
+	for i in 55:
+		s.step()
+	var t1 := JSON.stringify(s.to_dict(), "", true, true)
+	var s2 := Sim.new(); s2.from_dict(JSON.parse_string(t1))
+	var t2 := JSON.stringify(s2.to_dict(), "", true, true)
+	var same_bits := true
+	for i in s.v_balls.size():
+		var p: Sim.Ball = s.v_balls[i]
+		var q: Sim.Ball = s2.v_balls[i]
+		same_bits = same_bits and p.x == q.x and p.y == q.y and p.vx == q.vx and p.vy == q.vy
+	ok(t1 == t2 and same_bits and s2.v_angle == s.v_angle, "balls in flight are saved bit for bit (text save -> load -> save is identical)", "%d balls" % s.v_balls.size())
+
+
+func test_load_101_volley() -> void:
+	# a save written by 1.0.1 in the middle of a volley: stones without weights, balls as text numbers
+	var s := Sim.new(); s.new_run(808)
+	s.balls = 12; s.heavy = 1
+	s.fire(1.9)
+	for i in 40:
+		s.step()
+	var d := s.to_dict()
+	var old_blocks: Array = []
+	for a in d.blocks:
+		var row: Array = a.slice(0, 10)
+		if int(row[5]) <= 0:
+			row[5] = 7      # in 1.0.1 every generated stone already had its strength
+			row[6] = 7
+		old_blocks.append(row)
+	d.blocks = old_blocks
+	var balls_old: Array = []
+	for b in s.v_balls:
+		balls_old.append([b.x, b.y, b.vx, b.vy, b.k, b.hits, b.life, b.st, b.idx])
+	d.volley = {"tick": s.v_tick, "total": s.v_total, "launched": s.v_launched, "angle": s.v_angle, "dmg": s.v_damage, "balls": balls_old}
+	var save := {"v": 2, "settings": {"lang": "en", "sound": true, "music": true, "vibration": true, "shake": 2, "reduced_fx": true},
+		"meta": {"crystals": 617, "best": 40, "owned": ["classic"], "skin": "classic", "tutorial": 6, "runs": 3, "broken": 90, "spent": 0}, "run": d}
+	var data: Dictionary = G.migrate(JSON.parse_string(JSON.stringify(save)))
+	var s2 := Sim.new()
+	s2.from_dict(data.run)
+	var close := s2.v_balls.size() == s.v_balls.size() and s2.phase == Sim.PH_VOLLEY and absf(s2.v_angle - s.v_angle) < 1e-9
+	for i in mini(s.v_balls.size(), s2.v_balls.size()):
+		var p: Sim.Ball = s.v_balls[i]
+		var q: Sim.Ball = s2.v_balls[i]
+		close = close and absf(p.x - q.x) < 1e-6 and absf(p.vy - q.vy) < 1e-6 and p.k == q.k and p.st == q.st
+	var all_have_hp := true
+	for b in s2.blocks.values():
+		all_have_hp = all_have_hp and b.hp > 0 and b.q == 0.0
+	var guard := 0
+	while s2.phase == Sim.PH_VOLLEY and guard < 5000:
+		s2.step()
+		guard += 1
+	# rock generated after the update gets a weight and is activated on entry
+	for k in 6:
+		if s2.phase == Sim.PH_UPGRADE:
+			s2.choose_upgrade(s2.upgrade_opts[0])
+		if s2.phase != Sim.PH_AIM:
+			break
+		s2.fire(1.3)
+		while s2.phase == Sim.PH_VOLLEY:
+			s2.step()
+	var active_ok := true
+	for b in s2.blocks.values():
+		if not s2.is_future(b) and b.hp <= 0:
+			active_ok = false
+	ok(int(data.v) == G.SAVE_VERSION and close and all_have_hp and guard < 5000 and active_ok and int(data.meta.crystals) == 617 and data.settings.reduced_fx == true,
+		"save of 1.0.1 taken mid-volley loads in 1.0.2: same stones and balls, the volley finishes, later rock gets its strength on entry")

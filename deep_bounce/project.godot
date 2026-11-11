@@ -7,7 +7,7 @@ config_version=5
 
 config/name="Deep Bounce"
 config/description="Swipe, bounce, dig deeper."
-config/version="1.0.3"
+config/version="1.1.0"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://icon.png"
@@ -19,6 +19,8 @@ config/quit_on_go_back=false
 [autoload]
 
 G="*res://scripts/game_state.gd"
+Store="*res://scripts/store.gd"
+Ads="*res://scripts/ads.gd"
 
 [display]
 
@@ -58,3 +60,7 @@ limits/opengl/max_lights_per_object=2
 
 gdscript/warnings/inference_on_variant=0
 gdscript/warnings/untyped_declaration=0
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/GodotGooglePlayBilling/plugin.cfg", "res://addons/DeepBounceAds/plugin.cfg")

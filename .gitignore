@@ -15,3 +15,9 @@ deep_bounce/build/
 deep_bounce/tools/**/__pycache__/
 *.keystore
 *.jks
+# Godot Android build template (installed by tools/android/build_release.sh) and plugin build output
+deep_bounce/android/
+deep_bounce/android_plugins/*/build/
+deep_bounce/android_plugins/*/.gradle/
+deep_bounce/android_plugins/*/*/build/
+deep_bounce/android_plugins/*/local.properties

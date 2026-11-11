@@ -600,9 +600,68 @@ func test_save_migration() -> void:
 		var b: Dictionary = s2.blocks.get(id, {})
 		if b.is_empty() or a.c != b.c or a.r != b.r or a.hp != b.hp or a.w != b.w or a.h != b.h:
 			same_stones = false
-	ok(int(data.v) == G.SAVE_VERSION and data.settings.reduced_fx == false and data.settings.lang == "uk" and int(data.meta.best) == 57
-		and data.meta.owned.has("ember") and int(data.meta.crystals) == 382 and same_stones and s2.depth == old.depth and s2.gen == 2,
-		"save format 1 -> 3: run with its exact stones, record, purchases, wallet and language kept; new fields added")
+	ok(int(data.v) == G.SAVE_VERSION and data.settings.reduced_fx == false and data.settings.lang == "uk" and bool(data.settings.lang_set)
+		and int(data.meta.best) == 57 and data.cos.cannons.has("ember") and data.cos.cannon == "ember" and data.cos.ball == "classic"
+		and int(data.meta.crystals) == 382 and same_stones and s2.depth == old.depth and s2.gen == 2 and s2.mode == "endless" and s2.run_id != "",
+		"save format 1 -> 4: run (now an endless run) with its exact stones, record, bought cannon finish and its selection, wallet and language kept")
+	test_v4_rules()
+
+func test_v4_rules() -> void:
+	## 1.1: second chance, level win and stars, first-clear bonus, idempotent results
+	var keep := G.test_no_save
+	G.test_no_save = true
+	var saved_profile := {"meta": G.meta.duplicate(true), "levels": G.levels.duplicate(true), "result": G.result.duplicate(true), "run": G.run.duplicate(true), "ads": G.ads.duplicate(true)}
+	var s := Sim.new()
+	s.record_events = false
+	s.new_run(4711)
+	for c in [0, 3]:
+		s._add_block({"c": c, "r": s.top + 1, "w": 1, "h": 1, "hp": 5, "g": 1, "v": 0, "vein": false})
+	s._add_block({"c": 5, "r": s.top + 6, "w": 1, "h": 1, "hp": 5, "g": 1, "v": 0, "vein": false})
+	var far_id := s.next_id - 1
+	s.phase = Sim.PH_OVER
+	var gems := s.run_gems
+	var r1 := s.revive()
+	var r2 := s.revive()
+	var near := 0
+	for b in s.blocks.values():
+		if s.block_rect(b).position.y < Sim.DANGER_Y + 2.0 * Sim.CELL:
+			near += 1
+	ok(r1 and not r2 and near == 0 and s.blocks.has(far_id) and s.revive_used and s.run_gems == gems and s.phase != Sim.PH_OVER,
+		"second chance: stones on the line and within two cells below removed, lower stones stay, no crystals, only once")
+	var lv: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/levels.json")).levels[0]
+	var route: Array = JSON.parse_string(FileAccess.get_file_as_string("res://tests/level_routes.json")).levels[0].route
+	var l := Sim.new()
+	l.record_events = false
+	l.new_level(lv)
+	l.run_id = "selftest-L01"
+	for st in route:
+		l.fire(float(st.a))
+		while l.phase == Sim.PH_VOLLEY:
+			l.step()
+	G.levels = {"unlocked": 1, "stars": {}, "first": {}, "best_volleys": {}}
+	var before := int(G.meta.crystals)
+	var res := G.finish_run(l, lv)
+	var after := int(G.meta.crystals)
+	var again := G.finish_run(l, lv)
+	ok(l.phase == Sim.PH_WON and int(res.stars) == 3 and int(res.bonus) == 20 and after == before + int(res.gems) and int(G.meta.crystals) == after
+		and again.id == res.id and int(G.levels.unlocked) == 2, "level 1: route wins, 3 stars, first-clear bonus 20 once, results stored once", "gems %d" % int(res.gems))
+	var l2 := Sim.new()
+	l2.record_events = false
+	l2.new_level(lv)
+	l2.run_id = "selftest-L01-b"
+	l2.revive_used = true
+	for st in route:
+		l2.fire(float(st.a))
+		while l2.phase == Sim.PH_VOLLEY:
+			l2.step()
+	var res2 := G.finish_run(l2, lv)
+	ok(int(res2.stars) == 2 and int(res2.bonus) == 0 and int(G.levels.stars.L01) == 3, "with a second chance the attempt gets at most 2 stars; no second first-clear bonus; best stays 3")
+	G.meta = saved_profile.meta
+	G.levels = saved_profile.levels
+	G.result = saved_profile.result
+	G.run = saved_profile.run
+	G.ads = saved_profile.ads
+	G.test_no_save = keep
 
 
 func test_strength_on_entry() -> void:

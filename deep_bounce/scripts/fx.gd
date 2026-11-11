@@ -131,13 +131,8 @@ func _draw() -> void:
 	for h in homers:
 		var k2: float = h.life / h.max
 		var p: Vector2 = h.a.lerp(h.b, k2 * k2 * (3.0 - 2.0 * k2))
-		var key := "balls/ball_normal"
-		if h.k == Sim.K_HEAVY:
-			key = "balls/ball_heavy"
-		elif h.k == Sim.K_ELECTRIC:
-			key = "balls/ball_electric"
 		var s2 := 27.0 * (1.0 - 0.5 * k2)
-		draw_texture_rect(tex[key], Rect2(p - Vector2(s2, s2) * 0.5, Vector2(s2, s2)), false, Color(1, 1, 1, 1.0 - k2 * 0.6))
+		draw_texture_rect(world.ball_tex(h.k), Rect2(p - Vector2(s2, s2) * 0.5, Vector2(s2, s2)), false, Color(1, 1, 1, 1.0 - k2 * 0.6))
 	for g in gems:
 		var gs := 40.0
 		var pulse := 1.0 + 0.12 * sin(t * 18.0 + g.r * 10.0)

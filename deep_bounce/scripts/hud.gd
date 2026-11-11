@@ -35,6 +35,10 @@ var hint_target := Vector2.ZERO
 var hint_t := 0.0
 var hand: Node2D
 var hand_t := 0.0
+var level_box: VBoxContainer
+var stones_label: Label
+var vol_label: Label
+var vol_stars: HBoxContainer
 var display_gems := -1
 var gem_pop := 0.0
 var _last := {}
@@ -70,6 +74,24 @@ func _ready() -> void:
 	progress_label = UK.label("", 19, UK.TEAL, 5, "Rubik-Bold")
 	progress_label.position = Vector2(92, 4)
 	progress_btn.add_child(progress_label)
+	# level mode: stones still to break (field, below the floor and queue), volleys and the stars still reachable
+	level_box = VBoxContainer.new()
+	level_box.position = Vector2(30, 200)
+	level_box.add_theme_constant_override("separation", 0)
+	level_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(level_box)
+	stones_label = UK.label("", 22, UK.CREAM, 6, "Rubik-Bold")
+	level_box.add_child(stones_label)
+	var vh := HBoxContainer.new()
+	vh.add_theme_constant_override("separation", 6)
+	vh.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vol_stars = HBoxContainer.new()
+	vol_stars.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vh.add_child(vol_stars)
+	vol_label = UK.label("", 20, UK.TEAL, 5, "Rubik-Bold")
+	vh.add_child(vol_label)
+	level_box.add_child(vh)
+	level_box.visible = false
 	# top right, outside the field: speed, pause
 	speed_btn = Button.new()
 	speed_btn.theme_type_variation = "TealButton"
@@ -243,36 +265,78 @@ func _chip(tex: String) -> Control:
 	c.visible = false
 	return c
 
+func _ball_path(k: int) -> String:
+	var kind := "normal"
+	if k == Sim.K_HEAVY:
+		kind = "heavy"
+	elif k == Sim.K_ELECTRIC:
+		kind = "electric"
+	return "res://assets/art/balls/%s_%s.png" % [G.selected("ball"), kind]
+
 func gem_target_global() -> Vector2:
 	return gem_icon.get_global_rect().get_center()
 
 func ball_icon_global() -> Vector2:
 	return balls_label.get_global_rect().get_center()
 
+func refresh() -> void:
+	_last.clear()
+
 func update_state(sim: Sim, flying_gems: int, speed: int, show_speed: bool) -> void:
 	_sim = sim
-	var lang := G.lang_index()
+	var lang: String = G.settings.lang
 	var boost: bool = main != null and main.get("boost") == true
-	var key := [sim.depth, sim.balls, sim.heavy, sim.electric, sim.volleys, lang, G.meta.crystals - flying_gems, speed, show_speed, boost]
+	var left := sim.remaining_targets() if sim.mode == "level" else 0
+	var key := [sim.depth, sim.balls, sim.heavy, sim.electric, sim.volleys, lang, G.meta.crystals - flying_gems, speed, show_speed, boost, sim.mode, left, G.selected("ball")]
 	if key == _last.get("k"):
 		return
 	_last["k"] = key
-	depth_label.text = G.t("depth", [sim.depth])
+	var lv: Dictionary = main.level if main != null and sim.mode == "level" else {}
+	if sim.mode == "level" and not lv.is_empty():
+		depth_label.text = G.t("level_n", {"n": int(lv.n)})
+		level_box.visible = true
+		stones_label.text = G.tn("stones_left_n", left)
+		# the volley being aimed or in flight counts: stars still possible if it wins the level
+		var cur := sim.volleys + (0 if sim.phase == Sim.PH_WON or sim.phase == Sim.PH_OVER else 1)
+		var reach := 1
+		var limit := 0
+		if cur <= int(lv.t3):
+			reach = 3
+			limit = int(lv.t3)
+		elif cur <= int(lv.t2):
+			reach = 2
+			limit = int(lv.t2)
+		if sim.revive_used:
+			reach = mini(reach, 2)
+			limit = int(lv.t2) if reach == 2 else 0
+		for c in vol_stars.get_children():
+			vol_stars.remove_child(c)
+			c.queue_free()
+		for i in 3:
+			vol_stars.add_child(UK.icon(UK.ART + ("star_on.png" if i < reach else "star_off.png"), Vector2(22, 22)))
+		vol_label.text = G.t("volley_of", {"n": cur, "m": limit}) if limit > 0 else G.t("volley_n", {"n": cur})
+	else:
+		depth_label.text = G.t("depth", {"n": sim.depth})
+		level_box.visible = false
+	UK.fit_label(depth_label, 330, 18)
 	balls_label.text = G.balls_text(sim.balls)
+	UK.fit_label(balls_label, 330, 20)
 	heavy_chip.visible = sim.heavy > 0
 	electric_chip.visible = sim.electric > 0
 	chips.visible = sim.heavy > 0 or sim.electric > 0
-	(heavy_chip.get_node("lv") as Label).text = G.t("lv_short", [sim.heavy])
-	(electric_chip.get_node("lv") as Label).text = G.t("lv_short", [sim.electric])
+	(heavy_chip.get_node("lv") as Label).text = G.t("lv_short", {"n": sim.heavy})
+	(electric_chip.get_node("lv") as Label).text = G.t("lv_short", {"n": sim.electric})
 	var shown := maxi(0, G.meta.crystals - flying_gems)
 	if display_gems >= 0 and shown > display_gems:
 		gem_pop = 1.0
 	display_gems = shown
 	gems_label.text = str(shown)
-	var done := sim.volleys % Sim.UPGRADE_EVERY
+	var every := sim.upgrade_every
+	progress_btn.visible = every > 0 and not sim.available_upgrades().is_empty()
+	var done := sim.volleys % maxi(1, every)
 	for i in 4:
 		pips[i].color = Color(0.5, 0.95, 0.9, 0.95) if i < done else Color(0.1, 0.3, 0.3, 0.8)
-	progress_label.text = G.t("upgrade_progress", [done])
+	progress_label.text = G.t("upgrade_progress", {"n": done, "m": every})
 	# speed: shown in its own button next to pause; active only while a volley flies
 	speed_btn.disabled = not show_speed
 	speed_btn.text = "×%d" % speed
@@ -317,7 +381,7 @@ func show_series_info() -> void:
 		return
 	G.sfx("click", -6.0)
 	_clear_info()
-	info_box.add_child(_line(G.t("series_title", [G.balls_text(_sim.balls)]), 28))
+	info_box.add_child(_line(G.t("series_title", {"balls": G.balls_text(_sim.balls)}), 28))
 	var grid := GridContainer.new()
 	grid.columns = 16
 	grid.add_theme_constant_override("h_separation", 4)
@@ -325,19 +389,14 @@ func show_series_info() -> void:
 	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for i in _sim.balls:
 		var k := _sim.ball_kind(i)
-		var tex := "res://assets/art/balls/ball_normal.png"
-		if k == Sim.K_HEAVY:
-			tex = "res://assets/art/balls/ball_heavy.png"
-		elif k == Sim.K_ELECTRIC:
-			tex = "res://assets/art/balls/ball_electric.png"
-		grid.add_child(UK.icon(tex, Vector2(30, 30)))
+		grid.add_child(UK.icon(_ball_path(k), Vector2(30, 30)))
 	info_box.add_child(_center(grid))
-	info_box.add_child(_line(G.t("series_normal"), 21, UK.CREAM, "res://assets/art/balls/ball_normal.png"))
+	info_box.add_child(_line(G.t("series_normal"), 21, UK.CREAM, _ball_path(Sim.K_NORMAL)))
 	if _sim.electric > 0:
-		info_box.add_child(_line(G.t("series_electric", [_sim.electric, Sim.ZAP_DMG[_sim.electric]]), 21, UK.CREAM, "res://assets/art/balls/ball_electric.png"))
+		info_box.add_child(_line(G.t("series_electric", {"n": _sim.electric, "m": Sim.ZAP_DMG[_sim.electric]}), 21, UK.CREAM, _ball_path(Sim.K_ELECTRIC)))
 	if _sim.heavy > 0:
-		info_box.add_child(_line(G.t("series_heavy", [_sim.heavy, Sim.HEAVY_DMG[_sim.heavy]]), 21, UK.CREAM, "res://assets/art/balls/ball_heavy.png"))
-	if _sim.electric == 0 or _sim.heavy == 0:
+		info_box.add_child(_line(G.t("series_heavy", {"n": _sim.heavy, "m": Sim.HEAVY_DMG[_sim.heavy]}), 21, UK.CREAM, _ball_path(Sim.K_HEAVY)))
+	if (_sim.electric == 0 or _sim.heavy == 0) and _sim.upgrade_every > 0:
 		info_box.add_child(_line(G.t("series_locked"), 19, UK.TEAL))
 	info_box.add_child(_line(G.t("tap_close"), 18, Color(0.7, 0.85, 0.83)))
 	_open_info(size.y - 118)
@@ -347,9 +406,10 @@ func show_upgrade_info() -> void:
 		return
 	G.sfx("click", -6.0)
 	_clear_info()
-	var done := _sim.volleys % Sim.UPGRADE_EVERY
-	info_box.add_child(_line(G.t("upgrade_progress", [done]), 28))
-	info_box.add_child(_line(G.t("info_upgrade", [done]), 22))
+	var every := maxi(1, _sim.upgrade_every)
+	var done := _sim.volleys % every
+	info_box.add_child(_line(G.t("upgrade_progress", {"n": done, "m": every}), 28))
+	info_box.add_child(_line(G.tn("info_upgrade", every, {"done": done}), 22))
 	info_box.add_child(_line(G.t("tap_close"), 18, Color(0.7, 0.85, 0.83)))
 	_open_info(-1.0, 214)
 

@@ -1,0 +1,2443 @@
+{
+ "levels": [
+  {
+   "route": [
+    {
+     "a": 1.33071191939488
+    },
+    {
+     "a": 1.23467815643487
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 3,
+   "flight_s": 28.9,
+   "est_minutes": 0.6,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 43.67,
+   "design_s": 9.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 6,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.5,
+   "n": 1,
+   "id": "L01",
+   "t3": 3,
+   "t2": 5,
+   "balls": 8,
+   "heavy": 0,
+   "electric": 0,
+   "seed": 7013,
+   "stones": 6
+  },
+  {
+   "route": [
+    {
+     "a": 0.94657686755485
+    },
+    {
+     "a": 2.29104954899495
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 3,
+   "flight_s": 20.8,
+   "est_minutes": 0.5,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 23.33,
+   "design_s": 9.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 6,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.3,
+   "n": 2,
+   "id": "L02",
+   "t3": 3,
+   "t2": 5,
+   "balls": 8,
+   "heavy": 0,
+   "electric": 0,
+   "seed": 7026,
+   "stones": 7
+  },
+  {
+   "route": [
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 2,
+   "flight_s": 17.9,
+   "est_minutes": 0.4,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 10.26,
+   "design_s": 5.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 3,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 0.7,
+   "n": 3,
+   "id": "L03",
+   "t3": 2,
+   "t2": 3,
+   "balls": 8,
+   "heavy": 0,
+   "electric": 0,
+   "seed": 7039,
+   "stones": 9
+  },
+  {
+   "route": [
+    {
+     "a": 1.23467815643487
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 2,
+   "flight_s": 17.0,
+   "est_minutes": 0.4,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 11.09,
+   "design_s": 6.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 5,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.2,
+   "n": 4,
+   "id": "L04",
+   "t3": 2,
+   "t2": 4,
+   "balls": 9,
+   "heavy": 0,
+   "electric": 0,
+   "seed": 7052,
+   "stones": 10
+  },
+  {
+   "route": [
+    {
+     "a": 2.57915083787497
+    },
+    {
+     "a": 2.77121836379499
+    },
+    {
+     "a": 2.57915083787497
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 3,
+   "flight_s": 18.6,
+   "est_minutes": 0.5,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 15.3,
+   "design_s": 8.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 5,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.0,
+   "n": 5,
+   "id": "L05",
+   "t3": 3,
+   "t2": 4,
+   "balls": 9,
+   "heavy": 0,
+   "electric": 0,
+   "seed": 7065,
+   "stones": 19
+  },
+  {
+   "route": [
+    {
+     "a": 1.33071191939488
+    },
+    {
+     "a": 0.466408052754813
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 2,
+   "flight_s": 10.6,
+   "est_minutes": 0.3,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 14.62,
+   "design_s": 6.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 4,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 0.7,
+   "n": 6,
+   "id": "L06",
+   "t3": 2,
+   "t2": 3,
+   "balls": 10,
+   "heavy": 0,
+   "electric": 0,
+   "seed": 7078,
+   "stones": 12
+  },
+  {
+   "route": [
+    {
+     "a": 1.04261063051486
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 4,
+   "flight_s": 35.0,
+   "est_minutes": 0.8,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 10.54,
+   "design_s": 7.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 5,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.2,
+   "n": 7,
+   "id": "L07",
+   "t3": 4,
+   "t2": 5,
+   "balls": 10,
+   "heavy": 0,
+   "electric": 0,
+   "seed": 7091,
+   "stones": 16
+  },
+  {
+   "route": [
+    {
+     "a": 2.48311707491497
+    },
+    {
+     "a": 1.42674568235489
+    },
+    {
+     "a": 2.86725212675499
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 4,
+   "flight_s": 26.6,
+   "est_minutes": 0.7,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 2.94,
+   "design_s": 8.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 6,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.2,
+   "n": 8,
+   "id": "L08",
+   "t3": 4,
+   "t2": 5,
+   "balls": 10,
+   "heavy": 0,
+   "electric": 0,
+   "seed": 7104,
+   "stones": 49
+  },
+  {
+   "route": [
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 0.850543104594842
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.67518460083498,
+     "up": "heavy"
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 5,
+   "flight_s": 48.0,
+   "est_minutes": 1.1,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 3.07,
+   "design_s": 10.0,
+   "ordinary": {
+    "wins": 8,
+    "median": 7,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.7,
+   "n": 9,
+   "id": "L09",
+   "t3": 5,
+   "t2": 6,
+   "balls": 10,
+   "heavy": 1,
+   "electric": 0,
+   "seed": 7117,
+   "stones": 48
+  },
+  {
+   "route": [
+    {
+     "a": 2.77121836379499
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 2.19501578603494,
+     "up": "balls"
+    },
+    {
+     "a": 0.562441815714821
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 5,
+   "flight_s": 50.9,
+   "est_minutes": 1.1,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 3.43,
+   "design_s": 11.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 9,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.3,
+   "n": 10,
+   "id": "L10",
+   "t3": 5,
+   "t2": 7,
+   "balls": 12,
+   "heavy": 0,
+   "electric": 0,
+   "seed": 7130,
+   "stones": 58
+  },
+  {
+   "route": [
+    {
+     "a": 0.850543104594842
+    },
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 2.77121836379499
+    },
+    {
+     "a": 0.466408052754813
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 4,
+   "flight_s": 26.6,
+   "est_minutes": 0.7,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 6.01,
+   "design_s": 11.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 6,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.2,
+   "n": 11,
+   "id": "L11",
+   "t3": 4,
+   "t2": 5,
+   "balls": 12,
+   "heavy": 0,
+   "electric": 0,
+   "seed": 7143,
+   "stones": 34
+  },
+  {
+   "route": [
+    {
+     "a": 2.77121836379499
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 5,
+   "flight_s": 42.0,
+   "est_minutes": 1.0,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 6.7,
+   "design_s": 10.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 5,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.1,
+   "n": 12,
+   "id": "L12",
+   "t3": 5,
+   "t2": 6,
+   "balls": 12,
+   "heavy": 0,
+   "electric": 0,
+   "seed": 7156,
+   "stones": 32
+  },
+  {
+   "route": [
+    {
+     "a": 1.13864439347486
+    },
+    {
+     "a": 1.6188132082749
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 6,
+   "flight_s": 70.5,
+   "est_minutes": 1.4,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 7.72,
+   "design_s": 13.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 7,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.9,
+   "n": 13,
+   "id": "L13",
+   "t3": 6,
+   "t2": 7,
+   "balls": 12,
+   "heavy": 0,
+   "electric": 0,
+   "seed": 7169,
+   "stones": 41
+  },
+  {
+   "route": [
+    {
+     "a": 2.09898202307494
+    },
+    {
+     "a": 1.13864439347486
+    },
+    {
+     "a": 1.71484697123491
+    },
+    {
+     "a": 2.963285889715,
+     "up": "heavy"
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.274340526834799
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 6,
+   "flight_s": 50.2,
+   "est_minutes": 1.2,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 9.14,
+   "design_s": 17.0,
+   "ordinary": {
+    "wins": 8,
+    "median": 9,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.1,
+   "n": 14,
+   "id": "L14",
+   "t3": 6,
+   "t2": 8,
+   "balls": 14,
+   "heavy": 0,
+   "electric": 0,
+   "seed": 7182,
+   "stones": 44
+  },
+  {
+   "route": [
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 2.86725212675499,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 6,
+   "flight_s": 64.3,
+   "est_minutes": 1.4,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 12.1,
+   "design_s": 16.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 10,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.6,
+   "n": 15,
+   "id": "L15",
+   "t3": 6,
+   "t2": 8,
+   "balls": 14,
+   "heavy": 1,
+   "electric": 0,
+   "seed": 7195,
+   "stones": 43
+  },
+  {
+   "route": [
+    {
+     "a": 1.04261063051486
+    },
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 2.57915083787497,
+     "up": "heavy"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 6,
+   "flight_s": 47.2,
+   "est_minutes": 1.1,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 10.54,
+   "design_s": 16.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 9,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.0,
+   "n": 16,
+   "id": "L16",
+   "t3": 6,
+   "t2": 8,
+   "balls": 14,
+   "heavy": 1,
+   "electric": 0,
+   "seed": 7208,
+   "stones": 41
+  },
+  {
+   "route": [
+    {
+     "a": 0.850543104594842
+    },
+    {
+     "a": 0.754509341634835
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 2.57915083787497,
+     "up": "heavy"
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 2.86725212675499
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 7,
+   "flight_s": 63.7,
+   "est_minutes": 1.4,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 14.03,
+   "design_s": 22.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 10,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.4,
+   "n": 17,
+   "id": "L17",
+   "t3": 7,
+   "t2": 9,
+   "balls": 16,
+   "heavy": 1,
+   "electric": 0,
+   "seed": 7221,
+   "stones": 36
+  },
+  {
+   "route": [
+    {
+     "a": 2.77121836379499
+    },
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 2.67518460083498,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.274340526834799
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 8,
+   "flight_s": 75.0,
+   "est_minutes": 1.7,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 13.44,
+   "design_s": 21.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 9,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.2,
+   "n": 18,
+   "id": "L18",
+   "t3": 8,
+   "t2": 9,
+   "balls": 16,
+   "heavy": 1,
+   "electric": 0,
+   "seed": 7234,
+   "stones": 39
+  },
+  {
+   "route": [
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 0.274340526834799,
+     "up": "heavy"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 8,
+   "flight_s": 66.6,
+   "est_minutes": 1.6,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 11.76,
+   "design_s": 24.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 9,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.0,
+   "n": 19,
+   "id": "L19",
+   "t3": 8,
+   "t2": 9,
+   "balls": 16,
+   "heavy": 1,
+   "electric": 0,
+   "seed": 7247,
+   "stones": 43
+  },
+  {
+   "route": [
+    {
+     "a": 2.77121836379499
+    },
+    {
+     "a": 2.77121836379499
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 8,
+   "flight_s": 77.6,
+   "est_minutes": 1.7,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 10.58,
+   "design_s": 27.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 9,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.2,
+   "n": 20,
+   "id": "L20",
+   "t3": 8,
+   "t2": 9,
+   "balls": 18,
+   "heavy": 1,
+   "electric": 0,
+   "seed": 7260,
+   "stones": 43
+  },
+  {
+   "route": [
+    {
+     "a": 1.04261063051486
+    },
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 6,
+   "flight_s": 55.7,
+   "est_minutes": 1.2,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 14.6,
+   "design_s": 16.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 9,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.2,
+   "n": 21,
+   "id": "L21",
+   "t3": 6,
+   "t2": 8,
+   "balls": 14,
+   "heavy": 1,
+   "electric": 0,
+   "seed": 7273,
+   "stones": 35
+  },
+  {
+   "route": [
+    {
+     "a": 2.19501578603494
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "heavy"
+    },
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 2.86725212675499
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 6,
+   "flight_s": 48.8,
+   "est_minutes": 1.2,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 20.52,
+   "design_s": 20.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 8,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.8,
+   "n": 22,
+   "id": "L22",
+   "t3": 6,
+   "t2": 7,
+   "balls": 14,
+   "heavy": 1,
+   "electric": 0,
+   "seed": 7286,
+   "stones": 25
+  },
+  {
+   "route": [
+    {
+     "a": 1.04261063051486
+    },
+    {
+     "a": 0.850543104594842
+    },
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 2.77121836379499,
+     "up": "heavy"
+    },
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 0.274340526834799
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 6,
+   "flight_s": 58.9,
+   "est_minutes": 1.3,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 18.96,
+   "design_s": 15.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 7,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.7,
+   "n": 23,
+   "id": "L23",
+   "t3": 6,
+   "t2": 7,
+   "balls": 14,
+   "heavy": 1,
+   "electric": 1,
+   "seed": 7299,
+   "stones": 29
+  },
+  {
+   "route": [
+    {
+     "a": 1.04261063051486
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 1.52277944531489
+    },
+    {
+     "a": 2.67518460083498,
+     "up": "heavy"
+    },
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 0.274340526834799
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 6,
+   "flight_s": 54.4,
+   "est_minutes": 1.2,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 27.88,
+   "design_s": 18.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 8,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.9,
+   "n": 24,
+   "id": "L24",
+   "t3": 6,
+   "t2": 7,
+   "balls": 16,
+   "heavy": 1,
+   "electric": 1,
+   "seed": 7312,
+   "stones": 28
+  },
+  {
+   "route": [
+    {
+     "a": 2.19501578603494
+    },
+    {
+     "a": 0.850543104594842
+    },
+    {
+     "a": 0.658475578674828
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "electric"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 7,
+   "flight_s": 63.4,
+   "est_minutes": 1.4,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 17.0,
+   "design_s": 17.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 8,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.9,
+   "n": 25,
+   "id": "L25",
+   "t3": 7,
+   "t2": 8,
+   "balls": 16,
+   "heavy": 1,
+   "electric": 1,
+   "seed": 7325,
+   "stones": 30
+  },
+  {
+   "route": [
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 2.38708331195496
+    },
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 2.963285889715,
+     "up": "heavy"
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 2.57915083787497
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 8,
+   "flight_s": 68.4,
+   "est_minutes": 1.6,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 26.4,
+   "design_s": 27.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 11,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.5,
+   "n": 26,
+   "id": "L26",
+   "t3": 8,
+   "t2": 10,
+   "balls": 16,
+   "heavy": 1,
+   "electric": 1,
+   "seed": 7338,
+   "stones": 35
+  },
+  {
+   "route": [
+    {
+     "a": 2.09898202307494
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.466408052754813,
+     "up": "balls"
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 0.274340526834799
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 9,
+   "flight_s": 92.8,
+   "est_minutes": 2.0,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 20.02,
+   "design_s": 32.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 10,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.5,
+   "n": 27,
+   "id": "L27",
+   "t3": 9,
+   "t2": 10,
+   "balls": 18,
+   "heavy": 1,
+   "electric": 1,
+   "seed": 7351,
+   "stones": 37
+  },
+  {
+   "route": [
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 1.04261063051486
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.370374289794806,
+     "up": "heavy"
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 8,
+   "flight_s": 65.2,
+   "est_minutes": 1.5,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 21.62,
+   "design_s": 26.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 11,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.5,
+   "n": 28,
+   "id": "L28",
+   "t3": 8,
+   "t2": 10,
+   "balls": 18,
+   "heavy": 1,
+   "electric": 1,
+   "seed": 7364,
+   "stones": 41
+  },
+  {
+   "route": [
+    {
+     "a": 1.04261063051486
+    },
+    {
+     "a": 2.38708331195496
+    },
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 0.466408052754813,
+     "up": "heavy"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 1.04261063051486,
+     "up": "electric"
+    },
+    {
+     "a": 0.274340526834799
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 9,
+   "flight_s": 81.3,
+   "est_minutes": 1.8,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 26.19,
+   "design_s": 32.0,
+   "ordinary": {
+    "wins": 7,
+    "median": 11,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.6,
+   "n": 29,
+   "id": "L29",
+   "t3": 9,
+   "t2": 10,
+   "balls": 18,
+   "heavy": 1,
+   "electric": 1,
+   "seed": 7377,
+   "stones": 36
+  },
+  {
+   "route": [
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.19501578603494
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "heavy"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 9,
+   "flight_s": 92.1,
+   "est_minutes": 2.0,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 23.0,
+   "design_s": 32.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 11,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.8,
+   "n": 30,
+   "id": "L30",
+   "t3": 9,
+   "t2": 10,
+   "balls": 20,
+   "heavy": 1,
+   "electric": 1,
+   "seed": 7390,
+   "stones": 38
+  },
+  {
+   "route": [
+    {
+     "a": 1.23467815643487
+    },
+    {
+     "a": 0.94657686755485
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.94657686755485,
+     "up": "heavy"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 7,
+   "flight_s": 69.5,
+   "est_minutes": 1.5,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 18.7,
+   "design_s": 19.0,
+   "ordinary": {
+    "wins": 5,
+    "median": 9,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.2,
+   "n": 31,
+   "id": "L31",
+   "t3": 7,
+   "t2": 8,
+   "balls": 16,
+   "heavy": 1,
+   "electric": 1,
+   "seed": 7403,
+   "stones": 19
+  },
+  {
+   "route": [
+    {
+     "a": 0.94657686755485
+    },
+    {
+     "a": 1.81088073419491
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 2.963285889715,
+     "up": "heavy"
+    },
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 6,
+   "flight_s": 44.7,
+   "est_minutes": 1.1,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 9.77,
+   "design_s": 15.0,
+   "ordinary": {
+    "wins": 5,
+    "median": 8,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.7,
+   "n": 32,
+   "id": "L32",
+   "t3": 6,
+   "t2": 7,
+   "balls": 16,
+   "heavy": 1,
+   "electric": 1,
+   "seed": 7416,
+   "stones": 21
+  },
+  {
+   "route": [
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 1.90691449715492
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "heavy"
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 7,
+   "flight_s": 65.3,
+   "est_minutes": 1.5,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 10.04,
+   "design_s": 16.0,
+   "ordinary": {
+    "wins": 5,
+    "median": 8,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 1.9,
+   "n": 33,
+   "id": "L33",
+   "t3": 7,
+   "t2": 8,
+   "balls": 16,
+   "heavy": 1,
+   "electric": 1,
+   "seed": 7429,
+   "stones": 24
+  },
+  {
+   "route": [
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 7,
+   "flight_s": 82.3,
+   "est_minutes": 1.7,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 11.35,
+   "design_s": 19.0,
+   "ordinary": {
+    "wins": 5,
+    "median": 8,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.2,
+   "n": 34,
+   "id": "L34",
+   "t3": 7,
+   "t2": 8,
+   "balls": 18,
+   "heavy": 1,
+   "electric": 1,
+   "seed": 7442,
+   "stones": 23
+  },
+  {
+   "route": [
+    {
+     "a": 1.52277944531489
+    },
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 2.86725212675499
+    },
+    {
+     "a": 0.466408052754813,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.77121836379499
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 8,
+   "flight_s": 68.0,
+   "est_minutes": 1.6,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 15.91,
+   "design_s": 20.0,
+   "ordinary": {
+    "wins": 5,
+    "median": 10,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.3,
+   "n": 35,
+   "id": "L35",
+   "t3": 8,
+   "t2": 9,
+   "balls": 18,
+   "heavy": 1,
+   "electric": 1,
+   "seed": 7455,
+   "stones": 25
+  },
+  {
+   "route": [
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 2.77121836379499
+    },
+    {
+     "a": 0.754509341634835
+    },
+    {
+     "a": 2.963285889715,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 0.274340526834799
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 8,
+   "flight_s": 63.0,
+   "est_minutes": 1.5,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 24.78,
+   "design_s": 25.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 13,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.9,
+   "n": 36,
+   "id": "L36",
+   "t3": 8,
+   "t2": 11,
+   "balls": 18,
+   "heavy": 2,
+   "electric": 1,
+   "seed": 7468,
+   "stones": 27
+  },
+  {
+   "route": [
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.754509341634835
+    },
+    {
+     "a": 0.94657686755485
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.562441815714821
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 9,
+   "flight_s": 96.3,
+   "est_minutes": 2.0,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 24.2,
+   "design_s": 25.0,
+   "ordinary": {
+    "wins": 5,
+    "median": 10,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.6,
+   "n": 37,
+   "id": "L37",
+   "t3": 9,
+   "t2": 10,
+   "balls": 20,
+   "heavy": 2,
+   "electric": 1,
+   "seed": 7481,
+   "stones": 32
+  },
+  {
+   "route": [
+    {
+     "a": 2.19501578603494
+    },
+    {
+     "a": 2.19501578603494
+    },
+    {
+     "a": 2.77121836379499
+    },
+    {
+     "a": 2.963285889715,
+     "up": "heavy"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 0.274340526834799
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 9,
+   "flight_s": 88.8,
+   "est_minutes": 1.9,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 15.61,
+   "design_s": 23.0,
+   "ordinary": {
+    "wins": 5,
+    "median": 11,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.7,
+   "n": 38,
+   "id": "L38",
+   "t3": 9,
+   "t2": 10,
+   "balls": 20,
+   "heavy": 2,
+   "electric": 1,
+   "seed": 7494,
+   "stones": 29
+  },
+  {
+   "route": [
+    {
+     "a": 2.19501578603494
+    },
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.274340526834799,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.963285889715
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 10,
+   "flight_s": 91.2,
+   "est_minutes": 2.0,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 17.56,
+   "design_s": 30.0,
+   "ordinary": {
+    "wins": 5,
+    "median": 12,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.9,
+   "n": 39,
+   "id": "L39",
+   "t3": 10,
+   "t2": 11,
+   "balls": 20,
+   "heavy": 2,
+   "electric": 1,
+   "seed": 7507,
+   "stones": 40
+  },
+  {
+   "route": [
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.963285889715,
+     "up": "heavy"
+    },
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.562441815714821,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 10,
+   "flight_s": 99.8,
+   "est_minutes": 2.2,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 19.58,
+   "design_s": 34.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 12,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 3.0,
+   "n": 40,
+   "id": "L40",
+   "t3": 10,
+   "t2": 11,
+   "balls": 22,
+   "heavy": 2,
+   "electric": 1,
+   "seed": 7520,
+   "stones": 28
+  },
+  {
+   "route": [
+    {
+     "a": 0.754509341634835
+    },
+    {
+     "a": 2.86725212675499
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "heavy"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 7,
+   "flight_s": 68.2,
+   "est_minutes": 1.5,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 13.45,
+   "design_s": 18.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 10,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.5,
+   "n": 41,
+   "id": "L41",
+   "t3": 7,
+   "t2": 9,
+   "balls": 18,
+   "heavy": 2,
+   "electric": 2,
+   "seed": 7533,
+   "stones": 46
+  },
+  {
+   "route": [
+    {
+     "a": 2.29104954899495
+    },
+    {
+     "a": 2.19501578603494
+    },
+    {
+     "a": 2.57915083787497
+    },
+    {
+     "a": 0.562441815714821,
+     "up": "heavy"
+    },
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 8,
+   "flight_s": 86.2,
+   "est_minutes": 1.8,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 17.11,
+   "design_s": 19.0,
+   "ordinary": {
+    "wins": 5,
+    "median": 10,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.6,
+   "n": 42,
+   "id": "L42",
+   "t3": 8,
+   "t2": 9,
+   "balls": 18,
+   "heavy": 2,
+   "electric": 2,
+   "seed": 7546,
+   "stones": 46
+  },
+  {
+   "route": [
+    {
+     "a": 1.90691449715492
+    },
+    {
+     "a": 0.94657686755485
+    },
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 8,
+   "flight_s": 85.5,
+   "est_minutes": 1.8,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 10.61,
+   "design_s": 21.0,
+   "ordinary": {
+    "wins": 5,
+    "median": 10,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.6,
+   "n": 43,
+   "id": "L43",
+   "t3": 8,
+   "t2": 9,
+   "balls": 18,
+   "heavy": 2,
+   "electric": 2,
+   "seed": 7559,
+   "stones": 52
+  },
+  {
+   "route": [
+    {
+     "a": 2.77121836379499
+    },
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 0.466408052754813,
+     "up": "heavy"
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 8,
+   "flight_s": 83.6,
+   "est_minutes": 1.8,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 14.35,
+   "design_s": 21.0,
+   "ordinary": {
+    "wins": 5,
+    "median": 10,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.6,
+   "n": 44,
+   "id": "L44",
+   "t3": 8,
+   "t2": 9,
+   "balls": 20,
+   "heavy": 2,
+   "electric": 2,
+   "seed": 7572,
+   "stones": 58
+  },
+  {
+   "route": [
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 2.19501578603494
+    },
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 1.42674568235489,
+     "up": "heavy"
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 2.67518460083498
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 9,
+   "flight_s": 80.5,
+   "est_minutes": 1.8,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 14.2,
+   "design_s": 34.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 12,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.8,
+   "n": 45,
+   "id": "L45",
+   "t3": 9,
+   "t2": 11,
+   "balls": 20,
+   "heavy": 2,
+   "electric": 2,
+   "seed": 7585,
+   "stones": 59
+  },
+  {
+   "route": [
+    {
+     "a": 0.658475578674828
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 2.67518460083498,
+     "up": "heavy"
+    },
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 2.67518460083498,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 10,
+   "flight_s": 97.3,
+   "est_minutes": 2.1,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 16.78,
+   "design_s": 25.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 11,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.7,
+   "n": 46,
+   "id": "L46",
+   "t3": 10,
+   "t2": 11,
+   "balls": 20,
+   "heavy": 2,
+   "electric": 3,
+   "seed": 7598,
+   "stones": 56
+  },
+  {
+   "route": [
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 1.71484697123491
+    },
+    {
+     "a": 0.466408052754813,
+     "up": "heavy"
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.466408052754813,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.274340526834799
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 11,
+   "flight_s": 92.0,
+   "est_minutes": 2.1,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 12.91,
+   "design_s": 34.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 12,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.7,
+   "n": 47,
+   "id": "L47",
+   "t3": 11,
+   "t2": 12,
+   "balls": 22,
+   "heavy": 2,
+   "electric": 3,
+   "seed": 7611,
+   "stones": 68
+  },
+  {
+   "route": [
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 2.77121836379499,
+     "up": "balls"
+    },
+    {
+     "a": 2.77121836379499
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "heavy"
+    },
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 10,
+   "flight_s": 75.5,
+   "est_minutes": 1.8,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 16.03,
+   "design_s": 31.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 12,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.6,
+   "n": 48,
+   "id": "L48",
+   "t3": 10,
+   "t2": 11,
+   "balls": 22,
+   "heavy": 2,
+   "electric": 3,
+   "seed": 7624,
+   "stones": 76
+  },
+  {
+   "route": [
+    {
+     "a": 0.370374289794806
+    },
+    {
+     "a": 2.38708331195496
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.274340526834799,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.963285889715
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 11,
+   "flight_s": 96.4,
+   "est_minutes": 2.2,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 16.82,
+   "design_s": 32.0,
+   "ordinary": {
+    "wins": 6,
+    "median": 13,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 3.0,
+   "n": 49,
+   "id": "L49",
+   "t3": 11,
+   "t2": 12,
+   "balls": 22,
+   "heavy": 2,
+   "electric": 3,
+   "seed": 7637,
+   "stones": 65
+  },
+  {
+   "route": [
+    {
+     "a": 0.850543104594842
+    },
+    {
+     "a": 0.466408052754813
+    },
+    {
+     "a": 1.90691449715492
+    },
+    {
+     "a": 2.09898202307494,
+     "up": "heavy"
+    },
+    {
+     "a": 0.658475578674828
+    },
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 0.274340526834799
+    },
+    {
+     "a": 0.178306763874792,
+     "up": "balls"
+    },
+    {
+     "a": 0.178306763874792
+    },
+    {
+     "a": 2.67518460083498
+    },
+    {
+     "a": 0.178306763874792
+    }
+   ],
+   "replay_ok": true,
+   "volleys": 11,
+   "flight_s": 85.0,
+   "est_minutes": 2.0,
+   "useful_first": 30,
+   "angles": 30,
+   "scale": 16.65,
+   "design_s": 31.0,
+   "ordinary": {
+    "wins": 5,
+    "median": 13,
+    "attempts": 8
+   },
+   "est_minutes_ordinary": 2.9,
+   "n": 50,
+   "id": "L50",
+   "t3": 11,
+   "t2": 12,
+   "balls": 24,
+   "heavy": 2,
+   "electric": 3,
+   "seed": 7650,
+   "stones": 76
+  }
+ ]
+}

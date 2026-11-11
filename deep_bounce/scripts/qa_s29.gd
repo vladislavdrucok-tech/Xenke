@@ -41,7 +41,7 @@ func run(qa) -> void:
 			lang = a.substr(7)
 	G.settings.lang = lang
 	G.lang_changed.emit()
-	G.meta.skin = "classic"
+	G.cos.cannon = "classic"
 	G.meta.tutorial = 6
 	main.start_new_run(2929)
 	build(main.sim)

@@ -35,7 +35,7 @@ const ZAP_RADIUS := 120.0
 const MAXED_BONUS := 15
 const EPS := 1e-9
 
-enum { PH_AIM, PH_VOLLEY, PH_UPGRADE, PH_OVER }
+enum { PH_AIM, PH_VOLLEY, PH_UPGRADE, PH_OVER, PH_WON }
 enum { K_NORMAL, K_HEAVY, K_ELECTRIC }
 enum { H_NONE, H_WALL, H_FLOOR, H_BLOCK, H_RETURN }
 
@@ -71,6 +71,17 @@ var gen := 2                # layout generator: 1 = random rows (release 1.0), 2
 var band_kind := -1         # last band template of generator 2 (open and compact bands alternate)
 var stats := {"destroyed": 0, "zaps": 0, "best_volley": 0, "bonus": 0}
 var aim := PI * 0.5
+# mode and attempt (also saved)
+var mode := "endless"       # "endless" | "level"
+var run_id := ""            # unique id of this run / level attempt: rewards are tied to it
+var level_id := ""
+var level_ver := 0
+var level_queue: Array = [] # level rows that have not entered yet, each an Array of [c, w, h, hp, pattern, vein]
+var level_total := 0        # stones of the whole level
+var upgrades_allowed: Array = ["balls", "heavy", "electric"]
+var upgrade_every := UPGRADE_EVERY   # 0: this run never offers upgrades
+var revive_used := false
+var rewarded_seen := false  # a rewarded ad was watched in this run/attempt (then no interstitial after it)
 
 # --- current volley ---
 var v_tick := 0
@@ -134,7 +145,107 @@ func new_run(run_seed: int) -> void:
 	aim = PI * 0.5
 	v_balls = []
 	events = []
+	mode = "endless"
+	level_id = ""
+	level_ver = 0
+	level_queue = []
+	level_total = 0
+	upgrades_allowed = ["balls", "heavy", "electric"]
+	upgrade_every = UPGRADE_EVERY
+	revive_used = false
+	rewarded_seen = false
 	_ensure_rows(true)
+
+func new_level(level: Dictionary) -> void:
+	## A level attempt: a fixed layout, a fixed queue of rows, fixed starting balls and upgrades.
+	## The same level data always gives the same starting state.
+	seed = int(level.get("seed", 1)) & 0x7FFFFFFF
+	depth = 0
+	volleys = 0
+	balls = int(level.balls)
+	heavy = int(level.get("heavy", 0))
+	electric = int(level.get("electric", 0))
+	phase = PH_AIM
+	blocks = {}
+	grid = {}
+	next_id = 1
+	top = 0
+	gen_rows = 0
+	band_kind = -1
+	run_gems = 0
+	unclaimed = 0
+	upgrade_opts = []
+	picks = 0
+	stats = {"destroyed": 0, "zaps": 0, "best_volley": 0, "bonus": 0}
+	aim = PI * 0.5
+	v_balls = []
+	events = []
+	mode = "level"
+	level_id = String(level.id)
+	level_ver = int(level.ver)
+	level_queue = []
+	level_total = 0
+	for row in level.rows:
+		var copy: Array = []
+		for st in row:
+			copy.append(Array(st).duplicate())
+			level_total += 1
+		level_queue.append(copy)
+	upgrades_allowed = Array(level.get("upgrades", [])).duplicate()
+	upgrade_every = int(level.get("upgrade_every", 0))
+	revive_used = false
+	rewarded_seen = false
+	_ensure_rows()
+
+func remaining_targets() -> int:
+	## Stones still to break in a level: on the field, below the floor and in the queue.
+	var n := blocks.size()
+	for row in level_queue:
+		n += row.size()
+	return n
+
+func _gen_level_row() -> void:
+	if not level_queue.is_empty():
+		var row: Array = level_queue.pop_front()
+		for st in row:
+			var w: int = st[1]
+			var h: int = st[2]
+			var area := w * h
+			var vein: bool = st.size() > 5 and bool(st[5])
+			_add_block({"c": int(st[0]), "r": gen_rows, "w": w, "h": h, "hp": int(st[3]),
+				"g": (1 if area == 1 else (2 if area == 2 else 3)) + (3 if vein else 0),
+				"v": int(st[4]) if st.size() > 4 else (gen_rows + int(st[0])) % 4, "vein": vein})
+	gen_rows += 1
+
+func revive() -> bool:
+	## Second chance (once per run/attempt): every whole stone whose collider is above the red line or less
+	## than two cells below it is removed. Removed stones pay no crystals (reason "revive").
+	if phase != PH_OVER or revive_used:
+		return false
+	var limit := DANGER_Y + 2.0 * CELL
+	var ids := blocks.keys()
+	ids.sort()
+	for id in ids:
+		var b: Dictionary = blocks[id]
+		if block_rect(b).position.y < limit:
+			_remove_block(b)
+			var rc := block_rect(b)
+			_ev({"t": "cleared", "id": b.id, "x": rc.get_center().x, "y": rc.get_center().y, "w": b.w, "h": b.h, "why": "revive"})
+	revive_used = true
+	_ev({"t": "revive"})
+	if upgrade_every > 0 and volleys % upgrade_every == 0:
+		_offer_upgrades()
+	else:
+		phase = PH_AIM
+	return true
+
+func _remove_block(b: Dictionary) -> void:
+	blocks.erase(b.id)
+	for yy in b.h:
+		for xx in b.w:
+			var k: int = (b.r + yy) * COLS + b.c + xx
+			if grid.get(k, 0) == b.id:
+				grid.erase(k)
 
 static func mix(a: int, b: int) -> int:
 	var h := ((a & 0xFFFFFFFF) * 374761393 + (b & 0xFFFFFFFF) * 668265263) & 0xFFFFFFFF
@@ -163,7 +274,9 @@ func field_rows_in_use() -> int:
 	return VIS_ROWS - top_row
 
 func _gen_chunk() -> void:
-	if gen >= 2:
+	if mode == "level":
+		_gen_level_row()
+	elif gen >= 2:
 		_gen_band()
 	else:
 		_gen_rows_v1()
@@ -1160,6 +1273,11 @@ func _end_volley() -> void:
 	_ev({"t": "end", "dmg": v_damage})
 	v_balls = []
 	volleys += 1
+	if mode == "level" and remaining_targets() == 0:
+		# every stone of the level is broken and no row is left to come: won, no shift
+		phase = PH_WON
+		_ev({"t": "won"})
+		return
 	top += 1
 	depth += 1
 	_ensure_rows()
@@ -1168,23 +1286,26 @@ func _end_volley() -> void:
 			phase = PH_OVER
 			_ev({"t": "over"})
 			return
-	if volleys % UPGRADE_EVERY == 0:
+	if upgrade_every > 0 and volleys % upgrade_every == 0:
 		_offer_upgrades()
 	else:
 		phase = PH_AIM
 
 func available_upgrades() -> Array:
 	var opts: Array = []
-	if balls < MAX_BALLS:
+	if balls < MAX_BALLS and upgrades_allowed.has("balls"):
 		opts.append("balls")
-	if heavy < MAX_LEVEL:
+	if heavy < MAX_LEVEL and upgrades_allowed.has("heavy"):
 		opts.append("heavy")
-	if electric < MAX_LEVEL:
+	if electric < MAX_LEVEL and upgrades_allowed.has("electric"):
 		opts.append("electric")
 	return opts
 
 func _offer_upgrades() -> void:
 	var opts := available_upgrades()
+	if opts.is_empty() and mode == "level":
+		phase = PH_AIM
+		return
 	if opts.is_empty():
 		run_gems += MAXED_BONUS
 		unclaimed += MAXED_BONUS
@@ -1230,7 +1351,11 @@ func to_dict() -> Dictionary:
 		"phase": phase, "next_id": next_id, "gen_rows": gen_rows, "top": top, "run_gems": run_gems,
 		"unclaimed": unclaimed, "upgrade_opts": upgrade_opts.duplicate(), "picks": picks, "stats": stats.duplicate(), "gen": gen, "band_kind": band_kind,
 		"aim": snappedf(aim, 0.0001), "blocks": bl,
+		"mode": mode, "run_id": run_id, "revive_used": revive_used, "rewarded_seen": rewarded_seen,
+		"upgrades_allowed": upgrades_allowed.duplicate(), "upgrade_every": upgrade_every,
 	}
+	if mode == "level":
+		d["level"] = {"id": level_id, "ver": level_ver, "queue": level_queue.duplicate(true), "total": level_total}
 	if phase == PH_VOLLEY:
 		# positions, velocities and the angle are stored as the exact bytes of the doubles: text numbers do not
 		# survive JSON bit for bit, and one bit is enough to change a later bounce
@@ -1266,6 +1391,31 @@ func from_dict(d: Dictionary) -> void:
 	stats = {"destroyed": int(st.get("destroyed", 0)), "zaps": int(st.get("zaps", 0)),
 		"best_volley": int(st.get("best_volley", 0)), "bonus": int(st.get("bonus", 0))}
 	aim = float(d.get("aim", PI * 0.5))
+	mode = String(d.get("mode", "endless"))
+	run_id = String(d.get("run_id", ""))
+	revive_used = bool(d.get("revive_used", false))
+	rewarded_seen = bool(d.get("rewarded_seen", false))
+	upgrades_allowed = []
+	for u in d.get("upgrades_allowed", ["balls", "heavy", "electric"]):
+		upgrades_allowed.append(String(u))
+	upgrade_every = int(d.get("upgrade_every", UPGRADE_EVERY))
+	level_id = ""
+	level_ver = 0
+	level_queue = []
+	level_total = 0
+	if mode == "level" and d.has("level"):
+		var lv: Dictionary = d.level
+		level_id = String(lv.id)
+		level_ver = int(lv.ver)
+		level_total = int(lv.get("total", 0))
+		for row in lv.queue:
+			var copy: Array = []
+			for stone in row:
+				var a: Array = []
+				for x in stone:
+					a.append(int(x))
+				copy.append(a)
+			level_queue.append(copy)
 	blocks = {}
 	grid = {}
 	for a in d.blocks:
@@ -1308,6 +1458,7 @@ func from_dict(d: Dictionary) -> void:
 
 func clone() -> Sim:
 	var s := Sim.new()
+	s.gen = gen
 	s.from_dict(to_dict())
 	s.record_events = false
 	return s

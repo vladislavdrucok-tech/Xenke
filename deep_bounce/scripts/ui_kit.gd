@@ -8,11 +8,75 @@ const TEAL := Color("7fe3d6")
 
 static var _theme: Theme
 static var _fonts := {}
+static var _cjk := {}
+static var _lang := ""
+
+const CJK := {"ja": "NotoSansJP-Bold", "ko": "NotoSansKR-Bold", "zh_CN": "NotoSansSC-Bold"}
 
 static func font(name := "Rubik-ExtraBold") -> Font:
 	if not _fonts.has(name):
 		_fonts[name] = load("res://assets/fonts/%s.ttf" % name)
+		_apply_fallbacks(_fonts[name])
 	return _fonts[name]
+
+static func set_lang(code: String) -> void:
+	## Rubik covers Latin (Polish, Turkish, Vietnamese-free Western sets) and Cyrillic; Japanese, Korean and
+	## Chinese come from Noto Sans fallbacks. Han characters look different in each: the fallback of the
+	## chosen language goes first.
+	_lang = code
+	for n in _fonts:
+		_apply_fallbacks(_fonts[n])
+	for n in ["Rubik-Bold", "Rubik-ExtraBold", "Fredoka-Bold"]:
+		_apply_fallbacks(font(n))
+
+static func _cjk_font(code: String) -> Font:
+	if not _cjk.has(code):
+		var path := "res://assets/fonts/%s.ttf" % CJK[code]
+		_cjk[code] = load(path) if ResourceLoader.exists(path) else null
+	return _cjk[code]
+
+static func _apply_fallbacks(f: Font) -> void:
+	if f == null or not (f is FontFile):
+		return
+	var order := ["zh_CN", "ja", "ko"]
+	if _lang == "ja":
+		order = ["ja", "zh_CN", "ko"]
+	elif _lang == "ko":
+		order = ["ko", "zh_CN", "ja"]
+	var fb: Array[Font] = []
+	for c in order:
+		var cf := _cjk_font(c)
+		if cf:
+			fb.append(cf)
+	f.fallbacks = fb
+
+static func fit_button(b: Button, max_w: float, base := -1, min_size := 18) -> void:
+	## Long translations (German, Polish …) shrink to the button instead of stretching it off screen;
+	## past the minimum size the text wraps onto two lines.
+	# a button outside the tree cannot see its theme yet: sizes come straight from the game theme
+	var t := theme()
+	var type := String(b.theme_type_variation) if b.theme_type_variation != &"" else "Button"
+	var fs := base
+	if fs < 0:
+		fs = t.get_font_size("font_size", type) if t.has_font_size("font_size", type) else t.get_font_size("font_size", "Button")
+	var f := t.get_font("font", "Button")
+	var pad := 56.0
+	var text := b.text
+	while fs > min_size and f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + pad + (40.0 if b.icon else 0.0) > max_w:
+		fs -= 2
+	b.add_theme_font_size_override("font_size", fs)
+	if f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + pad > max_w:
+		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+static func fit_label(l: Label, max_w: float, min_size := 16) -> void:
+	## Single-line labels (titles, values) shrink to fit their width.
+	var ls := l.label_settings
+	if ls == null:
+		return
+	ls = ls.duplicate()
+	while ls.font_size > min_size and ls.font.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, ls.font_size).x > max_w:
+		ls.font_size -= 2
+	l.label_settings = ls
 
 static func sbt(file: String, margin: float, content := Vector4(26, 14, 26, 14)) -> StyleBoxTexture:
 	var s := StyleBoxTexture.new()
@@ -97,7 +161,31 @@ static func button(text: String, cb: Callable, teal := false, min_size := Vector
 		G.sfx("click", -4.0)
 		cb.call())
 	b.focus_mode = Control.FOCUS_NONE
+	fit_button(b, min_size.x)
 	return b
+
+static func wrap(text: String, size := 24, width := 520.0, color := CREAM, align := HORIZONTAL_ALIGNMENT_CENTER) -> Label:
+	var l := label(text, size, color, 5, "Rubik-Bold")
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size = Vector2(width, 0)
+	l.horizontal_alignment = align
+	return l
+
+static func title(text: String, size := 44, width := 600.0) -> Label:
+	var l := label(text, size)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.custom_minimum_size = Vector2(width, 0)
+	fit_label(l, width)
+	return l
+
+static func stars(n: int, size := 34.0, of := 3) -> HBoxContainer:
+	var h := HBoxContainer.new()
+	h.alignment = BoxContainer.ALIGNMENT_CENTER
+	h.add_theme_constant_override("separation", int(size * 0.12))
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for i in of:
+		h.add_child(icon(ART + ("star_on.png" if i < n else "star_off.png"), Vector2(size, size)))
+	return h
 
 static func icon(file: String, size: Vector2) -> TextureRect:
 	var r := TextureRect.new()

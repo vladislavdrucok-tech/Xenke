@@ -24,7 +24,14 @@ var barrel: Sprite2D
 var collar: Sprite2D
 var muzzle_glow: Sprite2D
 var barrel_mat: ShaderMaterial
-var skin := ""
+var skin := ""                 # cannon finish on screen
+var ball_skin := ""            # ball finish on screen
+var pending_ball := ""         # chosen during a volley: applied when the volley ends
+var trail_len := TRAIL_LEN
+var trail_cols := {}           # kind -> Color
+var glow_tint := Color.WHITE
+var theme_id := -1
+var decor_root: Node2D
 var blocks_root: Node2D
 var balls_node: Node2D
 var glow_node: Node2D
@@ -45,6 +52,7 @@ var shake_off := Vector2.ZERO
 var danger := 0
 var danger_t := 0.0
 var t := 0.0
+var spill: Sprite2D
 
 # ball rendering: positions before/after the last step, trails per ball index
 var prev_pos := {}
@@ -64,6 +72,88 @@ func _ready() -> void:
 				tex["crack_%dx%d_s%d" % [w, h, s]] = load(ART + "stones/crack_%dx%d_s%d.png" % [w, h, s])
 			tex["vein_%dx%d" % [w, h]] = load(ART + "stones/vein_%dx%d.png" % [w, h])
 	_build_static()
+
+const BALL_LOOK := {
+	# trail colour of normal / heavy / electric balls, trail length, glow tint. Heavy and electric keep their
+	# own colours on every finish, so the series stays readable.
+	"classic": {"trail": ["fff0cc", "ffc780", "8cfff2"], "len": 70.0, "glow": "ffffff"},
+	"copper": {"trail": ["ffb070", "ffc780", "8cfff2"], "len": 74.0, "glow": "ffd0a0"},
+	"teal": {"trail": ["9ff6ec", "ffc780", "8cfff2"], "len": 70.0, "glow": "c8fff8"},
+	"amber": {"trail": ["ffc45a", "ffb060", "8cfff2"], "len": 78.0, "glow": "ffd890"},
+	"frost": {"trail": ["e6f6ff", "ffd0a0", "a8fff6"], "len": 40.0, "glow": "e8f6ff"},
+	"obsidian": {"trail": ["58f0e2", "ffb070", "8cfff2"], "len": 66.0, "glow": "9ffff4"},
+}
+
+const THEMES := [
+	# chapter look: shaft / wall / ground tint, light colour, decor sprite prefix
+	{"bg": "ffffff", "wall": "ffffff", "ground": "ffffff", "light": "ffcc8c", "decor": ""},                # 1 Copper Mine (the endless look)
+	{"bg": "c8f0ff", "wall": "d6e8f2", "ground": "d0e4ee", "light": "9ffff0", "decor": "crystal"},         # 2 Crystal Vein
+	{"bg": "a8e0d8", "wall": "a8ccc8", "ground": "9cc4c4", "light": "8fe0ff", "decor": "water"},           # 3 Flooded Tunnels
+	{"bg": "8c8ca8", "wall": "8a8aa0", "ground": "84849a", "light": "6ff0e4", "decor": "obsidian"},        # 4 Obsidian Depths
+	{"bg": "ffb8a0", "wall": "e8b0a0", "ground": "dca898", "light": "ffa060", "decor": "heart"},           # 5 Heart of the Mine
+]
+
+func ball_tex(kind: int) -> Texture2D:
+	var k := "normal"
+	if kind == Sim.K_HEAVY:
+		k = "heavy"
+	elif kind == Sim.K_ELECTRIC:
+		k = "electric"
+	return tex["ballskin/%s_%s" % [ball_skin, k]]
+
+func set_ball_skin(id: String, force := false) -> void:
+	## A new ball finish shows from the next volley: during a volley it waits.
+	if not BALL_LOOK.has(id):
+		id = "classic"
+	if not force and sim != null and sim.phase == Sim.PH_VOLLEY and ball_skin != "":
+		pending_ball = id
+		return
+	pending_ball = ""
+	ball_skin = id
+	for k in ["normal", "heavy", "electric"]:
+		var key := "ballskin/%s_%s" % [id, k]
+		if not tex.has(key):
+			tex[key] = load(ART + "balls/%s_%s.png" % [id, k])
+	var look: Dictionary = BALL_LOOK[id]
+	trail_len = float(look.len)
+	trail_cols = {Sim.K_NORMAL: Color(look.trail[0]), Sim.K_HEAVY: Color(look.trail[1]), Sim.K_ELECTRIC: Color(look.trail[2])}
+	glow_tint = Color(look.glow)
+
+func apply_pending() -> void:
+	if pending_ball != "":
+		set_ball_skin(pending_ball, true)
+
+func set_theme(chapter: int) -> void:
+	## Level chapters change the palette of the shaft, walls and ground and add their decor along the walls.
+	chapter = clampi(chapter, 0, THEMES.size() - 1)
+	if chapter == theme_id:
+		return
+	theme_id = chapter
+	var th: Dictionary = THEMES[chapter]
+	bg.modulate = Color(th.bg)
+	for w in walls:
+		var k: int = w.get_meta("k", 0)
+		var base := Color(1, 1, 1) if k == 0 else (Color(0.62, 0.6, 0.6) if k == 1 else Color(0.42, 0.4, 0.4))
+		w.modulate = base * Color(th.wall)
+	ground.modulate = Color(th.ground)
+	spill.modulate = Color(Color(th.light), 0.10)
+	for c in decor_root.get_children():
+		c.queue_free()
+	if th.decor == "":
+		return
+	# decor sprites scroll with the walls; positions are fixed per chapter
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 900 + chapter
+	for i in 14:
+		var side := i % 2
+		var spr := Sprite2D.new()
+		spr.texture = load(ART + "themes/%s_%d.png" % [th.decor, rng.randi() % 3])
+		spr.scale = Vector2(0.5, 0.5) * rng.randf_range(0.8, 1.15)
+		spr.flip_h = side == 1
+		var x := Sim.FIELD_X0 - 18.0 if side == 0 else Sim.FIELD_X1 + 18.0
+		spr.position = Vector2(x, 160.0 + i * 190.0 + rng.randf_range(-50, 50))
+		spr.set_meta("y0", spr.position.y)
+		decor_root.add_child(spr)
 
 func _build_static() -> void:
 	# shaft: repeats in both directions, scrolls slower than the stones (parallax)
@@ -91,6 +181,7 @@ func _build_static() -> void:
 			else:
 				w.position = Vector2(Sim.FIELD_X1 - 2 + ww * k, -500)
 			w.set_meta("phase", k * 337.0)
+			w.set_meta("k", k)
 			if k > 0:
 				w.modulate = Color(0.62, 0.6, 0.6) if k == 1 else Color(0.42, 0.4, 0.4)
 				w.z_index = -1
@@ -103,7 +194,7 @@ func _build_static() -> void:
 	arch.scale = Vector2(0.5, 0.5)
 	add_child(arch)
 	# warm light from the cannon spilling into the shaft
-	var spill := Sprite2D.new()
+	spill = Sprite2D.new()
 	spill.texture = tex["fx/glow_warm"]
 	spill.position = Vector2(360, 230)
 	spill.scale = Vector2(5.0, 2.6)
@@ -123,6 +214,8 @@ func _build_static() -> void:
 	ground.position = Vector2(Sim.FIELD_X0, Sim.FLOOR_Y)
 	ground.region_rect = Rect2(0, 0, (Sim.FIELD_X1 - Sim.FIELD_X0) * 2.0, 1600)
 	add_child(ground)
+	decor_root = Node2D.new()
+	add_child(decor_root)
 	under_node = Node2D.new()
 	under_node.draw.connect(_draw_under)
 	add_child(under_node)
@@ -173,13 +266,16 @@ func _build_static() -> void:
 	add_child(fx)
 	fx_add = fx.add_layer
 	warn_font = load("res://assets/fonts/Rubik-ExtraBold.ttf")
-	set_skin(G.meta.skin)
+	set_skin(G.selected("cannon"))
+	set_ball_skin(G.selected("ball"), true)
 
 func set_skin(id: String) -> void:
 	if id == skin:
 		return
-	skin = id
 	var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(ART + "cannon/meta.json"))
+	if not meta.has(id):
+		id = "classic"
+	skin = id
 	var m: Dictionary = meta[id]
 	cannon_base.texture = load(ART + "cannon/base_%s.png" % id)
 	cannon_base.offset = -Vector2(m.base_pivot[0], m.base_pivot[1])
@@ -187,7 +283,8 @@ func set_skin(id: String) -> void:
 	barrel.texture = load(ART + "cannon/barrel_%s.png" % id)
 	barrel.offset = -Vector2(m.barrel_pivot[0], m.barrel_pivot[1])
 	collar.texture = load(ART + "cannon/collar_%s.png" % id)
-	var glow_col := {"classic": Color(1, 0.84, 0.6), "ember": Color(1, 0.55, 0.25), "brass": Color(1, 0.93, 0.7), "crystal": Color(0.5, 1, 0.95)}
+	var glow_col := {"classic": Color(1, 0.84, 0.6), "ember": Color(1, 0.55, 0.25), "brass": Color(1, 0.93, 0.7), "crystal": Color(0.5, 1, 0.95),
+		"bronze": Color(1, 0.72, 0.4), "crystal_engine": Color(0.45, 1, 0.92), "obsidian": Color(0.35, 1, 0.9)}
 	muzzle_glow.modulate = glow_col[id]
 	barrel_mat.set_shader_parameter("heat_color", glow_col[id])
 
@@ -356,6 +453,9 @@ func _process(dt: float) -> void:
 	under_node.queue_redraw()
 	for w in walls:
 		w.region_rect = Rect2(0, scroll * 2.0 + float(w.get_meta("phase")), 220, 3600)
+	for d in decor_root.get_children():
+		# the wall texture scrolls at the stones' speed; decor follows it and wraps around
+		d.position.y = fposmod(float(d.get_meta("y0")) - scroll, 2660.0) - 300.0
 	# cannon
 	recoil = maxf(0.0, recoil - dt * 9.0)
 	heat = maxf(0.0, heat - dt * 3.5)
@@ -422,13 +522,9 @@ func _draw_balls() -> void:
 			if tr.size() > 12:
 				tr.pop_back()
 		trails[b.idx] = tr
-		var col := Color(1.0, 0.94, 0.8)
-		if b.k == Sim.K_ELECTRIC:
-			col = Color(0.55, 1.0, 0.95)
-		elif b.k == Sim.K_HEAVY:
-			col = Color(1.0, 0.78, 0.5)
-		# trail: a ribbon that narrows and fades evenly over 70 units behind the ball (no steps at any frame rate)
-		var left := TRAIL_LEN
+		var col: Color = trail_cols.get(b.k, Color(1.0, 0.94, 0.8))
+		# trail: a ribbon that narrows and fades evenly behind the ball (no steps at any frame rate)
+		var left := trail_len
 		var d0 := 0.0
 		for i in range(tr.size() - 1):
 			var p0: Vector2 = tr[i]
@@ -439,8 +535,8 @@ func _draw_balls() -> void:
 			if L > left:
 				p1 = p0.lerp(p1, left / L)
 				L = left
-			var f0 := 1.0 - d0 / TRAIL_LEN
-			var f1 := maxf(0.0, 1.0 - (d0 + L) / TRAIL_LEN)
+			var f0 := 1.0 - d0 / trail_len
+			var f1 := maxf(0.0, 1.0 - (d0 + L) / trail_len)
 			var n := (p1 - p0).orthogonal() / L
 			var w0 := 1.0 + 6.0 * f0
 			var w1 := 1.0 + 6.0 * f1
@@ -456,12 +552,7 @@ func _draw_balls() -> void:
 		if b.st != 1:
 			continue
 		var p := ball_pos(b)
-		var key := "balls/ball_normal"
-		if b.k == Sim.K_HEAVY:
-			key = "balls/ball_heavy"
-		elif b.k == Sim.K_ELECTRIC:
-			key = "balls/ball_electric"
-		balls_node.draw_texture_rect(tex[key], Rect2(p - Vector2(half, half), Vector2(BALL_SIZE, BALL_SIZE)), false)
+		balls_node.draw_texture_rect(ball_tex(b.k), Rect2(p - Vector2(half, half), Vector2(BALL_SIZE, BALL_SIZE)), false)
 
 func _draw_glow() -> void:
 	if sim == null or sim.phase != Sim.PH_VOLLEY:
@@ -472,7 +563,8 @@ func _draw_glow() -> void:
 		var p := ball_pos(b)
 		var key := "fx/glow_teal" if b.k == Sim.K_ELECTRIC else "fx/glow_warm"
 		var s := 70.0
-		glow_node.draw_texture_rect(tex[key], Rect2(p - Vector2(s, s) * 0.5, Vector2(s, s)), false, Color(1, 1, 1, 0.8))
+		var gc := Color(1, 1, 1, 0.8) if b.k != Sim.K_NORMAL else Color(glow_tint, 0.8)
+		glow_node.draw_texture_rect(tex[key], Rect2(p - Vector2(s, s) * 0.5, Vector2(s, s)), false, gc)
 
 func _draw_aim() -> void:
 	if aim_alpha <= 0.01 or aim_pts.size() < 2:

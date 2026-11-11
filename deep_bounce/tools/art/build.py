@@ -9,6 +9,7 @@ from kit import *
 import stones
 import cannon
 import misc
+import skins
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 OUT = os.path.join(ROOT, 'assets', 'art')
@@ -54,7 +55,12 @@ def build_cannon():
         if skin == 'classic':
             nrm.save(path('cannon', 'barrel_normal.png'))
         cannon.collar(skin).save(path('cannon', f'collar_{skin}.png'))
-        cannon.preview(skin).save(path('cannon', f'preview_{skin}.png'))
+        pv = cannon.preview(skin)
+        pv.save(path('cannon', f'preview_{skin}.png'))
+        ic = Image.new('RGBA', (300, 192), (0, 0, 0, 0))
+        small = pv.resize((int(pv.width * 0.84), int(pv.height * 0.84)), Image.LANCZOS)
+        ic.alpha_composite(small, ((300 - small.width) // 2, (192 - small.height) // 2 + 6))
+        ic.save(path('cannon', f'icon_{skin}.png'))
         meta[skin] = {'base_pivot': [piv[0], piv[1]], 'barrel_pivot': [bpiv[0], bpiv[1]]}
     a, origin = cannon.arch()
     a.save(path('cannon', 'arch.png'))
@@ -72,6 +78,19 @@ def build_balls():
     misc.gem(40, 56, 5).save(path('fx', 'gem.png'))
     misc.gem(80, 112, 6).save(path('ui', 'gem_icon.png'))
     misc.ball('normal', 22).save(path('ui', 'ball_icon.png'))
+
+
+def build_skins():
+    for sk in skins.SKINS:
+        for k in ('normal', 'heavy', 'electric'):
+            skins.ball(sk, k).save(path('balls', f'{sk}_{k}.png'))
+        skins.icon(sk).save(path('balls', f'icon_{sk}.png'))
+    skins.star(True).save(path('ui', 'star_on.png'))
+    skins.star(False).save(path('ui', 'star_off.png'))
+    skins.video_glyph().save(path('ui', 'video.png'))
+    for kind, base in (('crystal', 500), ('water', 600), ('obsidian', 700), ('heart', 800)):
+        for i in range(3):
+            skins.decor(kind, i, base + i).save(path('themes', f'{kind}_{i}.png'))
 
 
 def build_fx():
@@ -103,7 +122,7 @@ def build_icon():
 
 
 GROUPS = dict(stones=build_stones, walls=build_walls, shaft=build_shaft, cannon=build_cannon, balls=build_balls,
-              fx=build_fx, ui=build_ui, icon=build_icon)
+              fx=build_fx, ui=build_ui, icon=build_icon, skins=build_skins)
 
 if __name__ == '__main__':
     todo = sys.argv[1:] or list(GROUPS)

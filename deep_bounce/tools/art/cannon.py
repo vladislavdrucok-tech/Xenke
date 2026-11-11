@@ -15,7 +15,22 @@ SKINS = {
                   wear='#8b6a2a', glow='#fff0c0', rivet='#ffe2a0', seam=None),
     'crystal': dict(paint='#173d46', paint_l='#5aa9b0', paint_d='#06161a', metal='#8fa7ab', metal_l='#e9fbff', metal_d='#2a3a3e',
                     wear='#244e56', glow='#7ff7ee', rivet='#c9f4f4', seam='#59f0e4', crystals=True),
+    # Google Play finishes
+    'bronze': dict(paint='#8c5a2c', paint_l='#e6b277', paint_d='#3a200c', metal='#d29a4e', metal_l='#ffe6b0', metal_d='#4a2a0a',
+                   wear='#6f4824', glow='#ffc070', rivet='#ffd496', seam=None, engrave=True),
+    'crystal_engine': dict(paint='#1c3138', paint_l='#5f8f96', paint_d='#08161a', metal='#c8762e', metal_l='#f6c27e', metal_d='#5e2d10',
+                           wear='#2a444a', glow='#7ff7ee', rivet='#f0a860', seam=None, crystals=True, inserts=True),
+    'obsidian': dict(paint='#15171c', paint_l='#5a6270', paint_d='#050608', metal='#b46a2c', metal_l='#f0b070', metal_d='#4a2208',
+                     wear='#262a33', glow='#5ff0e4', rivet='#e09a58', seam='#3ff0e0', stone=True),
 }
+
+
+def _facets(h, w, rng, n=40):
+    pts = [(rng.uniform(0, w), rng.uniform(0, h)) for _ in range(n)]
+    idx, f1, f2 = voronoi(h, w, pts)
+    shade = rng.uniform(0.7, 1.3, n)[idx]
+    edge = smoothstep(2.5, 0.0, f2 - f1)
+    return shade, edge
 
 
 def sphere(skin, r_world=44, seed=1):
@@ -35,6 +50,10 @@ def sphere(skin, r_world=44, seed=1):
     wear_n = fft_noise(size, size, 2.0, rng)
     wear = smoothstep(0.66, 0.78, wear_n)
     paint = lerp(rgb(k['paint']), rgb(k['wear']), wear * 0.85)
+    if k.get('stone'):
+        sh, ed = _facets(size, size, rng, 34)
+        paint = paint * sh[..., None]
+        paint = lerp(paint, rgb(k['paint_l']), ed * 0.35)
     # band around the sphere (tilted great circle) and rivets on it
     axis = np.array([0.30, -0.88, 0.37])
     axis /= np.linalg.norm(axis)
@@ -71,6 +90,17 @@ def sphere(skin, r_world=44, seed=1):
     if k.get('seam'):
         sm = smoothstep(0.035, 0.0, np.abs(dot - 0.16)) * m
         rgb_ = lerp(rgb_, rgb(k['seam']), sm * 0.9)
+    if k.get('engrave'):
+        # engraved ornament: two latitude lines with a wave between them, cut into the bronze
+        ang = np.arctan2(dy, dx)
+        lines = np.zeros_like(dot)
+        for L in (0.42, -0.42):
+            lines = np.maximum(lines, smoothstep(0.028, 0.0, np.abs(dot - L)))
+        wave = smoothstep(0.03, 0.0, np.abs(dot - 0.6 - 0.07 * np.sin(ang * 7)))
+        wave2 = smoothstep(0.03, 0.0, np.abs(dot + 0.6 + 0.07 * np.sin(ang * 7 + 1)))
+        cut = np.clip(lines + wave + wave2, 0, 1) * m * (nz > 0.2)
+        rgb_ = lerp(rgb_, rgb(k['metal_d']) * 0.7, cut * 0.85)
+        rgb_ = lerp(rgb_, rgb(k['metal_l']), np.roll(cut, 2, axis=0) * (1 - cut) * 0.45)
     if k.get('crystals'):
         for (ox, oy, gw, gh, an) in [(-0.35, -0.42, 0.22, 0.42, -0.5), (0.05, -0.62, 0.18, 0.34, 0.15), (-0.62, -0.08, 0.16, 0.28, -1.0)]:
             from stones import gem_shape
@@ -188,6 +218,29 @@ def barrel(skin, seed=3):
     if k.get('seam'):
         seam = np.array([1.0 if (30 <= x <= 31 or 58 <= x <= 59) else 0.0 for x in xs])
         alb = lerp(alb, rgb(k['seam']) * 1.2, seam[None, :] * (np.abs(v) < 0.95))
+    if k.get('stone'):
+        sh, ed = _facets(H, W, rng, 26)
+        stone_area = (1 - is_metal)[None, :] * np.ones_like(v)
+        alb = lerp(alb, alb * sh[..., None], stone_area)
+        alb = lerp(alb, rgb(k['paint_l']), ed * 0.3 * stone_area)
+    if k.get('engrave'):
+        # bronze plates: seams between them and an engraved wave along each plate
+        plate = np.array([1.0 if (abs(x - 10) < 0.6 or abs(x - 31) < 0.6 or abs(x - 53) < 0.6 or abs(x - 62) < 0.6) else 0.0 for x in xs])
+        alb = lerp(alb, rgb(k['metal_d']) * 0.6, plate[None, :] * (np.abs(v) < 0.98))
+        wave = smoothstep(0.07, 0.0, np.abs(v - 0.42 * np.sin(xs[None, :] * 0.5))) * (1 - is_metal)[None, :] * (xs[None, :] < 66)
+        alb = lerp(alb, rgb(k['metal_d']) * 0.7, wave * 0.8)
+        alb = lerp(alb, rgb(k['metal_l']), np.roll(wave, 2, axis=0) * (1 - wave) * 0.35)
+    insert = np.zeros_like(v)
+    if k.get('inserts'):
+        # turquoise crystal inserts set between the copper rings
+        for (a, b) in ((26.5, 36.5), (48.5, 62.0)):
+            band = np.array([1.0 if a <= x <= b else 0.0 for x in xs])[None, :]
+            ins = band * smoothstep(0.62, 0.5, np.abs(v))
+            insert = np.maximum(insert, ins)
+        facet = 0.5 + 0.5 * np.sign(np.sin(xs[None, :] * 1.3 + v * 4.0))
+        crystal = lerp(rgb('#169a98'), rgb('#7ffff2'), (0.35 + 0.5 * facet) * (1 - np.abs(v)))
+        alb = lerp(alb, crystal, insert)
+        alb = lerp(alb, rgb('#c8fff8'), insert * smoothstep(0.12, 0.0, np.abs(v + 0.25)) * 0.8)
     # bore: dark mouth seen slightly from the side at the tip
     bore = ellipse_mask(W, H, 75.0 * S * K, cy, 2.6 * S * K, 11 * S * K)
     rimm = ellipse_mask(W, H, 75.0 * S * K, cy, 4.0 * S * K, 18 * S * K)
@@ -197,6 +250,7 @@ def barrel(skin, seed=3):
     n = np.where((rimm > 0.5)[..., None] & (bore < 0.5)[..., None], np.dstack([np.full_like(v, 0.75), v * 0.4, np.full_like(v, 0.55)]), n)
     n /= np.maximum(np.linalg.norm(n, axis=2, keepdims=True), 1e-6)
     specmask = 0.45 + 0.5 * is_metal[None, :] * np.ones_like(v)
+    specmask = np.maximum(specmask, insert * 0.95)
     specmask = np.where(bore > 0.5, 0.0, specmask)
     # rivets on the bands (normal bumps)
     for bx in (20.0, 42.0, 71.5):
@@ -233,6 +287,11 @@ def collar(skin, seed=4):
     inner = d < 0.62
     alb = np.where(inner[..., None], rgb(k['paint']), rgb(k['metal']))
     col = alb * (0.25 + 1.0 * dif)[..., None] + (sp * 0.7)[..., None] * rgb(k['metal_l'])
+    if k.get('stone'):
+        # the turquoise core glowing through the obsidian cap
+        core = np.clip(1 - d / 0.5, 0, 1)
+        col = lerp(col, rgb('#1aa89e'), (d < 0.6) * 0.8)
+        col = lerp(col, rgb('#9ffff4'), core ** 1.5)
     rgb_, a_ = col, m
     for t in np.linspace(0, 2 * np.pi, 9)[:-1]:
         px, py = c + np.cos(t + 0.3) * r * 0.81, c + np.sin(t + 0.3) * r * 0.81

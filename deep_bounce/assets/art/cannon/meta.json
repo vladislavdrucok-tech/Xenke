@@ -39,6 +39,36 @@
    47.0
   ]
  },
+ "bronze": {
+  "base_pivot": [
+   130.0,
+   94
+  ],
+  "barrel_pivot": [
+   0,
+   47.0
+  ]
+ },
+ "crystal_engine": {
+  "base_pivot": [
+   130.0,
+   94
+  ],
+  "barrel_pivot": [
+   0,
+   47.0
+  ]
+ },
+ "obsidian": {
+  "base_pivot": [
+   130.0,
+   94
+  ],
+  "barrel_pivot": [
+   0,
+   47.0
+  ]
+ },
  "arch_origin": [
   200,
   -40

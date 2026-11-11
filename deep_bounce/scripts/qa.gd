@@ -4,7 +4,11 @@ extends Node
 ##   godot --path . -- --qa=tour  --out=DIR    every screen in both languages
 ##   godot --path . -- --qa=flow  --out=DIR    first launch -> runs -> purchase -> next run -> restart restore
 ##   godot --path . -- --qa=perf  --out=DIR    longest volley: 32 balls, all upgrades, frame times
+##   godot --path . -- --qa=money --out=DIR    purchases, ads, second chance, doubled crystals, interstitial
+##                                              cadence and levels, by pressing the real buttons
 ## Nothing here runs in normal play. Writes report lines to DIR/qa_<mode>.txt.
+
+const I18N := preload("res://scripts/i18n.gd")
 
 var main: Node
 var mode := ""
@@ -68,6 +72,8 @@ func _run() -> void:
 			await _demo()
 		"start":
 			await _start()
+		"money":
+			await _money()
 		"s29":
 			await load("res://scripts/qa_s29.gd").new().run(self)
 		_:
@@ -121,7 +127,7 @@ func build_ref_board() -> void:
 
 func _ref() -> void:
 	G.settings.lang = "en"
-	G.meta.skin = "classic"
+	G.cos.cannon = "classic"
 	main.start_new_run(4242)
 	build_ref_board()
 	main.world.clear_blocks()
@@ -160,20 +166,99 @@ func _ref() -> void:
 # ---------------------------------------------------------------- tour of screens
 
 func _tour() -> void:
-	for lang in ["en", "uk"]:
-		G.settings.lang = lang
-		G.lang_changed.emit()
+	## Every screen in every language (or the ones given with --langs=uk,en,…), with Google Play prices in
+	## the local format of the simulated store and test ads ready.
+	var langs: Array = ["en", "uk"]
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--langs="):
+			langs = Array(a.substr(8).split(","))
+	var fmt := {"en": "US$%s", "uk": "%s грн", "pl": "%s zł", "de": "%s €", "es": "%s €", "fr": "%s €", "it": "%s €",
+		"pt_BR": "R$ %s", "tr": "₺%s", "ja": "¥%s", "ko": "₩%s", "zh_CN": "¥%s"}
+	G.test_no_save = true
+	G.meta.crystals = 640
+	G.meta.best = 57
+	G.cos.balls = ["classic", "copper"]
+	G.cos.cannons = ["classic", "ember"]
+	G.levels = {"unlocked": 13, "stars": {}, "first": {}, "best_volleys": {}}
+	for i in 12:
+		G.levels.stars["L%02d" % (i + 1)] = [3, 3, 2, 3, 1, 3, 2, 3, 3, 2, 3, 2][i]
+		G.levels.first["L%02d" % (i + 1)] = "qa"
+	for lang in langs:
+		var fake: Node = Store.backend
+		if "currency_format" in fake:
+			fake.currency_format = fmt.get(lang, "US$%s")
+			Store.refresh_details()
+		G.set_lang(lang)
+		await frames(6)
+		G.run = {}
 		main.to_menu()
-		await shot("menu_" + lang)
+		await shot(lang + "_01_menu")
 		main.screens.show_settings()
-		await shot("settings_" + lang)
-		main.screens.show_cosmetics()
-		await shot("cosmetics_" + lang)
+		await shot(lang + "_02_settings")
+		main.screens.show_languages()
+		await shot(lang + "_03_languages")
+		main.screens.shop_focus = {"ball": "amber", "cannon": "crystal_engine"}
+		main.screens.show_shop("ball")
+		await frames(30)
+		await shot(lang + "_04_shop_balls")
+		main.screens.show_shop("cannon")
+		await frames(30)
+		await shot(lang + "_05_shop_cannons")
+		main.screens.show_shop("noads")
+		await shot(lang + "_06_shop_noads")
+		main.screens.show_support()
+		await shot(lang + "_07_support")
+		main.screens.show_thanks()
+		await shot(lang + "_08_thanks")
+		main.screens.show_levels()
+		await frames(4)
+		await shot(lang + "_09_levels")
+		main.screens.show_level_intro(12)
+		await shot(lang + "_10_level_intro")
+		main.start_level(12)
+		G.meta.tutorial = 6
+		await frames(10)
+		await shot(lang + "_11_level_hud")
+		main.open_pause()
+		await shot(lang + "_12_level_pause")
 		main.screens.close()
+		main.paused = false
+		# a stone at the line: the second-chance offer with the test ad loaded
+		main.sim.phase = Sim.PH_OVER
+		Ads.load_ad("revive")
+		await frames(20)
+		main._at_line()
+		await frames(4)
+		await shot(lang + "_13_revive_level")
+		main.screens.show_noads()
+		await shot(lang + "_14_noads_sheet")
+		# results
+		G.result = {"id": "qa-%s-w" % lang, "mode": "level", "won": true, "depth": 9, "record": false, "gems": 46, "bonus": 30,
+			"broken": 41, "volleys": 7, "stars": 2, "first": true, "level_id": "L12", "level_n": 12, "doubled": false, "revived": false, "rewarded_seen": false}
+		Ads.load_ad("double")
+		await frames(20)
+		main.screens.show_level_won()
+		await shot(lang + "_15_level_won")
+		G.result.won = false
+		main.screens.show_level_lost()
+		await shot(lang + "_16_level_lost")
+		G.result = {"id": "qa-%s-e" % lang, "mode": "endless", "won": false, "depth": 37, "record": true, "gems": 64, "bonus": 0,
+			"broken": 51, "volleys": 30, "stars": 0, "first": false, "level_id": "", "level_n": 0, "doubled": false, "revived": false, "rewarded_seen": false}
+		main.screens.show_gameover()
+		await shot(lang + "_17_endless_results")
+		G.result.doubled = true
+		main.screens.show_gameover()
+		await shot(lang + "_18_endless_doubled")
+		G.result = {"id": "qa-all", "mode": "level", "won": true, "depth": 9, "record": false, "gems": 80, "bonus": 40,
+			"broken": 70, "volleys": 11, "stars": 3, "first": true, "level_id": "L50", "level_n": 50, "doubled": false, "revived": false, "rewarded_seen": false, "all_clear": true}
+		main.screens.show_level_won()
+		await shot(lang + "_19_all_clear")
+		G.result = {}
+		# endless run: tutorial, series info, upgrade choice, endless revive, pause
 		G.meta.tutorial = 0
 		main.start_new_run(777)
 		await frames(10)
-		await shot("tutorial_aim_" + lang)
+		await shot(lang + "_20_tutorial_aim")
 		main.sim.heavy = 1
 		main.sim.electric = 2
 		main.sim.balls = 16
@@ -181,20 +266,21 @@ func _tour() -> void:
 		main.hud.update_state(main.sim, 0, 1, false)
 		main.hud.show_series_info()
 		await frames(4)
-		await shot("info_series_" + lang)
-		main.hud.hide_info()
-		main.hud.show_upgrade_info()
-		await frames(4)
-		await shot("info_upgrade_" + lang)
+		await shot(lang + "_21_info_series")
 		main.hud.hide_info()
 		main.screens.show_upgrade(["balls", "heavy", "electric"])
-		await shot("upgrade_" + lang)
+		await shot(lang + "_22_upgrade")
 		main.screens.show_pause()
-		await shot("pause_" + lang)
+		await shot(lang + "_23_pause_endless")
+		main.sim.phase = Sim.PH_OVER
+		main._at_line()
+		await frames(4)
+		await shot(lang + "_24_revive_endless")
+		main.screens.confirm(G.t("new_run_q"), func(): pass)
+		await shot(lang + "_25_confirm")
 		main.screens.close()
-		main.screens.show_gameover({"record": true, "depth": 37, "gems": 64, "broken": 51})
-		await shot("gameover_" + lang)
-		main.screens.close()
+	log_line("missing keys: %s" % str(I18N.missing.keys()))
+	G.test_no_save = false
 
 # ---------------------------------------------------------------- full player path
 
@@ -212,13 +298,13 @@ func play_volley(angle: float) -> void:
 func _flow() -> void:
 	# 1) first launch: no save
 	G.run = {}
-	G.meta = {"crystals": 0, "best": 0, "owned": ["classic"], "skin": "classic", "tutorial": 0, "runs": 0, "broken": 0, "spent": 0}
+	G.reset_defaults()
 	G.save_game()
 	main.to_menu()
 	await frames(3)
 	check(not G.has_run(), "fresh install: no run, Continue disabled")
 	await shot("flow_01_menu_fresh")
-	main.menu_play()
+	main.menu_endless()
 	await frames(5)
 	check(main.mode == main.M_GAME and main.sim.phase == Sim.PH_AIM, "Play starts a run in aiming phase")
 	check(main.hud.hint.visible, "first run shows the aiming hint")
@@ -228,7 +314,7 @@ func _flow() -> void:
 	var volleys := 0
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 99
-	while G.meta.crystals < G.SKIN_PRICE["ember"] and runs < 12:
+	while G.meta.crystals < 150 and runs < 12:
 		var s: Sim = main.sim
 		while s.phase != Sim.PH_OVER and volleys < 4000:
 			if s.phase == Sim.PH_UPGRADE:
@@ -241,7 +327,7 @@ func _flow() -> void:
 					await _check_restart_restore()
 		runs += 1
 		main.over_timer = -1.0
-		main._game_over()
+		main._finish()
 		await frames(2)
 		if runs == 1:
 			await shot("flow_03_gameover")
@@ -250,13 +336,13 @@ func _flow() -> void:
 	log_line("runs played: %d, volleys: %d, crystals: %d, best %d m" % [runs, volleys, G.meta.crystals, G.meta.best])
 	# 3) purchase
 	var before := int(G.meta.crystals)
-	check(G.buy_skin("ember"), "buy Ember Iron with earned crystals")
+	check(G.buy_with_crystals("cannon", "ember"), "buy Ember Iron with earned crystals")
 	var reread := FileAccess.get_file_as_string(G.SAVE_PATH)
 	var d: Dictionary = JSON.parse_string(reread)
-	check(int(d.meta.crystals) == before - G.SKIN_PRICE["ember"] and d.meta.owned.has("ember") and d.meta.skin == "ember",
+	check(int(d.meta.crystals) == before - 150 and d.cos.cannons.has("ember") and d.cos.cannon == "ember",
 		"purchase stored atomically: price spent and finish owned in one save")
-	check(not G.buy_skin("ember"), "the same finish cannot be bought twice")
-	main.apply_skin()
+	check(not G.buy_with_crystals("cannon", "ember"), "the same finish cannot be bought twice")
+	main.apply_skins()
 	main.start_new_run()
 	await frames(5)
 	check(main.world.skin == "ember", "the next run uses the purchased finish")
@@ -322,7 +408,7 @@ func _bot_angle(s: Sim, rng: RandomNumberGenerator) -> float:
 func _perf() -> void:
 	## Worst case: 32 balls with every upgrade drop through a single gap into a closed chamber and bounce
 	## there until they find the gap again (or the flight limit recalls them).
-	G.meta.skin = "classic"
+	G.cos.cannon = "classic"
 	main.start_new_run(31337)
 	var s: Sim = main.sim
 	s.balls = 32
@@ -536,7 +622,7 @@ func _demo() -> void:
 	G.settings.lang = "uk"
 	G.lang_changed.emit()
 	G.meta.tutorial = 6
-	G.meta.skin = "classic"
+	G.cos.cannon = "classic"
 	var seed := 2024
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--seed="):
@@ -572,7 +658,7 @@ func _start() -> void:
 	G.settings.lang = "en"
 	G.lang_changed.emit()
 	G.meta.tutorial = 6
-	G.meta.skin = "classic"
+	G.cos.cannon = "classic"
 	G.meta.crystals = 583
 	var seed := 2024
 	for a in OS.get_cmdline_user_args():
@@ -615,3 +701,299 @@ func _start() -> void:
 		main.over_timer = -1.0
 		await frames(45)
 	check(true, "opening sequence rendered")
+
+
+# ---------------------------------------------------------------- monetization and levels through the screens
+
+func find_button(text: String) -> Button:
+	if main.screens.layer == null:
+		return null
+	for b in main.screens.layer.find_children("*", "Button", true, false):
+		if b.text == text and b.is_visible_in_tree():
+			return b
+	return null
+
+func press(text: String) -> bool:
+	var b := find_button(text)
+	if b == null or b.disabled:
+		log_line("      (no active button '%s' on screen '%s')" % [text, main.screens.current])
+		return false
+	b.pressed.emit()
+	await frames(3)
+	return true
+
+func wait_s(t: float) -> void:
+	await get_tree().create_timer(t).timeout
+
+func press_named(node_name: String) -> bool:
+	if main.screens.layer == null:
+		return false
+	var found: Array[Node] = main.screens.layer.find_children(node_name, "Button", true, false)
+	if found.is_empty() or found[0].disabled:
+		log_line("      (no active button named '%s' on screen '%s')" % [node_name, main.screens.current])
+		return false
+	found[0].pressed.emit()
+	await frames(3)
+	return true
+
+func put_stone_at_line() -> void:
+	## A stone whose collider crosses the red line, as after a shift: the run is at its end.
+	var s: Sim = main.sim
+	s.run_gems += 7          # a few crystals found in this run, so there is something to double
+	s.unclaimed += 7
+	for c in [1, 4]:
+		var r := s.top + 1
+		if not s.grid.has(r * Sim.COLS + c):
+			s._add_block({"c": c, "r": r, "w": 1, "h": 1, "hp": 9, "g": 1, "v": 0, "vein": false})
+	s.phase = Sim.PH_OVER
+
+func near_line_count() -> int:
+	var s: Sim = main.sim
+	var n := 0
+	for b in s.blocks.values():
+		if s.block_rect(b).position.y < Sim.DANGER_Y + 2.0 * Sim.CELL:
+			n += 1
+	return n
+
+func _money() -> void:
+	var fake_ads: Node = Ads.backend
+	var fake_play: Node = Store.backend
+	G.test_no_save = false            # the real save path: restarts re-read the file
+	G.reset_defaults()
+	G.settings.lang = "en"
+	G.meta.tutorial = 6
+	G.save_game()
+	fake_play.account.clear()
+	Store.refresh_details()
+	await wait_s(0.3)
+	main.to_menu()
+	await frames(3)
+	# --- endless: second chance with a rewarded ad
+	check(await press(G.t("endless")), "menu: Endless Mode starts a run")
+	await frames(5)
+	var s: Sim = main.sim
+	var run_id := s.run_id
+	await play_volley(1.2)
+	put_stone_at_line()
+	G.add_crystals(main.sim.claim())     # crystals found before the line are the player's anyway
+	var wallet := int(G.meta.crystals)
+	main._consume_events()
+	main._at_line()
+	await wait_s(0.3)
+	check(main.screens.current == "revive" and main.paused, "a stone at the red line freezes the run and offers a second chance")
+	check(G.run.get("phase", -1) == Sim.PH_OVER or int(G.run.get("phase", -1)) == Sim.PH_OVER, "the frozen run is saved at that moment")
+	var before_near := near_line_count()
+	fake_ads.outcome = "close"
+	check(await press(G.t("revive_ad")), "button 'Continue with an Ad' is active when the video is ready")
+	await wait_s(0.4)
+	check(main.screens.current == "revive" and not s.revive_used and G.reward_state("revive", run_id) == "", "closing the video early: no second chance, back to the same choice")
+	fake_ads.outcome = "fail"
+	await wait_s(0.3)
+	await press(G.t("revive_ad"))
+	await wait_s(0.4)
+	check(main.screens.current == "revive" and not s.revive_used, "a video that fails to show: back to the choice")
+	fake_ads.outcome = "double_cb"
+	var shows0: int = fake_ads.shows
+	await wait_s(0.3)
+	await press(G.t("revive_ad"))
+	await wait_s(0.5)
+	check(s.revive_used and s.phase != Sim.PH_OVER and main.screens.current != "revive", "reward confirmed: the run continues (a repeated reward callback changes nothing)")
+	check(before_near > 0 and near_line_count() == 0, "every stone on the line or within two cells below it is gone", "%d -> %d" % [before_near, near_line_count()])
+	check(int(G.meta.crystals) == wallet, "removed stones pay no crystals")
+	var saved: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(G.SAVE_PATH))
+	check(bool(saved.run.revive_used) and String(saved.rewards.get("revive:" + run_id, {}).get("state", "")) == "applied", "revive used and reward applied are in the same save")
+	check(s.balls > 0 and s.phase == Sim.PH_AIM or s.phase == Sim.PH_UPGRADE, "balls and aiming state kept")
+	# the next crossing ends the run
+	if s.phase == Sim.PH_UPGRADE:
+		main.pick_upgrade(s.upgrade_opts[0])
+	put_stone_at_line()
+	main._at_line()
+	await wait_s(0.3)
+	check(main.screens.current == "over", "second crossing in the same run: straight to the results")
+	var r := G.result
+	var base := int(r.gems)
+	var w0 := int(G.meta.crystals)
+	fake_ads.outcome = "reward"
+	await wait_s(0.3)
+	check(await press(G.t("double_ad")), "results: 'Double Crystals with an Ad' is active")
+	await wait_s(0.4)
+	check(int(G.meta.crystals) == w0 + base and bool(G.result.doubled), "doubled once: +%d more" % base, "%d -> %d" % [w0, int(G.meta.crystals)])
+	check(find_button(G.t("double_ad")) == null and find_button(G.t("doubled", {"n": base})) != null, "the button now shows the doubled amount and cannot be pressed again")
+	await shot("money_01_doubled")
+	main.double_with_ad()
+	await wait_s(0.3)
+	check(int(G.meta.crystals) == w0 + base, "pressing again (or a late callback) pays nothing more")
+	# --- interstitial cadence: free runs, then 3 runs and 180 s of play between ads
+	var inter0 := int(G.ads.shown)
+	check(await press(G.t("play_again")), "Play Again (run 1 finished): no interstitial during the first runs")
+	check(int(G.ads.shown) == inter0 and main.mode == main.M_GAME and main.sim.phase == Sim.PH_AIM, "the next run starts at once")
+	for i in 5:
+		put_stone_at_line()
+		main.sim.revive_used = true
+		main._at_line()
+		await wait_s(0.15)
+		G.add_active_time(40.0)
+		var due := Ads.interstitial_due(bool(G.result.get("rewarded_seen", false)))
+		var n_fin := int(G.ads.finished_total)
+		Ads.preload_interstitial(false)
+		await wait_s(0.2)
+		await press(G.t("play_again"))
+		await wait_s(0.3)
+		log_line("      run %d finished: interstitial due %s, shown so far %d" % [n_fin, str(due), int(G.ads.shown) - inter0])
+	check(int(G.ads.shown) - inter0 == 1, "exactly one interstitial in runs 2-7 (after the 3 free runs, then ≥3 runs and ≥180 s of play)", "%d" % (int(G.ads.shown) - inter0))
+	check(main.mode == main.M_GAME and main.sim.phase == Sim.PH_AIM, "after the interstitial closes the next run starts")
+	# rewarded seen in the run: no interstitial after it
+	G.ads.since_runs = 5
+	G.ads.since_secs = 999.0
+	put_stone_at_line()
+	main._at_line()
+	await wait_s(0.3)
+	fake_ads.outcome = "reward"
+	await press(G.t("revive_ad"))
+	await wait_s(0.5)
+	put_stone_at_line()
+	main._at_line()
+	await wait_s(0.3)
+	var shown_b := int(G.ads.shown)
+	await press(G.t("play_again"))
+	await wait_s(0.3)
+	check(int(G.ads.shown) == shown_b, "a run where a rewarded video was watched is not followed by an interstitial")
+	# no ad ready: Play Again starts at once
+	fake_ads.fill = false
+	G.ads.since_runs = 5
+	G.ads.since_secs = 999.0
+	put_stone_at_line()
+	main.sim.revive_used = true
+	main._at_line()
+	await wait_s(0.3)
+	await press(G.t("play_again"))
+	await wait_s(0.2)
+	check(main.mode == main.M_GAME and main.sim.phase == Sim.PH_AIM and main.screens.current == "", "no interstitial loaded: the next run starts immediately")
+	fake_ads.fill = true
+	# --- Ad-Free bought from the second-chance screen, the run is kept
+	put_stone_at_line()
+	main._at_line()
+	await wait_s(0.3)
+	var hash_before: int = main.sim.state_hash()
+	check(await press(G.t("noads_link")), "second-chance screen: 'Remove ads' opens the Ad-Free sheet")
+	await shot("money_02_noads_sheet")
+	check(find_button(G.t("buy_price", {"price": Store.price("db_no_ads")})) != null, "the sheet lists what Ad-Free includes and shows the Google Play price", Store.price("db_no_ads"))
+	await press(G.t("buy_price", {"price": Store.price("db_no_ads")}))
+	await wait_s(0.5)
+	check(G.is_ad_free() and Store.owned("db_no_ads"), "Ad-Free granted after Google Play confirmed the purchase")
+	await press(G.t("back"))
+	await frames(3)
+	check(main.screens.current == "revive" and main.sim.state_hash() == hash_before, "back on the second-chance screen with the same run")
+	await shot("money_03_revive_adfree")
+	var shows_before: int = fake_ads.shows
+	var req_before: int = Ads.requests
+	check(await press(G.t("revive_free")), "Ad-Free: 'Continue' without a video")
+	await wait_s(0.2)
+	check(main.sim.revive_used and fake_ads.shows == shows_before, "continued without any video shown")
+	put_stone_at_line()
+	main._at_line()
+	await wait_s(0.3)
+	check(main.screens.current == "over", "the limit stays: one second chance per run, also with Ad-Free")
+	var w1 := int(G.meta.crystals)
+	var g1 := int(G.result.gems)
+	check(await press(G.t("double_free")), "Ad-Free: 'Double Crystals' without a video")
+	await wait_s(0.2)
+	check(int(G.meta.crystals) == w1 + g1, "doubled once without a video")
+	G.ads.since_runs = 9
+	G.ads.since_secs = 9999.0
+	await press(G.t("play_again"))
+	await wait_s(0.4)
+	check(Ads.requests == req_before and fake_ads.shows == shows_before and not Ads.interstitial_due(false), "Ad-Free: no ad is requested or shown any more")
+	# --- levels through the screens
+	main.to_menu()
+	await frames(2)
+	G.run = {}
+	main.to_menu()
+	check(await press(G.t("levels")), "menu: Levels opens the level list")
+	check(await press_named("L01"), "level 1 opens its intro card")
+	check(main.screens.current == "intro", "intro shows goal, balls and the volleys for each star")
+	await press(G.t("start"))
+	await frames(5)
+	var routes = JSON.parse_string(FileAccess.get_file_as_string("res://tests/level_routes.json"))
+	var route: Array = routes.levels[0].route
+	var w2 := int(G.meta.crystals)
+	for st in route:
+		await play_volley(float(st.a))
+		if main.sim.phase == Sim.PH_UPGRADE and st.has("up"):
+			main.pick_upgrade(String(st.up))
+	await wait_s(1.3)
+	check(main.screens.current == "won" and int(G.result.stars) == 3, "level 1 won with the 3-star route: 3 stars", "%s %s" % [main.screens.current, str(G.result.get("stars"))])
+	check(bool(G.result.first) and int(G.result.bonus) == 20 and int(G.levels.unlocked) == 2, "first clear: +20 crystals bonus and level 2 unlocked")
+	check(int(G.meta.crystals) == w2 + int(G.result.gems), "crystals of the attempt and the bonus credited together", "%d + %d" % [w2, int(G.result.gems)])
+	await shot("money_04_level_won")
+	await press(G.t("double_free"))
+	check(bool(G.result.doubled), "level result doubled (bonus included)")
+	await press(G.t("next_level"))
+	await frames(3)
+	check(main.screens.current == "intro", "Next Level opens the intro of level 2")
+	await press(G.t("start"))
+	await frames(3)
+	# language switch in the middle of an attempt
+	main.open_pause()
+	await press(G.t("settings"))
+	await press(I18N.native_name("en"))
+	await press("Deutsch")
+	await frames(3)
+	check(G.settings.lang == "de" and main.screens.current == "settings", "language switched to German during the attempt")
+	await press(G.t("back"))
+	await frames(3)
+	check(main.screens.current == "pause" and find_button(G.t("resume")) != null and G.t("resume") == "Weiterspielen", "the pause screen is in German")
+	await shot("money_05_pause_de")
+	await press(G.t("resume"))
+	await frames(3)
+	check(main.hud.depth_label.text == "Level 2" and main.hud.stones_label.text.contains("Steine"), "the HUD switched too", main.hud.stones_label.text)
+	G.set_lang("en")
+	# --- a pending purchase in the shop, then approved
+	main.to_menu()
+	await press(G.t("shop"))
+	main.screens.shop_focus["ball"] = "amber"
+	main.screens.rebuild()
+	await frames(3)
+	fake_play.next["db_ball_amber"] = "pending"
+	await press(G.t("buy_price", {"price": Store.price("db_ball_amber")}))
+	await wait_s(0.5)
+	check(not G.owns("ball", "amber") and find_button(G.t("pending_short")) != null, "pending payment: nothing granted, the button says it waits for payment")
+	await shot("money_06_pending")
+	fake_play.approve_pending()
+	Store._notification(NOTIFICATION_APPLICATION_RESUMED)
+	await wait_s(0.5)
+	check(G.owns("ball", "amber"), "payment completed: on return to the game the finish is granted")
+	# --- support the creator
+	main.to_menu()
+	await press(G.t("support"))
+	await press(G.t("give_price", {"price": Store.price("db_support_small")}))
+	await wait_s(0.5)
+	var support_left := 0
+	for tok in fake_play.account:
+		if String(fake_play.account[tok].product_ids[0]).begins_with("db_support"):
+			support_left += 1
+	check(main.screens.current == "thanks" and int(G.support.count) == 1 and support_left == 0, "support: thanks shown, recorded once, consumed on Google Play")
+	await shot("money_07_thanks")
+	# --- reinstall: restore purchases from the settings screen
+	var owned_before: Array = G.ent.products.duplicate()
+	G.reset_defaults()
+	G.save_game()
+	main.to_menu()
+	await press(G.t("settings"))
+	await press(G.t("restore"))
+	await wait_s(0.6)
+	check(G.is_ad_free() and G.owns("ball", "amber") and G.ent.products.size() == owned_before.size(), "after a reinstall 'Restore Purchases' brings back Ad-Free and the amber balls")
+	# a network error is not an absence
+	fake_play.network_ok = false
+	Store.restore()
+	await wait_s(0.5)
+	check(G.is_ad_free() and G.owns("ball", "amber"), "restore without network keeps the entitlements")
+	fake_play.network_ok = true
+	# a confirmed refund removes it
+	fake_play.refund("db_ball_amber")
+	Store.restore()
+	await wait_s(0.5)
+	check(not G.owns("ball", "amber") and G.selected("ball") == "classic", "a refund confirmed by Google Play removes the finish and falls back to Classic")
+	G.reset_defaults()
+	G.save_game()
+	finish()

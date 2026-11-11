@@ -1,15 +1,21 @@
 extends Node
 ## Deep Bounce controller: layout (9:16 world fitted into the safe area), touch aiming, the fixed-step
 ## volley loop, turning simulation events into effects and sounds, saving, tutorial hints, screens.
+## Two modes share one save slot: an endless run or a level attempt ("Continue" restores either).
+## Monetization flows live here too: the second chance at the red line, doubled crystals on the results
+## screen, interstitials after "Play Again" / "Next Level" / "Retry", Ad-Free and Google Play purchases.
 
 const World := preload("res://scripts/world.gd")
 const Hud := preload("res://scripts/hud.gd")
 const Screens := preload("res://scripts/screens.gd")
 const QA := preload("res://scripts/qa.gd")
+const CATALOG := preload("res://scripts/catalog.gd")
 
 enum { M_MENU, M_GAME }
 
 var sim := Sim.new()
+var level: Dictionary = {}       # definition of the level being played (level mode)
+var levels: Array = []           # the 50 level definitions, res://data/levels.json
 var world: Node2D
 var ui_root: Control
 var hud: Control
@@ -21,9 +27,11 @@ var volley_time := 0.0
 var boost := false
 var flying_gems := 0
 var over_timer := -1.0
+var won_timer := -1.0
 var upgrade_timer := -1.0
 var layout_scale := 1.0
 var layout_origin := Vector2.ZERO
+var save_timer := 0.0
 
 # aiming
 var touch_id := -1
@@ -44,9 +52,10 @@ var perf_worst := 0.0
 
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color("082b30"))
+	levels = load_levels()
 	world = World.new()
-	add_child(world)
 	world.sim = sim
+	add_child(world)
 	var canvas := CanvasLayer.new()
 	canvas.layer = 5
 	add_child(canvas)
@@ -68,24 +77,67 @@ func _ready() -> void:
 		G.sfx("gem", -8.0, randf_range(0.95, 1.1), 40))
 	get_viewport().size_changed.connect(_layout)
 	G.lang_changed.connect(_on_lang)
+	G.profile_changed.connect(_on_profile)
+	Store.purchase_result.connect(_on_purchase_result)
+	Store.restore_result.connect(_on_restore_result)
+	Store.changed.connect(func(): screens.refresh_store())
+	Ads.changed.connect(func(): screens.refresh_ads())
+	Ads.reward_earned.connect(_on_reward_earned)
+	Ads.rewarded_closed.connect(_on_rewarded_closed)
 	_layout()
 	# menu background: the saved run, or a fresh decorative field
 	if G.has_run():
 		sim.from_dict(G.run)
+		level = level_by_id(sim.level_id) if sim.mode == "level" else {}
 	else:
 		sim.new_run(12345)
+	world.set_theme(chapter_of(level))
 	world.aim_angle = sim.aim
 	world.sync_blocks(true)
 	world.scroll = sim.depth * Sim.CELL
 	world.scroll_target = world.scroll
 	hud.visible = false
-	screens.show_menu()
+	Store.start()
+	Ads.start()
+	if G.migrated_from > 0:
+		print("save migrated from format %d" % G.migrated_from)
+	var qa_mode := false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--qa"):
-			qa = QA.new()
-			qa.main = self
-			add_child(qa)
-			break
+			qa_mode = true
+	if not qa_mode and not G.result.is_empty():
+		# the app closed on a results screen: it comes back with its buttons (a recorded reward is paid)
+		_reopen_result()
+	else:
+		screens.show_menu()
+	if qa_mode:
+		qa = QA.new()
+		qa.main = self
+		add_child(qa)
+
+# ---------------------------------------------------------------- levels data
+
+static func load_levels() -> Array:
+	var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/levels.json"))
+	if typeof(d) != TYPE_DICTIONARY:
+		return []
+	return d.get("levels", [])
+
+func level_by_id(id: String) -> Dictionary:
+	for l in levels:
+		if l.id == id:
+			return l
+	return {}
+
+func level_n(n: int) -> Dictionary:
+	if n < 1 or n > levels.size():
+		return {}
+	return levels[n - 1]
+
+static func chapter_of(lv: Dictionary) -> int:
+	if lv.is_empty():
+		return 0
+	return clampi((int(lv.n) - 1) / 10, 0, 4)
 
 # ---------------------------------------------------------------- layout
 
@@ -108,7 +160,6 @@ func _layout() -> void:
 	ui_root.position = layout_origin
 	ui_root.scale = Vector2(s, s)
 	ui_root.size = Vector2(720.0, safe.size.y / s)
-	# the panel hides the stones below the floor; on tall screens the gap shows upcoming rows in fog
 	_update_gem_target()
 
 func _update_gem_target() -> void:
@@ -119,30 +170,69 @@ func _update_gem_target() -> void:
 func to_world(p: Vector2) -> Vector2:
 	return (p - layout_origin) / layout_scale
 
-# ---------------------------------------------------------------- run flow
+# ---------------------------------------------------------------- starting and continuing
 
-func menu_play() -> void:
+func saved_kind() -> String:
+	## "endless", "level" or "" (nothing to continue)
+	if not G.has_run():
+		return ""
+	return String(G.run.get("mode", "endless"))
+
+func menu_endless() -> void:
 	if G.has_run():
-		screens.confirm(G.t("new_run_q"), func(): start_new_run())
+		var q := "new_run_q" if saved_kind() == "endless" else "new_run_level_q"
+		screens.confirm(G.t(q), func(): start_new_run())
 	else:
 		start_new_run()
+
+func menu_level(n: int) -> void:
+	## From the level list: the intro card first; a saved attempt of another level or a run is replaced.
+	var lv := level_n(n)
+	if lv.is_empty() or n > int(G.levels.unlocked):
+		return
+	if G.has_run() and not (saved_kind() == "level" and String(G.run.get("level", {}).get("id", "")) == lv.id):
+		var q := "replace_run_q" if saved_kind() == "endless" else "replace_level_q"
+		screens.confirm(G.t(q), func(): screens.show_level_intro(n))
+	else:
+		screens.show_level_intro(n)
 
 func menu_continue() -> void:
 	if not G.has_run():
 		return
 	sim.from_dict(G.run)
+	level = level_by_id(sim.level_id) if sim.mode == "level" else {}
+	if sim.mode == "level" and level.is_empty():
+		# the level no longer exists in this version: nothing sensible to continue
+		G.run = {}
+		G.save_game()
+		screens.show_menu()
+		return
 	_enter_game()
 	if sim.phase == Sim.PH_VOLLEY:
 		open_pause()
 	elif sim.phase == Sim.PH_UPGRADE:
 		screens.show_upgrade(sim.upgrade_opts)
 	elif sim.phase == Sim.PH_OVER:
-		_game_over()
+		_at_line()
+	elif sim.phase == Sim.PH_WON:
+		_finish()
 
 func start_new_run(seed := -1) -> void:
 	if seed < 0:
 		seed = int(Time.get_unix_time_from_system() * 1000.0) ^ randi()
 	sim.new_run(seed)
+	sim.run_id = G.new_attempt_id()
+	level = {}
+	G.store_run(sim)
+	_enter_game()
+
+func start_level(n: int) -> void:
+	var lv := level_n(n)
+	if lv.is_empty():
+		return
+	level = lv
+	sim.new_level(lv)
+	sim.run_id = G.new_attempt_id()
 	G.store_run(sim)
 	_enter_game()
 
@@ -154,16 +244,19 @@ func _enter_game() -> void:
 	volley_time = 0.0
 	flying_gems = 0
 	over_timer = -1.0
+	won_timer = -1.0
 	upgrade_timer = -1.0
 	world.fx.clear()
 	world.clear_blocks()
+	world.set_theme(chapter_of(level))
 	world.sync_blocks(true)
 	world.aim_angle = sim.aim
 	world.scroll = sim.depth * Sim.CELL
 	world.scroll_target = world.scroll
 	world.prev_pos.clear()
 	world.trails.clear()
-	world.set_skin(G.meta.skin)
+	world.set_skin(G.selected("cannon"))
+	world.set_ball_skin(G.selected("ball"), true)
 	world.danger = sim.danger_level()
 	hud.visible = true
 	hud.hide_hint()
@@ -171,9 +264,11 @@ func _enter_game() -> void:
 	tut_hint_step = -1
 	_update_gem_target()
 	G.sfx("start", -4.0)
+	if sim.danger_level() >= 1:
+		Ads.load_ad("revive")
 
 func to_menu() -> void:
-	if mode == M_GAME and sim.phase != Sim.PH_OVER:
+	if mode == M_GAME and sim.phase != Sim.PH_OVER and sim.phase != Sim.PH_WON:
 		G.store_run(sim)
 	mode = M_MENU
 	paused = false
@@ -183,7 +278,9 @@ func to_menu() -> void:
 	screens.show_menu()
 
 func open_pause() -> void:
-	if mode != M_GAME or sim.phase == Sim.PH_OVER or over_timer >= 0.0:
+	if mode != M_GAME or sim.phase == Sim.PH_OVER or sim.phase == Sim.PH_WON or over_timer >= 0.0 or won_timer >= 0.0:
+		return
+	if Ads.showing != "":
 		return
 	paused = true
 	_cancel_aim()
@@ -194,17 +291,25 @@ func open_pause() -> void:
 func resume_from_pause() -> void:
 	screens.close()
 	paused = false
+	world.set_skin(G.selected("cannon"))
+	world.set_ball_skin(G.selected("ball"))
 	if sim.phase == Sim.PH_UPGRADE:
+		paused = true
 		screens.show_upgrade(sim.upgrade_opts)
 
 func end_run_now() -> void:
+	## "End run" from the pause screen: the depth reached counts, no second chance.
 	screens.close()
 	if sim.phase == Sim.PH_VOLLEY:
-		# the balls in flight are recalled; the run ends at the depth reached
 		sim.recall_all()
 		_consume_events()
 	sim.phase = Sim.PH_OVER
-	_game_over()
+	_finish()
+
+func retry_level_now() -> void:
+	## "Restart level" from the pause screen: the attempt ends without a result, the level starts again.
+	screens.close()
+	start_level(int(level.get("n", 1)))
 
 func pick_upgrade(id: String) -> void:
 	if sim.choose_upgrade(id):
@@ -216,8 +321,10 @@ func pick_upgrade(id: String) -> void:
 		paused = false
 		world.fx.float_text(Vector2(360, 700), G.t("up_" + id), Color("7fe3d6"), 40)
 
-func apply_skin() -> void:
-	world.set_skin(G.meta.skin)
+func apply_skins() -> void:
+	## A finish chosen in the shop: at once in the menu, from the next volley in a run.
+	world.set_skin(G.selected("cannon"))
+	world.set_ball_skin(G.selected("ball"), mode == M_MENU)
 
 func preview_shake() -> void:
 	world.add_shake(0.8)
@@ -226,20 +333,219 @@ func tutorial_reset() -> void:
 	tut_hint_step = -1
 	tut_hit_seen = false
 
-func _game_over() -> void:
+# ---------------------------------------------------------------- the red line: second chance
+
+func _at_line() -> void:
+	## A stone crossed the red line. The game stands still with everything saved; the player may continue
+	## once (a rewarded video, or free with Ad-Free) or end the run.
 	paused = true
 	hud.hide_hint()
 	world.aim_visible = false
-	var gems := sim.run_gems
-	var broken := int(sim.stats.destroyed)
-	var depth := sim.depth
-	var record := G.finish_run(sim)
-	screens.show_gameover({"record": record, "depth": depth, "gems": gems, "broken": broken})
+	G.store_run(sim)
+	var id := sim.run_id
+	if G.reward_state("revive", id) == "earned":
+		# the reward was confirmed before the app closed: it is applied now
+		_apply_revive()
+		return
+	if sim.revive_used or not can_offer_revive():
+		_finish()
+		return
+	Ads.load_ad("revive")
+	screens.show_revive()
+
+func can_offer_revive() -> bool:
+	return not sim.revive_used and (G.is_ad_free() or Ads.status("revive") != "off")
+
+func revive_with_ad() -> void:
+	if G.is_ad_free():
+		if G.mark_reward_earned("revive", sim.run_id):
+			_apply_revive()
+		return
+	if not Ads.show_rewarded("revive", sim.run_id):
+		Ads.load_ad("revive")
+		screens.toast(G.t("ad_not_ready"))
+		screens.refresh_ads()
+
+func decline_revive() -> void:
+	_finish()
+
+func _apply_revive() -> void:
+	if sim.phase != Sim.PH_OVER or sim.revive_used:
+		G.apply_reward_mark("revive", sim.run_id)
+		G.save_game()
+		return
+	if not G.is_ad_free():
+		sim.rewarded_seen = true
+	sim.revive()
+	_consume_events()
+	G.apply_reward_mark("revive", sim.run_id)
+	G.store_run(sim)          # revive used, stones removed, reward applied: one save
+	world.sync_blocks()
+	world.danger = sim.danger_level()
+	screens.close()
+	paused = false
+	world.fx.float_text(Vector2(360, 520), G.t("revived"), Color("7fe3d6"), 40)
+	G.sfx("upgrade", -3.0)
+	if sim.phase == Sim.PH_UPGRADE:
+		paused = true
+		screens.show_upgrade(sim.upgrade_opts)
+
+# ---------------------------------------------------------------- results
+
+func _finish() -> void:
+	## Ends the run / attempt once and shows its results.
+	paused = true
+	hud.hide_hint()
+	world.aim_visible = false
+	G.finish_run(sim, level)
+	_show_result()
+
+func _show_result() -> void:
+	var r := G.result
+	if r.is_empty():
+		screens.show_menu()
+		return
+	Ads.preload_interstitial(bool(r.get("rewarded_seen", false)))
+	if int(r.gems) > 0 and not bool(r.doubled):
+		Ads.load_ad("double")
+	if r.mode == "endless":
+		screens.show_gameover()
+	elif r.won:
+		screens.show_level_won()
+	else:
+		screens.show_level_lost()
+
+func _reopen_result() -> void:
+	var r := G.result
+	if G.reward_state("double", String(r.id)) == "earned":
+		G.apply_double(String(r.id))
+	if r.mode == "level":
+		level = level_by_id(String(r.level_id))
+	mode = M_GAME
+	paused = true
+	hud.visible = false
+	_show_result()
+
+func double_with_ad() -> void:
+	var r := G.result
+	if r.is_empty() or bool(r.doubled) or int(r.gems) <= 0:
+		return
+	if G.is_ad_free():
+		if G.mark_reward_earned("double", String(r.id), int(r.gems)):
+			_apply_double()
+		return
+	if not Ads.show_rewarded("double", String(r.id)):
+		Ads.load_ad("double")
+		screens.toast(G.t("ad_not_ready"))
+		screens.refresh_ads()
+
+func _apply_double() -> void:
+	var r := G.result
+	if not G.is_ad_free():
+		r["rewarded_seen"] = true
+	var paid := G.apply_double(String(r.id))
+	if paid > 0:
+		G.sfx("upgrade", -3.0)
+		screens.toast(G.t("doubled_toast", {"n": paid}))
+	screens.rebuild()
+
+func _on_reward_earned(placement: String, attempt: String) -> void:
+	## The SDK confirmed the reward (already recorded by Ads): applied once.
+	if placement == "revive" and attempt == sim.run_id:
+		_apply_revive()
+	elif placement == "double" and attempt == String(G.result.get("id", "")):
+		_apply_double()
+
+func _on_rewarded_closed(placement: String, attempt: String, earned: bool, error: String) -> void:
+	if earned:
+		return
+	# closed early or could not be shown: back to the same choice
+	screens.toast(G.t("ad_no_reward") if error == "no_reward" else G.t("ad_failed"))
+	Ads.load_ad(placement)
+	screens.rebuild()
+
+func play_again() -> void:
+	var seen := bool(G.result.get("rewarded_seen", false))
+	screens.close()
+	G.close_result()
+	Ads.show_interstitial_then(seen, func(): start_new_run())
+
+func next_level() -> void:
+	var n := int(G.result.get("level_n", level.get("n", 1)))
+	var seen := bool(G.result.get("rewarded_seen", false))
+	screens.close()
+	G.close_result()
+	Ads.show_interstitial_then(seen, func(): screens.show_level_intro(mini(levels.size(), n + 1)))
+
+func retry_level() -> void:
+	var n := int(G.result.get("level_n", level.get("n", 1)))
+	var seen := bool(G.result.get("rewarded_seen", false))
+	screens.close()
+	G.close_result()
+	Ads.show_interstitial_then(seen, func(): start_level(n))
+
+func result_to_levels() -> void:
+	G.close_result()
+	mode = M_MENU
+	hud.visible = false
+	screens.show_levels()
+
+func result_to_menu() -> void:
+	G.close_result()
+	mode = M_MENU
+	hud.visible = false
+	screens.show_menu()
+
+# ---------------------------------------------------------------- purchases
+
+func _on_purchase_result(pid: String, status: String) -> void:
+	var p: Dictionary = CATALOG.product(pid)
+	match status:
+		"granted":
+			G.sfx("buy")
+			if p.get("grants", "") == "no_ads":
+				Ads.disable()
+				screens.toast(G.t("noads_active"))
+			elif p.get("type", "") == "consumable":
+				screens.show_thanks()
+				return
+			else:
+				var sk: Array = CATALOG.skin_for_product(pid)
+				if not sk.is_empty():
+					G.select_skin(sk[0], sk[1])
+					apply_skins()
+				screens.toast(G.t("bought"))
+		"pending":
+			screens.toast(G.t("purchase_pending"), 4.0)
+		"cancelled":
+			pass
+		"already_owned":
+			screens.toast(G.t("already_owned"))
+		"unavailable":
+			screens.toast(G.t("store_unavailable"))
+		_:
+			screens.toast(G.t("purchase_error"))
+	screens.rebuild()
+
+func _on_restore_result(status: String, count: int) -> void:
+	match status:
+		"ok":
+			screens.toast(G.tn("restored_n", count))
+		"none":
+			screens.toast(G.t("restored_none"))
+		_:
+			screens.toast(G.t("restore_error"))
+	screens.rebuild()
+
+func _on_profile() -> void:
+	if G.is_ad_free():
+		Ads.disable()
+	apply_skins()
 
 # ---------------------------------------------------------------- input
 
 func _unhandled_input(event: InputEvent) -> void:
-	if mode != M_GAME or paused or screens.is_open():
+	if mode != M_GAME or paused or screens.is_open() or Ads.showing != "":
 		return
 	if event is InputEventScreenTouch:
 		if event.pressed and touch_id < 0:
@@ -279,6 +585,7 @@ func _cancel_aim() -> void:
 	world.aim_visible = false
 
 func _fire(angle: float) -> void:
+	world.apply_pending()
 	if not sim.fire(angle):
 		return
 	hud.hide_info()
@@ -295,10 +602,22 @@ func _fire(angle: float) -> void:
 func _process(dt: float) -> void:
 	if mode != M_GAME:
 		return
+	if Ads.showing != "":
+		return       # a full-screen ad is up: the game stands still
+	if not paused and not screens.is_open() and (sim.phase == Sim.PH_AIM or sim.phase == Sim.PH_VOLLEY):
+		G.add_active_time(dt)
+		save_timer += dt
+		if save_timer > 20.0 and sim.phase == Sim.PH_AIM:
+			save_timer = 0.0
+			G.save_game()
 	if over_timer >= 0.0:
 		over_timer -= dt
 		if over_timer < 0.0:
-			_game_over()
+			_at_line()
+	if won_timer >= 0.0:
+		won_timer -= dt
+		if won_timer < 0.0:
+			_finish()
 	if upgrade_timer >= 0.0:
 		upgrade_timer -= dt
 		if upgrade_timer < 0.0 and sim.phase == Sim.PH_UPGRADE:
@@ -373,6 +692,9 @@ func _consume_events() -> void:
 				world.add_shake(0.22 * sqrt(float(e.w * e.h)))
 				G.sfx("break", -3.0, randf_range(0.9, 1.08), 50)
 				G.vibrate(22)
+			"cleared":
+				# removed by the second chance: crumbles without crystals
+				world.fx.break_stone(Vector2(e.x, e.y), e.w, e.h, 0)
 			"zap":
 				world.fx.zap(Vector2(e.x, e.y), Vector2(e.x2, e.y2))
 				G.sfx("zap", -5.0, randf_range(0.95, 1.1), 50)
@@ -389,9 +711,14 @@ func _consume_events() -> void:
 				G.sfx("gameover", -2.0)
 				G.vibrate(220)
 				world.add_shake(1.0)
+				Ads.load_ad("revive")
+			"won":
+				won_timer = 0.9
+				G.sfx("upgrade", -2.0)
+				G.vibrate(60)
 			"bonus":
 				G.add_crystals(sim.claim())
-				world.fx.float_text(Vector2(360, 640), G.t("maxed_bonus", [e.g]), Color("7fe3d6"), 30)
+				world.fx.float_text(Vector2(360, 640), G.t("maxed_bonus", {"n": e.g}), Color("7fe3d6"), 30)
 				G.sfx("upgrade", -4.0)
 	world.sync_blocks()
 
@@ -402,6 +729,7 @@ func _on_volley_end() -> void:
 	perf_frames = 0
 	perf_sum = 0.0
 	perf_worst = 0.0
+	world.apply_pending()
 	world.scroll_target = sim.depth * Sim.CELL
 	world.sync_blocks()
 	world.danger = sim.danger_level()
@@ -410,9 +738,11 @@ func _on_volley_end() -> void:
 	if world.danger == 2 and sim.phase != Sim.PH_OVER:
 		G.sfx("danger", -4.0)
 		G.vibrate(60)
+	if world.danger >= 1 and not sim.revive_used:
+		Ads.load_ad("revive")      # ready before it may be needed
 	if sim.phase == Sim.PH_UPGRADE:
 		upgrade_timer = 0.45
-	if sim.phase != Sim.PH_OVER:
+	if sim.phase != Sim.PH_OVER and sim.phase != Sim.PH_WON:
 		G.store_run(sim)
 
 # ---------------------------------------------------------------- tutorial
@@ -464,6 +794,7 @@ func _hint_strength(id: int) -> void:
 			hud.hide_hint())
 
 func _on_lang() -> void:
+	hud.refresh()
 	hud.update_state(sim, flying_gems, 1, false)
 	if tut_hint_step >= 0:
 		var s := tut_hint_step
@@ -475,6 +806,8 @@ func _on_lang() -> void:
 
 func _go_back() -> void:
 	## Android back button: never lose a run by accident.
+	if Ads.showing != "":
+		return
 	if screens.is_open():
 		match screens.current:
 			"menu":
@@ -482,7 +815,7 @@ func _go_back() -> void:
 				get_tree().quit()
 			"pause":
 				resume_from_pause()
-			"upgrade", "over":
+			"upgrade", "over", "won", "lost", "revive", "allclear":
 				pass
 			_:
 				screens.back()
@@ -494,9 +827,13 @@ func _notification(what: int) -> void:
 		_go_back()
 		return
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_CLOSE_REQUEST:
-		if mode == M_GAME and sim.phase != Sim.PH_OVER and over_timer < 0.0:
+		if Ads.showing != "" or Store.flow_pid != "":
+			# our own ad or the Google Play window took the focus: the state is already saved
+			G.save_game()
+			return
+		if mode == M_GAME and sim.phase != Sim.PH_OVER and sim.phase != Sim.PH_WON and over_timer < 0.0 and won_timer < 0.0:
 			G.store_run(sim)   # full snapshot, balls in flight included
 			if not paused and what != NOTIFICATION_WM_CLOSE_REQUEST:
 				open_pause()
-		elif mode == M_MENU:
+		else:
 			G.save_game()

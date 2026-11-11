@@ -99,8 +99,8 @@ func _ready() -> void:
 	hud.visible = false
 	Store.start()
 	Ads.start()
-	if G.migrated_from > 0:
-		print("save migrated from format %d" % G.migrated_from)
+	G.diag("[game] start %s, save format %d%s, language %s" % [G.VERSION, G.SAVE_VERSION,
+		(" (migrated from %d)" % G.migrated_from) if G.migrated_from > 0 else "", G.settings.lang])
 	var qa_mode := false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--qa"):

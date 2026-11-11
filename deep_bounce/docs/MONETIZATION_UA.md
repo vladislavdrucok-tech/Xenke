@@ -181,6 +181,14 @@ https://developers.google.com/admob/android/privacy/play-data-disclosure
 8. Реклама: з `use_test_ads=true` мають показуватись тестові відео з написом «Test Ad»; у ЄЕЗ (або з
    `debug_geography_eea=true` і своїм test device ID) — форма згоди UMP і кнопка конфіденційності в налаштуваннях.
 
+**Діагностика на телефоні.** Гра пише події покупок і реклами (підключення до Google Play, помилки, видачу,
+acknowledge/consume, згоду UMP, завантаження й помилки реклами, міграцію збереження) у файл без персональних
+даних. Прочитати з комп'ютера (USB-налагодження; для збірки з Play — лише з debuggable-збірки або через
+root, тому зручніше на тестовому телефоні з APK):
+`adb shell run-as com.deepbounce.game cat files/diag.log`.
+Якщо в ньому `Google Play Billing plugin: MISSING` або `DeepBounceAds plugin: MISSING` — збірка без плагінів:
+магазин показує «Недоступно», реклама не запитується, симулятори для ПК на Android **ніколи** не вмикаються.
+
 ## 8. Чекліст перед публікацією
 
 - [ ] `config/monetization.cfg`: `use_test_ads=false`, 4 реальні ID AdMob, `license_key`.

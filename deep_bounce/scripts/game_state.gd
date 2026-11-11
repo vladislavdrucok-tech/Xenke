@@ -418,6 +418,25 @@ static func migrate(data: Dictionary) -> Dictionary:
 		data["v"] = 4
 	return data
 
+# ---------------------------------------------------------------- diagnostics
+
+const DIAG_PATH := "user://diag.log"
+
+func diag(line: String) -> void:
+	## Billing / ads / save events with a timestamp in user://diag.log (also printed). On a phone the file is
+	## read with `adb shell run-as com.deepbounce.game cat files/diag.log`; it holds no personal data.
+	print(line)
+	var mode := FileAccess.READ_WRITE if FileAccess.file_exists(DIAG_PATH) else FileAccess.WRITE
+	var f := FileAccess.open(DIAG_PATH, mode)
+	if f == null:
+		return
+	if f.get_length() > 65536:
+		f.close()
+		f = FileAccess.open(DIAG_PATH, FileAccess.WRITE)
+	f.seek_end()
+	f.store_line("%s %s" % [Time.get_datetime_string_from_system(), line])
+	f.close()
+
 # ---------------------------------------------------------------- feedback
 
 func _setup_audio() -> void:

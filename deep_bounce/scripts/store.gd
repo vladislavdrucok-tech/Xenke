@@ -19,6 +19,7 @@ signal restore_result(status: String, count: int)     # ok, none, error
 const CATALOG := preload("res://scripts/catalog.gd")
 const PlayBackend := preload("res://scripts/billing_play.gd")
 const FakeBackend := preload("res://scripts/billing_fake.gd")
+const NoBackend := preload("res://scripts/billing_none.gd")
 const PACKAGE := "com.deepbounce.game"
 const PURCHASED := 1
 const PENDING := 2
@@ -50,8 +51,10 @@ func _ready() -> void:
 	var cfg := ConfigFile.new()
 	cfg.load("res://config/monetization.cfg")
 	license_key = String(cfg.get_value("billing", "license_key", ""))
-	if OS.get_name() == "Android" and Engine.has_singleton("GodotGooglePlayBilling"):
-		use_backend(PlayBackend.new())
+	if OS.get_name() == "Android":
+		# on a phone only the real Google Play is ever used; without its plugin nothing can be bought
+		use_backend(PlayBackend.new() if Engine.has_singleton("GodotGooglePlayBilling") else NoBackend.new())
+		_log("Google Play Billing plugin: %s" % ("found" if Engine.has_singleton("GodotGooglePlayBilling") else "MISSING"))
 	else:
 		use_backend(FakeBackend.new())   # desktop and tests: a simulated Google Play
 	if license_key == "":
@@ -80,7 +83,10 @@ func _log(s: String) -> void:
 	log_lines.append(s)
 	if log_lines.size() > 200:
 		log_lines.remove_at(0)
-	print("[store] ", s)
+	if G.test_no_save:
+		print("[store] ", s)
+	else:
+		G.diag("[store] " + s)
 
 # ---------------------------------------------------------------- connection
 

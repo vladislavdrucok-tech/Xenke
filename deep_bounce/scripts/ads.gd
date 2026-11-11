@@ -15,6 +15,7 @@ signal privacy_changed
 
 const AndroidAds := preload("res://scripts/ads_android.gd")
 const FakeAds := preload("res://scripts/ads_fake.gd")
+const NoAds := preload("res://scripts/ads_none.gd")
 const LOAD_TIMEOUT_MS := 30000
 
 var backend: Node
@@ -35,10 +36,12 @@ var _inter_cb := Callable()
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	cfg.load("res://config/monetization.cfg")
-	if OS.get_name() == "Android" and Engine.has_singleton("DeepBounceAds"):
-		use_backend(AndroidAds.new())
+	if OS.get_name() == "Android":
+		# on a phone only the real SDK is ever used; without its plugin no ad is requested or shown
+		use_backend(AndroidAds.new() if Engine.has_singleton("DeepBounceAds") else NoAds.new())
+		G.diag("[ads] DeepBounceAds plugin: " + ("found" if Engine.has_singleton("DeepBounceAds") else "MISSING"))
 	else:
-		use_backend(FakeAds.new())
+		use_backend(FakeAds.new())     # desktop and tests
 
 func use_backend(b: Node) -> void:
 	if backend:
@@ -90,6 +93,7 @@ func _on_consent(can: bool, privacy: bool, error: String) -> void:
 	privacy_required = privacy
 	if error != "":
 		print("[ads] consent: ", error)
+	G.diag("[ads] consent finished: can_request=%s privacy_required=%s %s" % [can, privacy, error])
 	changed.emit()
 	privacy_changed.emit()
 
@@ -162,6 +166,7 @@ func _process(_dt: float) -> void:
 			changed.emit()
 
 func _on_loaded(_kind: String, u: String) -> void:
+	G.diag("[ads] loaded " + u)
 	loading.erase(u)
 	failed.erase(u)
 	if G.is_ad_free():
@@ -173,7 +178,7 @@ func _on_load_failed(_kind: String, u: String, code: int, msg: String) -> void:
 	loading.erase(u)
 	loaded.erase(u)
 	failed[u] = code
-	print("[ads] load failed %s %d %s" % [u, code, msg])
+	G.diag("[ads] load failed %s %d %s" % [u, code, msg])
 	changed.emit()
 
 # ---------------------------------------------------------------- rewarded
@@ -204,7 +209,7 @@ func _on_showed(_kind: String, _u: String) -> void:
 
 func _on_show_failed(kind: String, _u: String, code: int, msg: String) -> void:
 	G.mute_for_ad(false)
-	print("[ads] show failed %s %d %s" % [kind, code, msg])
+	G.diag("[ads] show failed %s %d %s" % [kind, code, msg])
 	_finish(false, "show_failed")
 
 func _on_dismissed(_kind: String, _u: String) -> void:

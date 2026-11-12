@@ -13,7 +13,7 @@ signal profile_changed
 const I18N := preload("res://scripts/i18n.gd")
 const CATALOG := preload("res://scripts/catalog.gd")
 const SAVE_PATH := "user://deep_bounce.save"
-const VERSION := "1.1.0"
+const VERSION := "1.1.1"
 const SAVE_VERSION := 4
 const FIRST_CLEAR := [20, 25, 30, 35, 40]     # first-clear bonus per chapter (levels 1-10, 11-20, …)
 

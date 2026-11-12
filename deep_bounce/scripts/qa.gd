@@ -74,6 +74,8 @@ func _run() -> void:
 			await _start()
 		"money":
 			await _money()
+		"store":
+			await _store()
 		"s29":
 			await load("res://scripts/qa_s29.gd").new().run(self)
 		_:
@@ -996,4 +998,99 @@ func _money() -> void:
 	check(not G.owns("ball", "amber") and G.selected("ball") == "classic", "a refund confirmed by Google Play removes the finish and falls back to Classic")
 	G.reset_defaults()
 	G.save_game()
+	finish()
+
+
+# ---------------------------------------------------------------- Google Play screenshots
+
+func _store() -> void:
+	## Six store screenshots per language at the window size (1080x1920 for Play): endless volley, level in
+	## flight, level list, shop, level won, upgrade choice. Nothing is saved.
+	var langs: Array = ["en"]
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--langs="):
+			langs = Array(a.substr(8).split(","))
+	var fmt := {"en": "$%s", "uk": "%s грн", "pl": "%s zł", "de": "%s €", "es": "%s €", "fr": "%s €", "it": "%s €",
+		"pt_BR": "R$ %s", "tr": "₺%s", "ja": "¥%s", "ko": "₩%s", "zh_CN": "¥%s"}
+	G.test_no_save = true
+	G.meta.tutorial = 6
+	G.meta.best = 64
+	G.cos.balls = ["classic", "copper", "teal", "amber"]
+	G.cos.cannons = ["classic", "ember", "brass"]
+	G.levels = {"unlocked": 24, "stars": {}, "first": {}, "best_volleys": {}}
+	for i in 23:
+		G.levels.stars["L%02d" % (i + 1)] = [3, 3, 3, 2, 3, 3, 2, 3, 3, 3, 3, 2, 3, 3, 1, 3, 3, 2, 3, 3, 2, 3, 3][i]
+		G.levels.first["L%02d" % (i + 1)] = "store"
+	var routes = JSON.parse_string(FileAccess.get_file_as_string("res://tests/level_routes.json"))
+	for lang in langs:
+		var fake: Node = Store.backend
+		if "currency_format" in fake:
+			fake.currency_format = fmt.get(lang, "$%s")
+			Store.refresh_details()
+		G.set_lang(lang)
+		G.meta.crystals = 1280
+		await frames(4)
+		# 1 endless: the reference board mid-volley with amber balls
+		G.cos.ball = "amber"
+		G.cos.cannon = "brass"
+		main.start_new_run(4242)
+		build_ref_board()
+		main.world.set_skin("brass")
+		main.world.set_ball_skin("amber", true)
+		main.world.clear_blocks()
+		main.world.sync_blocks(true)
+		main.world.scroll = 42 * Sim.CELL
+		main.world.scroll_target = main.world.scroll
+		main.hud.hide_hint()
+		await frames(4)
+		var s: Sim = main.sim
+		s.fire(0.92)
+		main.paused = true
+		step_ticks(70)
+		await frames(6)
+		await shot("%s_1_endless" % lang)
+		# 2 a level in flight (chapter 3 look)
+		G.cos.ball = "teal"
+		G.cos.cannon = "classic"
+		main.start_level(23)
+		main.world.set_ball_skin("teal", true)
+		main.world.set_skin("classic")
+		main.paused = true
+		var r: Array = routes.levels[22].route
+		main.sim.fire(float(r[0].a))
+		main.world.aim_angle = float(r[0].a)
+		step_ticks(95)
+		await frames(6)
+		await shot("%s_2_level" % lang)
+		main.paused = false
+		# 3 level list
+		main.screens.show_levels()
+		await frames(6)
+		await shot("%s_3_levels" % lang)
+		# 4 shop with the animated preview
+		main.screens.shop_focus = {"ball": "obsidian", "cannon": "crystal_engine"}
+		main.screens.show_shop("ball")
+		await frames(40)
+		await shot("%s_4_shop" % lang)
+		# 5 level won
+		G.result = {"id": "store-%s" % lang, "mode": "level", "won": true, "depth": 9, "record": false, "gems": 58, "bonus": 30,
+			"broken": 41, "volleys": 6, "stars": 3, "first": true, "level_id": "L23", "level_n": 23, "doubled": false, "revived": false, "rewarded_seen": false}
+		Ads.load_ad("double")
+		await get_tree().create_timer(0.3).timeout
+		main.screens.show_level_won()
+		await shot("%s_5_level_won" % lang)
+		G.result = {}
+		# 6 upgrade choice over a busy endless field
+		main.start_new_run(5151)
+		build_ref_board()
+		main.world.clear_blocks()
+		main.world.sync_blocks(true)
+		main.sim.balls = 16
+		main.sim.heavy = 1
+		main.sim.electric = 1
+		main.screens.show_upgrade(["balls", "heavy", "electric"])
+		await frames(4)
+		await shot("%s_6_upgrade" % lang)
+		main.screens.close()
+	G.test_no_save = false
 	finish()
